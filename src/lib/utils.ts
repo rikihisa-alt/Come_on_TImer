@@ -51,3 +51,25 @@ export function computeTimeToEnd(
   }
   return totalMs;
 }
+
+export function computeRegCloseTime(
+  levels: { type: string; duration: number; level: number }[],
+  currentIndex: number,
+  currentRemainingMs: number,
+  regCloseLevel?: number
+): number | null {
+  if (!regCloseLevel || regCloseLevel <= 0) return null;
+  let targetIndex = -1;
+  for (let i = 0; i < levels.length; i++) {
+    if (levels[i].type === 'play' && levels[i].level === regCloseLevel) {
+      targetIndex = i;
+      break;
+    }
+  }
+  if (targetIndex < 0 || targetIndex <= currentIndex) return null;
+  let totalMs = currentRemainingMs;
+  for (let i = currentIndex + 1; i <= targetIndex; i++) {
+    totalMs += levels[i].duration * 1000;
+  }
+  return totalMs;
+}

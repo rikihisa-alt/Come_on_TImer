@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import { GlobalNav } from '@/components/GlobalNav';
 
 export const metadata: Metadata = {
   title: 'COME ON Timer - ポーカータイマー',
@@ -18,6 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ja">
       <body className="antialiased">
+        <GlobalNav />
         {children}
         <script
           dangerouslySetInnerHTML={{

@@ -30,6 +30,7 @@ export type Tournament = {
   buyInAmount: number;
   prizeStructure: PrizeEntry[];
   createdAt: number;
+  regCloseLevel?: number;
 };
 
 export type CashGame = {
@@ -104,6 +105,8 @@ export type DisplayToggles = {
   showCashRate: boolean;
   showCashMemo: boolean;
   showCashTimer: boolean;
+  tickerText: string;
+  backgroundImageUrl: string;
 };
 
 export type SyncMessageType = 'FULL_SYNC' | 'TIMER_TICK' | 'LEVEL_CHANGE';

@@ -20,7 +20,6 @@ function CashDisplayInner() {
   const themeId = assignment?.themeId || 'come-on-blue';
   const theme: ThemeConfig | undefined = themes.find(t => t.id === themeId) || themes[0];
 
-  // Tab switching for multiple running cash games
   const runningCash = cashGames.filter(c => c.status === 'running' || c.status === 'paused');
   const [selectedId, setSelectedId] = useState(defaultTargetId);
   const activeId = assignment?.targetId || selectedId || defaultTargetId;
@@ -29,7 +28,6 @@ function CashDisplayInner() {
   const [elapsed, setElapsed] = useState(0);
   const [countdown, setCountdown] = useState(0);
 
-  // Unlock audio
   useEffect(() => {
     const h = () => unlockAudio();
     document.addEventListener('click', h, { once: true });
@@ -37,7 +35,6 @@ function CashDisplayInner() {
     return () => { document.removeEventListener('click', h); document.removeEventListener('touchstart', h); };
   }, []);
 
-  // Sync
   useEffect(() => {
     return onSync((msg) => {
       if (msg.type === 'FULL_SYNC' && msg.payload) {
@@ -50,7 +47,6 @@ function CashDisplayInner() {
     });
   }, []);
 
-  // Tick
   useEffect(() => {
     if (!cashGame) return;
     const iv = setInterval(() => {
@@ -92,21 +88,21 @@ function CashDisplayInner() {
 
   return (
     <div className="min-h-screen flex flex-col select-none overflow-hidden relative" style={bgStyle}>
-      {/* Overlay */}
       {theme && theme.overlayOpacity > 0 && (
         <div className="absolute inset-0 bg-black pointer-events-none" style={{ opacity: theme.overlayOpacity / 100 }} />
       )}
 
-      {/* Tab bar for multiple running cash games */}
+      {/* COME ON Timer branding (mobile) */}
+      <div className="md:hidden absolute top-2 left-3 z-30">
+        <span className="text-xs font-black text-blue-400/40 tracking-tight">COME ON</span>
+        <span className="text-white/10 font-medium text-[9px] ml-1">Timer</span>
+      </div>
+
       {runningCash.length > 1 && (
-        <div className="relative z-20 flex justify-center py-2 bg-black/30">
+        <div className="relative z-20 flex justify-center py-2 bg-black/20">
           <div className="tab-bar">
             {runningCash.map(rc => (
-              <div
-                key={rc.id}
-                className={`tab-item ${rc.id === activeId ? 'active' : ''}`}
-                onClick={() => setSelectedId(rc.id)}
-              >
+              <div key={rc.id} className={`tab-item ${rc.id === activeId ? 'active' : ''}`} onClick={() => setSelectedId(rc.id)}>
                 {rc.name}
               </div>
             ))}
@@ -114,59 +110,46 @@ function CashDisplayInner() {
         </div>
       )}
 
-      {/* Header */}
-      <header className="relative z-10 flex items-center justify-between px-5 md:px-8 py-2.5 bg-black/20">
+      <header className="relative z-10 flex items-center justify-between px-5 md:px-8 py-2.5 bg-black/20 border-b border-white/[0.04]">
         <div className="flex items-center gap-3">
-          <span className="text-base md:text-lg font-black text-blue-400 tracking-tight">
-            COME ON
-          </span>
-          <span className="text-white/20 font-medium text-xs">Timer</span>
-          <span className="text-white/25 text-sm ml-3 font-medium">{cashGame.name}</span>
+          <span className="hidden md:inline text-base md:text-lg font-black text-blue-400 tracking-tight">COME ON</span>
+          <span className="hidden md:inline text-white/20 font-medium text-xs">Timer</span>
+          <span className="text-white/25 text-sm md:ml-3 font-medium">{cashGame.name}</span>
         </div>
-        <div className="text-xs text-white/20 font-medium">Cash Game</div>
+        <div className="text-xs text-white/15 font-medium tracking-wider uppercase">Cash Game</div>
       </header>
 
-      {/* Main */}
       <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 gap-4 md:gap-6">
-        {/* Rate label */}
         {dt.showCashRate && (
-          <div className="text-white/20 text-base md:text-lg font-semibold tracking-[0.2em] uppercase">
-            Rate
-          </div>
+          <div className="text-white/15 text-sm md:text-base font-semibold tracking-[0.3em] uppercase">Rate</div>
         )}
 
-        {/* Blinds */}
         {dt.showCashRate && (
-          <div className="text-center">
-            <div
-              className="text-6xl md:text-8xl lg:text-[10vw] font-black leading-none tracking-tight"
-              style={{ color: primaryColor }}
-            >
+          <div className="text-center fade-in">
+            <div className="text-5xl md:text-7xl lg:text-[9vw] font-black leading-none tracking-tight" style={{ color: primaryColor }}>
               {cashGame.smallBlind.toLocaleString()} / {cashGame.bigBlind.toLocaleString()}
             </div>
             {cashGame.ante > 0 && (
-              <div className="text-xl md:text-3xl text-white/30 font-semibold mt-1">
+              <div className="text-lg md:text-2xl text-white/25 font-semibold mt-1">
                 Ante {cashGame.ante.toLocaleString()}
               </div>
             )}
           </div>
         )}
 
-        {/* Memo */}
         {dt.showCashMemo && cashGame.memo && (
-          <div className="px-5 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] text-base md:text-lg text-white/40 font-medium text-center max-w-md">
+          <div className="glass-sm px-5 py-2.5 text-base md:text-lg text-white/35 font-medium text-center max-w-md">
             {cashGame.memo}
           </div>
         )}
 
-        {/* Timer */}
         {dt.showCashTimer && (
           <div className="text-center space-y-1 mt-2">
             <div className="text-[10px] text-white/15 uppercase tracking-widest font-medium">
               {cashGame.countdownMode ? 'Remaining' : 'Session Time'}
             </div>
-            <div className={`text-4xl md:text-6xl font-black timer-font leading-none ${
-              isCountdownWarning ? 'text-amber-400 warning-pulse' : 'text-white/50'
+            <div className={`text-4xl md:text-6xl font-black timer-font leading-none transition-colors duration-300 ${
+              isCountdownWarning ? 'text-amber-400 warning-pulse' : 'text-white/45'
             }`}>
               {cashGame.countdownMode ? formatTimerHMS(countdown) : formatTimerHMS(elapsed)}
             </div>
@@ -174,31 +157,38 @@ function CashDisplayInner() {
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="relative z-10 flex items-center justify-center gap-6 md:gap-12 px-4 py-3 bg-black/20 flex-wrap">
+      <footer className="relative z-10 flex items-center justify-center gap-6 md:gap-12 px-4 py-3 bg-black/20 border-t border-white/[0.04] flex-wrap">
         <div className="text-center">
-          <div className="text-[9px] text-white/15 uppercase tracking-wider">SB</div>
-          <div className="text-base font-bold">{cashGame.smallBlind.toLocaleString()}</div>
+          <div className="text-[8px] md:text-[9px] text-white/15 uppercase tracking-wider">SB</div>
+          <div className="text-base font-bold text-white/60">{cashGame.smallBlind.toLocaleString()}</div>
         </div>
         <div className="text-center">
-          <div className="text-[9px] text-white/15 uppercase tracking-wider">BB</div>
-          <div className="text-base font-bold">{cashGame.bigBlind.toLocaleString()}</div>
+          <div className="text-[8px] md:text-[9px] text-white/15 uppercase tracking-wider">BB</div>
+          <div className="text-base font-bold text-white/60">{cashGame.bigBlind.toLocaleString()}</div>
         </div>
         {cashGame.ante > 0 && (
           <div className="text-center">
-            <div className="text-[9px] text-white/15 uppercase tracking-wider">Ante</div>
-            <div className="text-base font-bold">{cashGame.ante.toLocaleString()}</div>
+            <div className="text-[8px] md:text-[9px] text-white/15 uppercase tracking-wider">Ante</div>
+            <div className="text-base font-bold text-white/60">{cashGame.ante.toLocaleString()}</div>
           </div>
         )}
       </footer>
 
-      {/* Idle overlay */}
+      {/* Ticker */}
+      {dt.tickerText && (
+        <div className="relative z-10 w-full py-1.5 bg-black/30 border-t border-white/[0.04] overflow-hidden">
+          <div className="ticker-container">
+            <span className="ticker-scroll text-xs md:text-sm font-medium text-white/35 px-4">
+              {dt.tickerText}
+            </span>
+          </div>
+        </div>
+      )}
+
       {cashGame.status === 'idle' && (
         <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/60">
-          <div className="text-center space-y-4">
-            <div className="text-4xl md:text-6xl font-black text-blue-400">
-              COME ON Timer
-            </div>
+          <div className="text-center space-y-4 fade-in-up">
+            <div className="text-4xl md:text-6xl font-black text-blue-400 glow-pulse">COME ON Timer</div>
             <div className="text-lg md:text-xl text-white/20 font-medium">Cash Game Ready</div>
           </div>
         </div>

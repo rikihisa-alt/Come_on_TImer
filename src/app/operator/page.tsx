@@ -10,18 +10,11 @@ import { BlindLevel, Tournament, CashGame, SoundPreset, PrizeEntry } from '@/lib
 export default function OperatorPage() {
   const [tab, setTab] = useState<'tournaments' | 'cash' | 'displays' | 'settings'>('tournaments');
   return (
-    <div className="min-h-screen" style={{ background: '#0a0e1a' }}>
-      <header className="flex items-center justify-between px-4 py-3 border-b border-white/5">
-        <div className="flex items-center gap-2">
-          <span className="text-lg font-black text-blue-400 tracking-tight">COME ON</span>
-          <span className="text-white/30 font-medium text-sm">Operator</span>
-        </div>
-        <a href="/" className="text-xs text-white/20 hover:text-white/40">Home</a>
-      </header>
-      <nav className="flex border-b border-white/5">
+    <div className="min-h-screen pb-mobile" style={{ background: '#0a0e1a' }}>
+      <nav className="flex border-b border-white/[0.06] glass-dark">
         {(['tournaments', 'cash', 'displays', 'settings'] as const).map(t => (
           <button key={t} onClick={() => setTab(t)}
-            className={`flex-1 py-3 text-sm font-semibold transition-colors ${tab === t ? 'text-blue-400 border-b-2 border-blue-400' : 'text-white/30 hover:text-white/50'}`}>
+            className={`flex-1 py-3 text-sm font-semibold transition-all duration-200 ${tab === t ? 'text-blue-400 border-b-2 border-blue-400 bg-blue-400/5' : 'text-white/30 hover:text-white/50 hover:bg-white/[0.02]'}`}>
             {t === 'tournaments' ? 'Tournaments' : t === 'cash' ? 'Cash Games' : t === 'displays' ? 'Displays' : 'Settings'}
           </button>
         ))}
@@ -41,11 +34,11 @@ function TournamentsTab() {
   const [selectedId, setSelectedId] = useState(tournaments[0]?.id || '');
   useEffect(() => { if (!selectedId && tournaments.length) setSelectedId(tournaments[0].id); }, [tournaments, selectedId]);
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 fade-in">
       <div className="flex items-center gap-2 flex-wrap">
         {tournaments.map(t => (
           <button key={t.id} onClick={() => setSelectedId(t.id)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${selectedId === t.id ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-white/5 text-white/40 hover:text-white/60 border border-transparent'}`}>
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${selectedId === t.id ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-white/5 text-white/40 hover:text-white/60 border border-transparent hover:border-white/10'}`}>
             {t.name}
             <span className={`ml-2 text-xs ${t.status === 'running' ? 'text-green-400' : t.status === 'paused' ? 'text-amber-400' : 'text-white/20'}`}>
               {t.status === 'running' ? 'LIVE' : t.status === 'paused' ? 'PAUSED' : t.status === 'finished' ? 'END' : ''}
@@ -156,6 +149,7 @@ function TournamentTimer({ tournament: t }: { tournament: Tournament }) {
 
 function TournamentStats({ tournament: t }: { tournament: Tournament }) {
   const up = (p: Partial<Tournament>) => useStore.getState().updateTournament(t.id, p);
+  const totalPlayLevels = t.levels.filter(l => l.type === 'play').length;
   return (
     <div className="space-y-3">
       <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Tournament Info</div>
@@ -163,7 +157,19 @@ function TournamentStats({ tournament: t }: { tournament: Tournament }) {
         <div><label className="text-[11px] text-white/25 block mb-1">Starting Chips</label><input type="number" className="input input-sm" value={t.startingChips} onChange={e => up({ startingChips: +e.target.value })} /></div>
         <div><label className="text-[11px] text-white/25 block mb-1">Entries</label><div className="flex gap-1"><button className="btn btn-ghost btn-sm" onClick={() => up({ entryCount: Math.max(0, t.entryCount - 1) })}>-</button><input type="number" className="input input-sm text-center" value={t.entryCount} onChange={e => up({ entryCount: Math.max(0, +e.target.value) })} /><button className="btn btn-ghost btn-sm" onClick={() => up({ entryCount: t.entryCount + 1 })}>+</button></div></div>
         <div><label className="text-[11px] text-white/25 block mb-1">Rebuys</label><div className="flex gap-1"><button className="btn btn-ghost btn-sm" onClick={() => up({ rebuyCount: Math.max(0, t.rebuyCount - 1) })}>-</button><input type="number" className="input input-sm text-center" value={t.rebuyCount} onChange={e => up({ rebuyCount: Math.max(0, +e.target.value) })} /><button className="btn btn-ghost btn-sm" onClick={() => up({ rebuyCount: t.rebuyCount + 1 })}>+</button></div></div>
-        <div><label className="text-[11px] text-white/25 block mb-1">Buy-in (¥)</label><input type="number" className="input input-sm" value={t.buyInAmount} onChange={e => up({ buyInAmount: +e.target.value })} /></div>
+        <div><label className="text-[11px] text-white/25 block mb-1">Add-ons</label><div className="flex gap-1"><button className="btn btn-ghost btn-sm" onClick={() => up({ addonCount: Math.max(0, (t.addonCount || 0) - 1) })}>-</button><input type="number" className="input input-sm text-center" value={t.addonCount || 0} onChange={e => up({ addonCount: Math.max(0, +e.target.value) })} /><button className="btn btn-ghost btn-sm" onClick={() => up({ addonCount: (t.addonCount || 0) + 1 })}>+</button></div></div>
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div><label className="text-[11px] text-white/25 block mb-1">Buy-in (&yen;)</label><input type="number" className="input input-sm" value={t.buyInAmount} onChange={e => up({ buyInAmount: +e.target.value })} /></div>
+        <div>
+          <label className="text-[11px] text-white/25 block mb-1">Reg Close Level</label>
+          <select className="input input-sm" value={t.regCloseLevel || 0} onChange={e => up({ regCloseLevel: +e.target.value || undefined })}>
+            <option value={0}>-- None --</option>
+            {Array.from({ length: totalPlayLevels }, (_, i) => (
+              <option key={i + 1} value={i + 1}>Level {i + 1}</option>
+            ))}
+          </select>
+        </div>
       </div>
     </div>
   );
@@ -183,7 +189,7 @@ function PrizeEditor({ tournament: t }: { tournament: Tournament }) {
           <span className="text-xs text-white/30 w-6">{p.place}位</span>
           <input type="number" className="input input-sm w-20" value={p.percent} onChange={e => { const arr = [...t.prizeStructure]; arr[i] = { ...arr[i], percent: +e.target.value }; update(arr); }} min={0} max={100} />
           <span className="text-xs text-white/20">%</span>
-          <span className="text-xs text-white/40 ml-2">¥{pool > 0 ? Math.round(pool * p.percent / 100).toLocaleString() : '0'}</span>
+          <span className="text-xs text-white/40 ml-2">&yen;{pool > 0 ? Math.round(pool * p.percent / 100).toLocaleString() : '0'}</span>
           <button className="btn btn-danger btn-sm ml-auto" onClick={() => update(t.prizeStructure.filter((_, j) => j !== i))}>x</button>
         </div>
       ))}
@@ -211,14 +217,14 @@ function BlindEditor({ tournament: t }: { tournament: Tournament }) {
       </div>
       <div className="space-y-1">
         {t.levels.map((lv, i) => (
-          <div key={i} className={`flex items-center gap-2 p-2 rounded-lg ${i === t.currentLevelIndex ? 'bg-blue-500/10 border border-blue-500/20' : 'hover:bg-white/[0.02]'}`}>
-            <button onClick={() => store.tJumpLevel(t.id, i)} className="text-[11px] text-white/20 hover:text-blue-400 w-5 text-center cursor-pointer">{i === t.currentLevelIndex ? '▸' : (i + 1)}</button>
+          <div key={i} className={`flex items-center gap-2 p-2 rounded-lg transition-colors ${i === t.currentLevelIndex ? 'bg-blue-500/10 border border-blue-500/20' : 'hover:bg-white/[0.02]'}`}>
+            <button onClick={() => store.tJumpLevel(t.id, i)} className="text-[11px] text-white/20 hover:text-blue-400 w-5 text-center cursor-pointer transition-colors">{i === t.currentLevelIndex ? '▸' : (i + 1)}</button>
             {lv.type === 'break' ? (
               <><span className="text-green-400 text-xs font-semibold flex-1">BREAK</span><input type="number" className="input input-sm w-16 text-center" value={Math.floor(lv.duration / 60)} onChange={e => upLv(i, { duration: +e.target.value * 60 })} min={1} /><span className="text-[11px] text-white/20">min</span></>
             ) : (
               <><span className="text-[11px] text-white/30 w-6">Lv{lv.level}</span><input type="number" className="input input-sm w-16" value={lv.smallBlind} onChange={e => upLv(i, { smallBlind: +e.target.value })} /><span className="text-white/15">/</span><input type="number" className="input input-sm w-16" value={lv.bigBlind} onChange={e => upLv(i, { bigBlind: +e.target.value })} /><span className="text-[11px] text-white/20 ml-1">A:</span><input type="number" className="input input-sm w-14" value={lv.ante} onChange={e => upLv(i, { ante: +e.target.value })} /><input type="number" className="input input-sm w-14 text-center" value={Math.floor(lv.duration / 60)} onChange={e => upLv(i, { duration: +e.target.value * 60 })} min={1} /><span className="text-[11px] text-white/20">m</span></>
             )}
-            <button onClick={() => rmLv(i)} className="text-white/15 hover:text-red-400 text-xs ml-1">x</button>
+            <button onClick={() => rmLv(i)} className="text-white/15 hover:text-red-400 text-xs ml-1 transition-colors">x</button>
           </div>
         ))}
       </div>
@@ -228,32 +234,61 @@ function BlindEditor({ tournament: t }: { tournament: Tournament }) {
 }
 
 function CashTab() {
-  const { cashGames, addCashGame } = useStore();
+  const { cashGames, addCashGame, removeCashGame } = useStore();
   const [selectedId, setSelectedId] = useState(cashGames[0]?.id || '');
-  useEffect(() => { if (!selectedId && cashGames.length) setSelectedId(cashGames[0].id); }, [cashGames, selectedId]);
+
+  // Fix: when selected game is deleted, switch to first available or clear
+  useEffect(() => {
+    if (cashGames.length === 0) {
+      setSelectedId('');
+      return;
+    }
+    if (!cashGames.find(c => c.id === selectedId)) {
+      setSelectedId(cashGames[0]?.id || '');
+    }
+  }, [cashGames, selectedId]);
+
+  const handleDelete = (id: string) => {
+    removeCashGame(id);
+    // If deleting the selected game, switch to another
+    if (id === selectedId) {
+      const remaining = cashGames.filter(c => c.id !== id);
+      setSelectedId(remaining[0]?.id || '');
+    }
+  };
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 fade-in">
       <div className="flex items-center gap-2 flex-wrap">
         {cashGames.map(c => (
           <button key={c.id} onClick={() => setSelectedId(c.id)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${selectedId === c.id ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-white/5 text-white/40 border border-transparent'}`}>
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${selectedId === c.id ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-white/5 text-white/40 border border-transparent hover:border-white/10'}`}>
             {c.name}{c.status === 'running' && <span className="ml-2 text-xs text-green-400">LIVE</span>}
           </button>
         ))}
         <button onClick={() => { const id = addCashGame(`Cash ${cashGames.length + 1}`); setSelectedId(id); }} className="btn btn-ghost btn-sm">+ Add</button>
       </div>
-      {selectedId && <CashEditor id={selectedId} />}
+      {selectedId && <CashEditor id={selectedId} onDelete={handleDelete} />}
+      {cashGames.length === 0 && (
+        <div className="card p-8 text-center text-white/20">
+          <p className="text-sm">No cash games. Click &quot;+ Add&quot; to create one.</p>
+        </div>
+      )}
     </div>
   );
 }
 
-function CashEditor({ id }: { id: string }) {
+function CashEditor({ id, onDelete }: { id: string; onDelete: (id: string) => void }) {
   const store = useStore();
   const c = store.cashGames.find(x => x.id === id);
-  if (!c) return null;
+
+  // Hooks must be called unconditionally (before any early return)
   const [elapsed, setElapsed] = useState(0);
-  const [countdown, setCountdown] = useState(c.countdownRemainingMs);
+  const [countdown, setCountdown] = useState(0);
+
   useEffect(() => {
+    if (!c) return;
+    setCountdown(c.countdownRemainingMs);
     const iv = setInterval(() => {
       if (c.status === 'running' && c.timerStartedAt) {
         const e = Date.now() - c.timerStartedAt;
@@ -263,11 +298,14 @@ function CashEditor({ id }: { id: string }) {
     }, 500);
     return () => clearInterval(iv);
   }, [c]);
+
+  if (!c) return null;
+
   return (
     <div className="card p-4 space-y-4 fade-in">
       <div className="flex items-center gap-3">
         <input className="input flex-1" value={c.name} onChange={e => store.updateCashGame(id, { name: e.target.value })} placeholder="Cash game name" />
-        <button onClick={() => store.removeCashGame(id)} className="btn btn-danger btn-sm">Delete</button>
+        <button onClick={() => onDelete(id)} className="btn btn-danger btn-sm">Delete</button>
       </div>
       <div className="grid grid-cols-3 gap-3">
         <div><label className="text-[11px] text-white/25 block mb-1">SB</label><input type="number" className="input input-sm" value={c.smallBlind} onChange={e => store.updateCashGame(id, { smallBlind: +e.target.value })} /></div>
@@ -295,7 +333,7 @@ function DisplaysTab() {
   const { displays, tournaments, cashGames, themes, setDisplay, removeDisplay } = useStore();
   const [newId, setNewId] = useState('');
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 fade-in">
       <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Display Assignments</div>
       <p className="text-xs text-white/20">ディスプレイURLに <code className="text-blue-400/60">?display=TV1</code> を付けてアクセス</p>
       {displays.map(d => (
@@ -318,7 +356,7 @@ function DisplaysTab() {
 }
 
 function SettingsTab() {
-  return <div className="space-y-6"><SoundPanel /><TogglesPanel /></div>;
+  return <div className="space-y-6 fade-in"><SoundPanel /><DisplaySettingsPanel /><TogglesPanel /></div>;
 }
 
 function SoundPanel() {
@@ -353,6 +391,35 @@ function SoundPanel() {
             <button className="btn btn-ghost btn-sm" onClick={() => updateSound({ ttsMessages: [...sound.ttsMessages, { id: uid(), label: 'Custom', template: '', enabled: true }] })}>+ Add</button>
           </div>
         </>}
+      </div>
+    </div>
+  );
+}
+
+function DisplaySettingsPanel() {
+  const { displayToggles: dt, updateDisplayToggles: up } = useStore();
+  return (
+    <div className="card p-4 space-y-4">
+      <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Display Settings</div>
+      <div>
+        <label className="text-[11px] text-white/25 block mb-1">Ticker Text (テロップ)</label>
+        <input
+          className="input"
+          value={dt.tickerText}
+          onChange={e => up({ tickerText: e.target.value })}
+          placeholder="画面下部に表示するテキストを入力..."
+        />
+        <p className="text-[10px] text-white/15 mt-1">ディスプレイ画面の下部にスクロール表示されます</p>
+      </div>
+      <div>
+        <label className="text-[11px] text-white/25 block mb-1">Background Image URL (背景画像)</label>
+        <input
+          className="input"
+          value={dt.backgroundImageUrl}
+          onChange={e => up({ backgroundImageUrl: e.target.value })}
+          placeholder="https://example.com/image.jpg"
+        />
+        <p className="text-[10px] text-white/15 mt-1">トーナメント表示画面の背景画像URL</p>
       </div>
     </div>
   );
