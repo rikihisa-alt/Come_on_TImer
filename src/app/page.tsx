@@ -17,7 +17,7 @@ function NavCard({ href, icon, title, desc }: { href: string; icon: React.ReactN
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-8 md:gap-10 p-6 pb-mobile"
+    <div className="min-h-screen flex flex-col items-center justify-center gap-8 md:gap-10 p-6"
       style={{ background: 'linear-gradient(160deg, #0e1c36 0%, #152d52 50%, #1c3d6e 100%)' }}>
 
       {/* Logo */}

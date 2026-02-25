@@ -10,16 +10,7 @@ import { BlindLevel, Tournament, CashGame, SoundPreset, PrizeEntry } from '@/lib
 export default function OperatorPage() {
   const [tab, setTab] = useState<'tournaments' | 'cash' | 'displays' | 'settings'>('tournaments');
   return (
-    <div className="min-h-screen pb-mobile" style={{ background: 'linear-gradient(160deg, #0e1c36 0%, #152d52 50%, #1c3d6e 100%)' }}>
-      {/* Glass Header */}
-      <div className="g-topbar px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-base font-black text-blue-400 tracking-tight">COME ON</span>
-          <span className="text-white/20 font-medium text-xs">Timer</span>
-        </div>
-        <span className="text-xs text-white/25 font-medium tracking-wider uppercase">Operator</span>
-      </div>
-
+    <div className="min-h-screen" style={{ background: 'linear-gradient(160deg, #0e1c36 0%, #152d52 50%, #1c3d6e 100%)' }}>
       {/* Glass Tab Nav */}
       <nav className="flex px-3 py-2 gap-1.5 border-b border-white/[0.06]">
         {(['tournaments', 'cash', 'displays', 'settings'] as const).map(t => (
@@ -358,10 +349,15 @@ function CashEditor({ id, onDelete }: { id: string; onDelete: (id: string) => vo
   );
 }
 
-/* ── Display Preview (scaled iframe) ── */
-function DisplayPreview({ route, displayId }: { route: string; displayId: string }) {
+/* ── Enhanced Display Preview ── */
+function DisplayPreview({ route, displayId, targetName, themeLabel }: {
+  route: string; displayId: string; targetName: string; themeLabel: string;
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.25);
+  const [iframeKey, setIframeKey] = useState(0);
+  const [expanded, setExpanded] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const update = () => {
@@ -373,30 +369,109 @@ function DisplayPreview({ route, displayId }: { route: string; displayId: string
     update();
     window.addEventListener('resize', update);
     return () => window.removeEventListener('resize', update);
-  }, []);
+  }, [expanded]);
 
-  const src = route === 'split'
+  const path = route === 'split'
     ? `/display/split?display=${displayId}`
     : route === 'cash'
     ? `/display/cash?display=${displayId}`
     : `/display/tournament?display=${displayId}`;
 
+  const fullUrl = typeof window !== 'undefined' ? `${window.location.origin}${path}` : path;
+  const routeLabel = route === 'split' ? 'Split View' : route === 'cash' ? 'Cash Game' : 'Tournament';
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(fullUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleOpen = () => {
+    window.open(path, '_blank');
+  };
+
   return (
-    <div ref={containerRef} className="mt-3 rounded-xl overflow-hidden border border-white/[0.08] bg-black/30 relative" style={{ height: `${Math.round(scale * 720)}px` }}>
-      <iframe
-        src={src}
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '1280px',
-          height: '720px',
-          transform: `scale(${scale})`,
-          transformOrigin: 'top left',
-          border: 'none',
-          pointerEvents: 'none',
-        }}
-      />
+    <div className="mt-3 space-y-0">
+      {/* Preview Toolbar */}
+      <div className="flex items-center gap-2 px-3 py-2 bg-white/[0.03] rounded-t-xl border border-white/[0.08] border-b-0">
+        {/* Route badge */}
+        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md shrink-0 ${
+          route === 'tournament' ? 'bg-blue-500/20 text-blue-400' :
+          route === 'cash' ? 'bg-green-500/20 text-green-400' :
+          'bg-purple-500/20 text-purple-400'
+        }`}>{routeLabel}</span>
+        {/* Target name */}
+        <span className="text-[11px] text-white/40 truncate">{targetName}</span>
+        {/* Theme */}
+        <span className="text-[10px] text-white/20 shrink-0">{themeLabel}</span>
+
+        <div className="ml-auto flex items-center gap-1">
+          {/* Refresh */}
+          <button onClick={() => setIframeKey(k => k + 1)}
+            className="p-1.5 rounded-lg hover:bg-white/[0.08] text-white/25 hover:text-white/60 transition-colors" title="Refresh">
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182" />
+            </svg>
+          </button>
+          {/* Expand / Collapse */}
+          <button onClick={() => setExpanded(!expanded)}
+            className="p-1.5 rounded-lg hover:bg-white/[0.08] text-white/25 hover:text-white/60 transition-colors" title={expanded ? 'Collapse' : 'Expand'}>
+            {expanded ? (
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 9V4.5M9 9H4.5M9 9 3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5 5.25 5.25" />
+              </svg>
+            ) : (
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+              </svg>
+            )}
+          </button>
+          {/* Open in new tab */}
+          <button onClick={handleOpen}
+            className="p-1.5 rounded-lg hover:bg-white/[0.08] text-white/25 hover:text-white/60 transition-colors" title="Open in new tab">
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      {/* URL bar */}
+      <div className="flex items-center gap-2 px-3 py-1.5 bg-white/[0.02] border-x border-white/[0.08]">
+        <svg className="w-3 h-3 text-white/15 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+        </svg>
+        <code className="text-[10px] text-blue-400/50 flex-1 truncate select-all">{fullUrl}</code>
+        <button onClick={handleCopy}
+          className={`text-[10px] px-2 py-0.5 rounded-md transition-all ${copied ? 'bg-green-500/20 text-green-400' : 'bg-white/[0.05] text-white/30 hover:text-white/60 hover:bg-white/[0.1]'}`}>
+          {copied ? 'Copied!' : 'Copy'}
+        </button>
+      </div>
+
+      {/* Preview iframe */}
+      <div ref={containerRef} className="rounded-b-xl overflow-hidden border border-white/[0.08] border-t-0 bg-black/40 relative transition-all duration-300"
+        style={{ height: expanded ? `${Math.round(scale * 720 * 2)}px` : `${Math.round(scale * 720)}px` }}>
+        <iframe
+          key={iframeKey}
+          src={path}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '1280px',
+            height: '720px',
+            transform: `scale(${expanded ? scale * 2 : scale})`,
+            transformOrigin: 'top left',
+            border: 'none',
+            pointerEvents: 'none',
+          }}
+        />
+        {/* Live indicator */}
+        <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/50 backdrop-blur-sm">
+          <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+          <span className="text-[9px] text-white/40 font-semibold">LIVE</span>
+        </div>
+      </div>
     </div>
   );
 }
@@ -484,7 +559,16 @@ function DisplaysTab() {
             </div>
           )}
           {/* Live Preview */}
-          <DisplayPreview route={d.route} displayId={d.displayId} />
+          <DisplayPreview
+            route={d.route}
+            displayId={d.displayId}
+            targetName={
+              d.route === 'split'
+                ? `${(tournaments.find(t => t.id === d.targetId) || cashGames.find(c => c.id === d.targetId))?.name || '?'} + ${(tournaments.find(t => t.id === d.splitTargetId) || cashGames.find(c => c.id === d.splitTargetId))?.name || '?'}`
+                : (d.route === 'tournament' ? tournaments.find(t => t.id === d.targetId)?.name : cashGames.find(c => c.id === d.targetId)?.name) || '?'
+            }
+            themeLabel={themes.find(th => th.id === d.themeId)?.name || ''}
+          />
         </div>
       ))}
       <div className="flex gap-2">
