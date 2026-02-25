@@ -237,11 +237,95 @@ function CashPanel({ cashGame, theme, displayToggles: dt }: {
   );
 }
 
+/* ═══ Panel Selector (tap panel header to switch timer) ═══ */
+function PanelSelector({ selectedId, onSelect, tournaments, cashGames, side }: {
+  selectedId: string;
+  onSelect: (id: string) => void;
+  tournaments: Tournament[];
+  cashGames: CashGame[];
+  side: 'left' | 'right';
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, [open]);
+
+  const allTimers = [
+    ...tournaments.map(t => ({ id: t.id, name: t.name, kind: 'T' as const, status: t.status })),
+    ...cashGames.map(c => ({ id: c.id, name: c.name, kind: 'C' as const, status: c.status })),
+  ];
+  const current = allTimers.find(t => t.id === selectedId);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-1 px-2 py-0.5 rounded bg-white/[0.04] hover:bg-white/[0.1] border border-white/[0.06] hover:border-white/[0.15] transition-all duration-200 cursor-pointer"
+      >
+        <span className={`text-[8px] font-bold px-1 rounded ${current?.kind === 'C' ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'}`}>
+          {current?.kind === 'C' ? 'C' : 'T'}
+        </span>
+        <span className="text-[10px] lg:text-xs text-white/50 font-medium truncate max-w-[120px]">{current?.name || '選択'}</span>
+        <svg className={`w-2.5 h-2.5 text-white/20 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+      </button>
+
+      {open && (
+        <div className={`absolute top-full mt-1 ${side === 'right' ? 'right-0' : 'left-0'} z-50 min-w-[180px] bg-black/90 backdrop-blur-xl border border-white/[0.1] rounded-lg shadow-2xl overflow-hidden`}>
+          <div className="py-1">
+            {allTimers.length === 0 && <div className="px-3 py-2 text-xs text-white/20">タイマーなし</div>}
+            {allTimers.map(t => (
+              <button
+                key={t.id}
+                onClick={() => { onSelect(t.id); setOpen(false); }}
+                className={`w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-white/[0.08] transition-colors ${t.id === selectedId ? 'bg-blue-500/10' : ''}`}
+              >
+                <span className={`text-[8px] font-bold px-1 rounded shrink-0 ${t.kind === 'C' ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'}`}>
+                  {t.kind === 'C' ? 'Cash' : 'Trn'}
+                </span>
+                <span className="text-xs text-white/60 truncate flex-1">{t.name}</span>
+                {t.status === 'running' && <span className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0 animate-pulse" />}
+                {t.status === 'paused' && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />}
+                {t.id === selectedId && <svg className="w-3 h-3 text-blue-400 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ═══ Split Display Main ═══ */
 function SplitInner() {
   const params = useSearchParams();
   const displayId = params.get('display') || '';
   const { tournaments, cashGames, displays, themes, sound, displayToggles } = useStore();
+
+  // Auto-detect type from ID
+  const detectType = useCallback((id: string): 'tournament' | 'cash' => {
+    if (cashGames.find(c => c.id === id)) return 'cash';
+    return 'tournament';
+  }, [cashGames]);
+
+  // Get initial IDs from assignment or URL params
+  const assignment = displays.find(d => d.displayId === displayId);
+  const initLeftId = params.get('left') || assignment?.targetId || tournaments[0]?.id || cashGames[0]?.id || '';
+  const initRightId = params.get('right') || assignment?.splitTargetId || (tournaments[1]?.id || cashGames[0]?.id || tournaments[0]?.id || '');
+
+  // Local state for panel selection (can be changed from the display itself)
+  const [selLeft, setSelLeft] = useState(initLeftId);
+  const [selRight, setSelRight] = useState(initRightId);
+
+  // Sync initial values when assignment changes
+  useEffect(() => {
+    if (assignment?.targetId) setSelLeft(assignment.targetId);
+    if (assignment?.splitTargetId) setSelRight(assignment.splitTargetId);
+  }, [assignment?.targetId, assignment?.splitTargetId]);
 
   useEffect(() => {
     const h = () => unlockAudio();
@@ -264,27 +348,16 @@ function SplitInner() {
     });
   }, []);
 
-  const assignment = displays.find(d => d.displayId === displayId);
   const themeId = assignment?.themeId || 'come-on-blue';
   const theme = themes.find(t => t.id === themeId) || themes[0];
 
-  // Auto-detect type from ID
-  const detectType = (id: string): 'tournament' | 'cash' => {
-    if (cashGames.find(c => c.id === id)) return 'cash';
-    return 'tournament';
-  };
+  const leftType = detectType(selLeft);
+  const rightType = detectType(selRight);
 
-  // Left panel config (from assignment or URL params)
-  const leftId = params.get('left') || assignment?.targetId || tournaments[0]?.id || cashGames[0]?.id || '';
-  const leftType = (params.get('leftType') as 'tournament' | 'cash') || assignment?.leftRoute || detectType(leftId);
-  // Right panel config
-  const rightId = params.get('right') || assignment?.splitTargetId || (tournaments[1]?.id || cashGames[0]?.id || tournaments[0]?.id || '');
-  const rightType = (params.get('rightType') as 'tournament' | 'cash') || assignment?.splitRoute || detectType(rightId);
-
-  const leftTournament = leftType === 'tournament' ? tournaments.find(t => t.id === leftId) : undefined;
-  const leftCash = leftType === 'cash' ? cashGames.find(c => c.id === leftId) : undefined;
-  const rightTournament = rightType === 'tournament' ? tournaments.find(t => t.id === rightId) : undefined;
-  const rightCash = rightType === 'cash' ? cashGames.find(c => c.id === rightId) : undefined;
+  const leftTournament = leftType === 'tournament' ? tournaments.find(t => t.id === selLeft) : undefined;
+  const leftCash = leftType === 'cash' ? cashGames.find(c => c.id === selLeft) : undefined;
+  const rightTournament = rightType === 'tournament' ? tournaments.find(t => t.id === selRight) : undefined;
+  const rightCash = rightType === 'cash' ? cashGames.find(c => c.id === selRight) : undefined;
 
   const bgStyle = displayToggles.backgroundImageUrl
     ? { backgroundImage: `url(${displayToggles.backgroundImageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
@@ -300,13 +373,14 @@ function SplitInner() {
       {displayToggles.backgroundImageUrl && <div className="absolute inset-0 bg-black/50 pointer-events-none z-[1]" />}
       {theme && theme.overlayOpacity > 0 && <div className="absolute inset-0 bg-black pointer-events-none z-[1]" style={{ opacity: theme.overlayOpacity / 100 }} />}
 
-      {/* Header */}
+      {/* Header with panel selectors */}
       <div className="relative z-10 flex items-center justify-between px-3 py-1.5 bg-black/30 border-b border-white/[0.06]">
-        <div className="flex items-center gap-2">
+        <PanelSelector selectedId={selLeft} onSelect={setSelLeft} tournaments={tournaments} cashGames={cashGames} side="left" />
+        <div className="flex items-center gap-1.5">
           <span className="text-sm font-black text-blue-400 tracking-tight">COME ON</span>
           <span className="text-white/20 font-medium text-[10px]">Timer</span>
         </div>
-        <span className="text-[10px] text-white/15 font-medium uppercase tracking-wider">Split Display</span>
+        <PanelSelector selectedId={selRight} onSelect={setSelRight} tournaments={tournaments} cashGames={cashGames} side="right" />
       </div>
 
       {/* Split panels */}
@@ -320,7 +394,7 @@ function SplitInner() {
               <CashPanel cashGame={leftCash} theme={theme} displayToggles={displayToggles} />
             ) : null
           ) : (
-            <div className="flex-1 flex items-center justify-center text-white/15 text-sm">No left panel configured</div>
+            <div className="flex-1 flex items-center justify-center text-white/15 text-sm">左パネル: タイマーを選択してください ↑</div>
           )}
         </div>
 
@@ -333,7 +407,7 @@ function SplitInner() {
               <CashPanel cashGame={rightCash} theme={theme} displayToggles={displayToggles} />
             ) : null
           ) : (
-            <div className="flex-1 flex items-center justify-center text-white/15 text-sm">No right panel configured</div>
+            <div className="flex-1 flex items-center justify-center text-white/15 text-sm">右パネル: タイマーを選択してください ↑</div>
           )}
         </div>
       </div>
