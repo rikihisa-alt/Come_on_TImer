@@ -31,6 +31,7 @@ export type Tournament = {
   prizeStructure: PrizeEntry[];
   createdAt: number;
   regCloseLevel?: number;
+  scheduledStartTime?: number | null;
 };
 
 export type CashGame = {
@@ -109,6 +110,7 @@ export type DisplayToggles = {
   showCashMemo: boolean;
   showCashTimer: boolean;
   tickerText: string;
+  tickerSpeed: number;
   backgroundImageUrl: string;
 };
 

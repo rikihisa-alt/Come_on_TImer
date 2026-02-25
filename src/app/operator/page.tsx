@@ -10,11 +10,21 @@ import { BlindLevel, Tournament, CashGame, SoundPreset, PrizeEntry } from '@/lib
 export default function OperatorPage() {
   const [tab, setTab] = useState<'tournaments' | 'cash' | 'displays' | 'settings'>('tournaments');
   return (
-    <div className="min-h-screen pb-mobile" style={{ background: '#0a0e1a' }}>
-      <nav className="flex border-b border-white/[0.06] glass-dark">
+    <div className="min-h-screen pb-mobile" style={{ background: 'linear-gradient(160deg, #0e1c36 0%, #152d52 50%, #1c3d6e 100%)' }}>
+      {/* Glass Header */}
+      <div className="g-topbar px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-base font-black text-blue-400 tracking-tight">COME ON</span>
+          <span className="text-white/20 font-medium text-xs">Timer</span>
+        </div>
+        <span className="text-xs text-white/25 font-medium tracking-wider uppercase">Operator</span>
+      </div>
+
+      {/* Glass Tab Nav */}
+      <nav className="flex px-3 py-2 gap-1.5 border-b border-white/[0.06]">
         {(['tournaments', 'cash', 'displays', 'settings'] as const).map(t => (
           <button key={t} onClick={() => setTab(t)}
-            className={`flex-1 py-3 text-sm font-semibold transition-all duration-200 ${tab === t ? 'text-blue-400 border-b-2 border-blue-400 bg-blue-400/5' : 'text-white/30 hover:text-white/50 hover:bg-white/[0.02]'}`}>
+            className={`flex-1 py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all duration-200 ${tab === t ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'text-white/30 hover:text-white/50 hover:bg-white/[0.04] border border-transparent'}`}>
             {t === 'tournaments' ? 'Tournaments' : t === 'cash' ? 'Cash Games' : t === 'displays' ? 'Displays' : 'Settings'}
           </button>
         ))}
@@ -38,7 +48,7 @@ function TournamentsTab() {
       <div className="flex items-center gap-2 flex-wrap">
         {tournaments.map(t => (
           <button key={t.id} onClick={() => setSelectedId(t.id)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${selectedId === t.id ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-white/5 text-white/40 hover:text-white/60 border border-transparent hover:border-white/10'}`}>
+            className={`px-3 py-1.5 rounded-xl text-sm font-medium transition-all duration-200 ${selectedId === t.id ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-white/[0.05] text-white/40 hover:text-white/60 border border-white/[0.08] hover:border-white/[0.15]'}`}>
             {t.name}
             <span className={`ml-2 text-xs ${t.status === 'running' ? 'text-green-400' : t.status === 'paused' ? 'text-amber-400' : 'text-white/20'}`}>
               {t.status === 'running' ? 'LIVE' : t.status === 'paused' ? 'PAUSED' : t.status === 'finished' ? 'END' : ''}
@@ -58,16 +68,16 @@ function TournamentEditor({ id }: { id: string }) {
   if (!t) return null;
   return (
     <div className="space-y-4 fade-in">
-      <div className="card p-4 space-y-4">
+      <div className="g-card p-4 space-y-4">
         <div className="flex items-center gap-3">
           <input className="input flex-1" value={t.name} onChange={e => store.updateTournament(id, { name: e.target.value })} placeholder="Tournament name" />
           <button onClick={() => store.removeTournament(id)} className="btn btn-danger btn-sm">Delete</button>
         </div>
         <TournamentTimer tournament={t} />
       </div>
-      <div className="card p-4"><TournamentStats tournament={t} /></div>
-      <div className="card p-4"><PrizeEditor tournament={t} /></div>
-      <div className="card p-4"><BlindEditor tournament={t} /></div>
+      <div className="g-card p-4"><TournamentStats tournament={t} /></div>
+      <div className="g-card p-4"><PrizeEditor tournament={t} /></div>
+      <div className="g-card p-4"><BlindEditor tournament={t} /></div>
     </div>
   );
 }
@@ -150,6 +160,13 @@ function TournamentTimer({ tournament: t }: { tournament: Tournament }) {
 function TournamentStats({ tournament: t }: { tournament: Tournament }) {
   const up = (p: Partial<Tournament>) => useStore.getState().updateTournament(t.id, p);
   const totalPlayLevels = t.levels.filter(l => l.type === 'play').length;
+
+  const toLocalDatetime = (ts: number) => {
+    const d = new Date(ts);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
   return (
     <div className="space-y-3">
       <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Tournament Info</div>
@@ -169,6 +186,21 @@ function TournamentStats({ tournament: t }: { tournament: Tournament }) {
               <option key={i + 1} value={i + 1}>Level {i + 1}</option>
             ))}
           </select>
+        </div>
+        <div className="col-span-2">
+          <label className="text-[11px] text-white/25 block mb-1">Scheduled Start (開始予定時刻)</label>
+          <div className="flex items-center gap-2">
+            <input
+              type="datetime-local"
+              className="input input-sm flex-1"
+              value={t.scheduledStartTime ? toLocalDatetime(t.scheduledStartTime) : ''}
+              onChange={e => up({ scheduledStartTime: e.target.value ? new Date(e.target.value).getTime() : null })}
+            />
+            {t.scheduledStartTime && (
+              <button className="btn btn-ghost btn-sm" onClick={() => up({ scheduledStartTime: null })}>Clear</button>
+            )}
+          </div>
+          <p className="text-[10px] text-white/15 mt-1">設定すると開催前のディスプレイにカウントダウンが表示されます</p>
         </div>
       </div>
     </div>
@@ -217,8 +249,8 @@ function BlindEditor({ tournament: t }: { tournament: Tournament }) {
       </div>
       <div className="space-y-1">
         {t.levels.map((lv, i) => (
-          <div key={i} className={`flex items-center gap-2 p-2 rounded-lg transition-colors ${i === t.currentLevelIndex ? 'bg-blue-500/10 border border-blue-500/20' : 'hover:bg-white/[0.02]'}`}>
-            <button onClick={() => store.tJumpLevel(t.id, i)} className="text-[11px] text-white/20 hover:text-blue-400 w-5 text-center cursor-pointer transition-colors">{i === t.currentLevelIndex ? '▸' : (i + 1)}</button>
+          <div key={i} className={`flex items-center gap-2 p-2 rounded-xl transition-colors ${i === t.currentLevelIndex ? 'bg-blue-500/10 border border-blue-500/20' : 'hover:bg-white/[0.02]'}`}>
+            <button onClick={() => store.tJumpLevel(t.id, i)} className="text-[11px] text-white/20 hover:text-blue-400 w-5 text-center cursor-pointer transition-colors">{i === t.currentLevelIndex ? '\u25B8' : (i + 1)}</button>
             {lv.type === 'break' ? (
               <><span className="text-green-400 text-xs font-semibold flex-1">BREAK</span><input type="number" className="input input-sm w-16 text-center" value={Math.floor(lv.duration / 60)} onChange={e => upLv(i, { duration: +e.target.value * 60 })} min={1} /><span className="text-[11px] text-white/20">min</span></>
             ) : (
@@ -237,7 +269,6 @@ function CashTab() {
   const { cashGames, addCashGame, removeCashGame } = useStore();
   const [selectedId, setSelectedId] = useState(cashGames[0]?.id || '');
 
-  // Fix: when selected game is deleted, switch to first available or clear
   useEffect(() => {
     if (cashGames.length === 0) {
       setSelectedId('');
@@ -250,7 +281,6 @@ function CashTab() {
 
   const handleDelete = (id: string) => {
     removeCashGame(id);
-    // If deleting the selected game, switch to another
     if (id === selectedId) {
       const remaining = cashGames.filter(c => c.id !== id);
       setSelectedId(remaining[0]?.id || '');
@@ -262,7 +292,7 @@ function CashTab() {
       <div className="flex items-center gap-2 flex-wrap">
         {cashGames.map(c => (
           <button key={c.id} onClick={() => setSelectedId(c.id)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${selectedId === c.id ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-white/5 text-white/40 border border-transparent hover:border-white/10'}`}>
+            className={`px-3 py-1.5 rounded-xl text-sm font-medium transition-all duration-200 ${selectedId === c.id ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-white/[0.05] text-white/40 border border-white/[0.08] hover:border-white/[0.15]'}`}>
             {c.name}{c.status === 'running' && <span className="ml-2 text-xs text-green-400">LIVE</span>}
           </button>
         ))}
@@ -270,7 +300,7 @@ function CashTab() {
       </div>
       {selectedId && <CashEditor id={selectedId} onDelete={handleDelete} />}
       {cashGames.length === 0 && (
-        <div className="card p-8 text-center text-white/20">
+        <div className="g-card p-8 text-center text-white/20">
           <p className="text-sm">No cash games. Click &quot;+ Add&quot; to create one.</p>
         </div>
       )}
@@ -282,7 +312,6 @@ function CashEditor({ id, onDelete }: { id: string; onDelete: (id: string) => vo
   const store = useStore();
   const c = store.cashGames.find(x => x.id === id);
 
-  // Hooks must be called unconditionally (before any early return)
   const [elapsed, setElapsed] = useState(0);
   const [countdown, setCountdown] = useState(0);
 
@@ -302,7 +331,7 @@ function CashEditor({ id, onDelete }: { id: string; onDelete: (id: string) => vo
   if (!c) return null;
 
   return (
-    <div className="card p-4 space-y-4 fade-in">
+    <div className="g-card p-4 space-y-4 fade-in">
       <div className="flex items-center gap-3">
         <input className="input flex-1" value={c.name} onChange={e => store.updateCashGame(id, { name: e.target.value })} placeholder="Cash game name" />
         <button onClick={() => onDelete(id)} className="btn btn-danger btn-sm">Delete</button>
@@ -329,17 +358,58 @@ function CashEditor({ id, onDelete }: { id: string; onDelete: (id: string) => vo
   );
 }
 
+/* ── Display Preview (scaled iframe) ── */
+function DisplayPreview({ route, displayId }: { route: string; displayId: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(0.25);
+
+  useEffect(() => {
+    const update = () => {
+      if (containerRef.current) {
+        const w = containerRef.current.offsetWidth;
+        setScale(w / 1280);
+      }
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
+  const src = route === 'split'
+    ? `/display/split?display=${displayId}`
+    : route === 'cash'
+    ? `/display/cash?display=${displayId}`
+    : `/display/tournament?display=${displayId}`;
+
+  return (
+    <div ref={containerRef} className="mt-3 rounded-xl overflow-hidden border border-white/[0.08] bg-black/30 relative" style={{ height: `${Math.round(scale * 720)}px` }}>
+      <iframe
+        src={src}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '1280px',
+          height: '720px',
+          transform: `scale(${scale})`,
+          transformOrigin: 'top left',
+          border: 'none',
+          pointerEvents: 'none',
+        }}
+      />
+    </div>
+  );
+}
+
 function DisplaysTab() {
   const { displays, tournaments, cashGames, themes, setDisplay, removeDisplay } = useStore();
   const [newId, setNewId] = useState('');
 
-  // Helper: detect type from ID
   const detectType = (id: string): 'tournament' | 'cash' => {
     if (cashGames.find(c => c.id === id)) return 'cash';
     return 'tournament';
   };
 
-  // All timers combined list
   const allTimers = [
     ...tournaments.map(t => ({ id: t.id, name: t.name, kind: 'tournament' as const })),
     ...cashGames.map(c => ({ id: c.id, name: c.name, kind: 'cash' as const })),
@@ -348,7 +418,7 @@ function DisplaysTab() {
   return (
     <div className="space-y-4 fade-in">
       <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Display Assignments</div>
-      <div className="card p-3 space-y-2">
+      <div className="g-card p-3 space-y-2">
         <p className="text-xs text-white/20">ディスプレイURLに <code className="text-blue-400/60">?display=TV1</code> を付けてアクセス</p>
         <div className="text-[10px] text-white/15 space-y-0.5">
           <div>Tournament: <code className="text-blue-400/40">/display/tournament?display=TV1</code></div>
@@ -357,7 +427,7 @@ function DisplaysTab() {
         </div>
       </div>
       {displays.map(d => (
-        <div key={d.displayId} className="card p-3 space-y-2">
+        <div key={d.displayId} className="g-card p-4 space-y-3">
           <div className="flex items-center gap-3 flex-wrap">
             <span className="font-bold text-sm text-blue-400 min-w-[60px]">{d.displayId}</span>
             <select className="input input-sm w-32" value={d.route} onChange={e => {
@@ -382,7 +452,7 @@ function DisplaysTab() {
             <select className="input input-sm w-32" value={d.themeId} onChange={e => setDisplay({ ...d, themeId: e.target.value })}>{themes.map(th => <option key={th.id} value={th.id}>{th.name}</option>)}</select>
             <button onClick={() => removeDisplay(d.displayId)} className="btn btn-danger btn-sm ml-auto">Remove</button>
           </div>
-          {/* Split: LEFT + RIGHT panel selection (unified list) */}
+          {/* Split panel selection */}
           {d.route === 'split' && (
             <div className="space-y-2 pl-4 border-l-2 border-blue-500/20 ml-2">
               <div className="flex items-center gap-2 flex-wrap">
@@ -413,6 +483,8 @@ function DisplaysTab() {
               </div>
             </div>
           )}
+          {/* Live Preview */}
+          <DisplayPreview route={d.route} displayId={d.displayId} />
         </div>
       ))}
       <div className="flex gap-2">
@@ -430,7 +502,7 @@ function SettingsTab() {
 function SoundPanel() {
   const { sound, updateSound } = useStore();
   return (
-    <div className="card p-4 space-y-4">
+    <div className="g-card p-4 space-y-4">
       <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Sound Settings</div>
       <div className="flex items-center gap-3"><span className="text-sm text-white/50 w-20">Volume</span><input type="range" min={0} max={1} step={0.05} value={sound.masterVolume} onChange={e => updateSound({ masterVolume: +e.target.value })} className="flex-1" /><span className="text-sm text-white/30 w-10 text-right">{Math.round(sound.masterVolume * 100)}%</span></div>
       <div className="flex items-center gap-3"><span className="text-sm text-white/50 w-20">Sound</span>
@@ -466,8 +538,15 @@ function SoundPanel() {
 
 function DisplaySettingsPanel() {
   const { displayToggles: dt, updateDisplayToggles: up } = useStore();
+  const speedOptions = [
+    { value: 15, label: 'Fast (15s)' },
+    { value: 20, label: 'Medium-Fast (20s)' },
+    { value: 25, label: 'Normal (25s)' },
+    { value: 35, label: 'Slow (35s)' },
+    { value: 50, label: 'Very Slow (50s)' },
+  ];
   return (
-    <div className="card p-4 space-y-4">
+    <div className="g-card p-4 space-y-4">
       <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Display Settings</div>
       <div>
         <label className="text-[11px] text-white/25 block mb-1">Ticker Text (テロップ)</label>
@@ -478,6 +557,19 @@ function DisplaySettingsPanel() {
           placeholder="画面下部に表示するテキストを入力..."
         />
         <p className="text-[10px] text-white/15 mt-1">ディスプレイ画面の下部にスクロール表示されます</p>
+      </div>
+      <div>
+        <label className="text-[11px] text-white/25 block mb-1">Ticker Speed (テロップ速度)</label>
+        <select
+          className="input input-sm"
+          value={dt.tickerSpeed || 25}
+          onChange={e => up({ tickerSpeed: +e.target.value })}
+        >
+          {speedOptions.map(o => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
+        <p className="text-[10px] text-white/15 mt-1">テロップのスクロール速度を選択</p>
       </div>
       <div>
         <label className="text-[11px] text-white/25 block mb-1">Background Image URL (背景画像)</label>
@@ -506,7 +598,7 @@ function TogglesPanel() {
     { key: 'showCashTimer', label: 'Cash: Timer' },
   ];
   return (
-    <div className="card p-4 space-y-3">
+    <div className="g-card p-4 space-y-3">
       <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Display Elements</div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {items.map(({ key, label }) => (

@@ -48,34 +48,7 @@ export function GlobalNav() {
 
   return (
     <>
-      {/* Desktop top nav */}
-      <nav className="hidden md:flex items-center justify-between px-5 py-3 glass-dark border-b border-white/[0.06] sticky top-0 z-50">
-        <Link href="/" className="flex items-center gap-2 group">
-          <span className="text-lg font-black text-blue-400 tracking-tight group-hover:text-blue-300 transition-colors">COME ON</span>
-          <span className="text-white/25 font-medium text-sm">Timer</span>
-        </Link>
-        <div className="flex items-center gap-1">
-          {NAV_ITEMS.map(item => (
-            <Link key={item.href} href={item.href}
-              className={`nav-link ${pathname === item.href ? 'active' : ''}`}>
-              {item.label}
-            </Link>
-          ))}
-        </div>
-      </nav>
-
-      {/* Mobile top brand */}
-      <div className="md:hidden flex items-center justify-between px-4 py-2.5 border-b border-white/[0.06] glass-dark sticky top-0 z-40">
-        <Link href="/" className="flex items-center gap-2">
-          <span className="text-base font-black text-blue-400 tracking-tight">COME ON</span>
-          <span className="text-white/20 font-medium text-xs">Timer</span>
-        </Link>
-        <span className="text-[11px] text-white/20 font-medium">
-          {pathname === '/operator' ? 'Operator' : ''}
-        </span>
-      </div>
-
-      {/* Mobile bottom nav */}
+      {/* Mobile bottom nav only */}
       <div className="md:hidden bottom-nav">
         {NAV_ITEMS.map((item, i) => {
           const Icon = ICONS[i];

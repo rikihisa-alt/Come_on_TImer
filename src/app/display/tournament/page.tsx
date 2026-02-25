@@ -32,7 +32,7 @@ function TimerSelector({ selectedId, onSelect, tournaments }: {
       <button onClick={() => setOpen(!open)}
         className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.1] hover:border-white/[0.2] transition-all duration-200 cursor-pointer">
         <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-md bg-blue-500/20 text-blue-400">T</span>
-        <span className="text-[10px] lg:text-xs text-white/60 font-medium truncate max-w-[160px]">{current?.name || '選択'}</span>
+        <span className="text-[10px] lg:text-xs text-white/60 font-medium truncate max-w-[160px]">{current?.name || '\u9078\u629E'}</span>
         <svg className={`w-2.5 h-2.5 text-white/30 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
       </button>
       {open && (
@@ -78,6 +78,22 @@ function Inner() {
   const prevRef = useRef(-1);
   const warnRef = useRef(false);
 
+  /* Pre-tournament countdown */
+  const [preCountdown, setPreCountdown] = useState(0);
+  useEffect(() => {
+    if (!tournament || tournament.status !== 'idle' || !tournament.scheduledStartTime) {
+      setPreCountdown(0);
+      return;
+    }
+    const update = () => {
+      const diff = (tournament.scheduledStartTime || 0) - Date.now();
+      setPreCountdown(Math.max(0, diff));
+    };
+    update();
+    const iv = setInterval(update, 1000);
+    return () => clearInterval(iv);
+  }, [tournament?.status, tournament?.scheduledStartTime]);
+
   useEffect(() => {
     const h = () => unlockAudio();
     document.addEventListener('click', h, { once: true });
@@ -119,11 +135,11 @@ function Inner() {
         const lv = tournament.levels[tournament.currentLevelIndex];
         if (lv?.type === 'break') {
           if (sound.breakStartEnabled) playSound(sound.soundPreset, sound.masterVolume);
-          const m = sound.ttsMessages.find(x => x.enabled && (x.label.includes('ブレイク') || x.label.includes('休憩') || x.label.toLowerCase().includes('break')));
+          const m = sound.ttsMessages.find(x => x.enabled && (x.label.includes('\u30D6\u30EC\u30A4\u30AF') || x.label.includes('\u4F11\u61A9') || x.label.toLowerCase().includes('break')));
           if (sound.ttsEnabled && m) speakTTS(fillTTSTemplate(m.template, { level: lv.level, sb: lv.smallBlind, bb: lv.bigBlind, ante: lv.ante }), sound.ttsLang);
         } else if (lv) {
           if (sound.blindChangeEnabled) playSound(sound.soundPreset, sound.masterVolume);
-          const m = sound.ttsMessages.find(x => x.enabled && (x.label.includes('レベル') || x.label.toLowerCase().includes('level')));
+          const m = sound.ttsMessages.find(x => x.enabled && (x.label.includes('\u30EC\u30D9\u30EB') || x.label.toLowerCase().includes('level')));
           if (sound.ttsEnabled && m) speakTTS(fillTTSTemplate(m.template, { level: lv.level, sb: lv.smallBlind, bb: lv.bigBlind, ante: lv.ante }), sound.ttsLang);
         }
       }
@@ -135,7 +151,7 @@ function Inner() {
     if (displayMs <= 60000 && displayMs > 55000 && !warnRef.current) {
       warnRef.current = true;
       if (sound.oneMinWarningEnabled) playWarningBeep(sound.masterVolume);
-      const m = sound.ttsMessages.find(x => x.enabled && (x.label.includes('残り') || x.label.toLowerCase().includes('min')));
+      const m = sound.ttsMessages.find(x => x.enabled && (x.label.includes('\u6B8B\u308A') || x.label.toLowerCase().includes('min')));
       if (sound.ttsEnabled && m) speakTTS(fillTTSTemplate(m.template, { level: 0, sb: 0, bb: 0, ante: 0 }), sound.ttsLang);
     }
   }, [displayMs, tournament, sound]);
@@ -147,6 +163,7 @@ function Inner() {
   );
 
   const dt = displayToggles;
+  const tickerSpeed = dt.tickerSpeed || 25;
   const cur = tournament.levels[tournament.currentLevelIndex];
   const nextPlay = tournament.levels.slice(tournament.currentLevelIndex + 1).find(l => l.type === 'play');
   const isBrk = cur?.type === 'break';
@@ -169,6 +186,8 @@ function Inner() {
     ? { backgroundImage: `url(${theme.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
     : { background: 'linear-gradient(160deg, #0e1c36 0%, #152d52 50%, #1c3d6e 100%)' };
 
+  const showPreCountdown = tournament.status === 'idle' && tournament.scheduledStartTime && preCountdown > 0;
+
   return (
     <div className={`min-h-screen flex flex-col select-none overflow-hidden relative ${isBrk ? 'break-bg' : ''}`} style={bgStyle}>
       {/* BG Overlays */}
@@ -185,7 +204,9 @@ function Inner() {
         </div>
         <div className="flex-1 flex items-center justify-center gap-3">
           <TimerSelector selectedId={activeId} onSelect={setSelectedId} tournaments={tournaments} />
-          {tournaments.length <= 1 && <span className="text-sm md:text-lg font-bold text-white/60 tracking-wide truncate max-w-[300px]">{tournament.name}</span>}
+          {dt.showTournamentName && (
+            <span className="text-lg md:text-2xl lg:text-3xl font-black text-white/70 tracking-wide truncate max-w-[50vw]">{tournament.name}</span>
+          )}
         </div>
         {dt.showLevelInfo && (
           <div className="text-xs md:text-sm text-white/30 font-medium shrink-0">
@@ -296,16 +317,30 @@ function Inner() {
       {/* ═══ Ticker ═══ */}
       {dt.tickerText && (
         <div className="relative z-10 px-2.5 md:px-3 lg:px-4 pb-2.5 md:pb-3">
-          <div className="g-ticker py-2 overflow-hidden">
+          <div className="g-ticker py-2.5 md:py-3 overflow-hidden">
             <div className="ticker-container">
-              <span className="ticker-scroll text-xs md:text-sm font-medium text-white/40 px-4">{dt.tickerText}</span>
+              <span className="ticker-scroll text-sm md:text-lg lg:text-xl font-semibold text-white/40 px-4" style={{ animationDuration: `${tickerSpeed}s` }}>{dt.tickerText}</span>
             </div>
           </div>
         </div>
       )}
 
       {/* ═══ Overlays ═══ */}
-      {tournament.status === 'idle' && (
+      {/* Pre-tournament countdown */}
+      {showPreCountdown && (
+        <div className="absolute inset-0 z-40 flex items-center justify-center g-overlay-idle">
+          <div className="g-card p-8 md:p-14 text-center fade-in-up">
+            <div className="text-xl md:text-3xl lg:text-4xl font-black text-white/50 tracking-wide mb-4 md:mb-6">{tournament.name}</div>
+            <div className="text-sm md:text-lg text-white/25 uppercase tracking-[0.3em] font-semibold mb-3 md:mb-5">Starting In</div>
+            <div className="text-5xl md:text-8xl lg:text-[10vw] font-black timer-font text-blue-400 leading-none">
+              {formatTimerHMS(preCountdown)}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Regular idle (no scheduled time or past time) */}
+      {tournament.status === 'idle' && !showPreCountdown && (
         <div className="absolute inset-0 z-40 flex items-center justify-center g-overlay-idle">
           <div className="g-card p-8 md:p-12 text-center fade-in-up">
             <div className="text-3xl md:text-5xl font-black text-blue-400">COME ON Timer</div>

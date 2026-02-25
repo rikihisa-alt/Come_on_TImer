@@ -49,6 +49,7 @@ function mkTournament(name?: string, levels?: BlindLevel[]): Tournament {
     startingChips: 10000, entryCount: 0, rebuyCount: 0, addonCount: 0, buyInAmount: 0,
     prizeStructure: [{ place: 1, percent: 50 }, { place: 2, percent: 30 }, { place: 3, percent: 20 }],
     createdAt: Date.now(),
+    scheduledStartTime: null,
   };
 }
 

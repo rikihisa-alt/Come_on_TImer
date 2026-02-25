@@ -108,6 +108,7 @@ function CashDisplayInner() {
   }, [cashGame]);
 
   const dt = displayToggles;
+  const tickerSpeed = dt.tickerSpeed || 25;
 
   if (!cashGame) {
     return (
@@ -212,9 +213,9 @@ function CashDisplayInner() {
       {/* ═══ Ticker ═══ */}
       {dt.tickerText && (
         <div className="relative z-10 px-2.5 md:px-3 lg:px-4 pb-2.5 md:pb-3">
-          <div className="g-ticker py-2 overflow-hidden">
+          <div className="g-ticker py-2.5 md:py-3 overflow-hidden">
             <div className="ticker-container">
-              <span className="ticker-scroll text-xs md:text-sm font-medium text-white/40 px-4">
+              <span className="ticker-scroll text-sm md:text-lg lg:text-xl font-semibold text-white/40 px-4" style={{ animationDuration: `${tickerSpeed}s` }}>
                 {dt.tickerText}
               </span>
             </div>

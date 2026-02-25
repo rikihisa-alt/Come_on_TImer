@@ -51,5 +51,5 @@ export const DEFAULT_DISPLAY_TOGGLES: DisplayToggles = {
   showProgressBar: true, showNextLevel: true, showTimeToBreak: true, showTimeToEnd: true,
   showPrizeStructure: true, showEntryCount: true, showChipInfo: true, showFooter: true,
   showCashRate: true, showCashMemo: true, showCashTimer: true,
-  tickerText: '', backgroundImageUrl: '',
+  tickerText: '', tickerSpeed: 25, backgroundImageUrl: '',
 };

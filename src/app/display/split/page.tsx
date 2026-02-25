@@ -387,9 +387,9 @@ function SplitInner() {
       {/* Ticker */}
       {displayToggles.tickerText && (
         <div className="relative z-10 px-2.5 pb-2">
-          <div className="g-ticker py-1.5 overflow-hidden">
+          <div className="g-ticker py-2 overflow-hidden">
             <div className="ticker-container">
-              <span className="ticker-scroll text-xs font-medium text-white/35 px-4">{displayToggles.tickerText}</span>
+              <span className="ticker-scroll text-sm md:text-base font-semibold text-white/35 px-4" style={{ animationDuration: `${displayToggles.tickerSpeed || 25}s` }}>{displayToggles.tickerText}</span>
             </div>
           </div>
         </div>
