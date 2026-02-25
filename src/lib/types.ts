@@ -51,9 +51,11 @@ export type CashGame = {
 
 export type DisplayAssignment = {
   displayId: string;
-  route: 'tournament' | 'cash';
+  route: 'tournament' | 'cash' | 'split';
   targetId: string;
   themeId: string;
+  splitTargetId?: string;
+  splitRoute?: 'tournament' | 'cash';
 };
 
 export type ThemeConfig = {

@@ -8,11 +8,22 @@ import { unlockAudio, playSound, playWarningBeep, speakTTS, fillTTSTemplate } fr
 import { formatTimer, formatChips, formatTimerHMS, computeTimeToBreak, computeTimeToEnd, computeRegCloseTime } from '@/lib/utils';
 import { Tournament, ThemeConfig } from '@/lib/types';
 
-function StatBox({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+/* ── Reusable stat cell for the left/right columns ── */
+function StatCell({ label, value, className }: { label: string; value: string; className?: string }) {
   return (
-    <div className="stat-box">
-      <div className="text-[9px] md:text-[10px] text-white/20 uppercase tracking-wider font-medium leading-tight">{label}</div>
-      <div className={`text-sm md:text-lg lg:text-xl font-bold timer-font leading-tight mt-0.5 ${accent ? 'text-blue-400' : 'text-white/60'}`}>{value}</div>
+    <div className={`flex-1 flex flex-col items-center justify-center px-2 py-1 border-b border-white/[0.06] last:border-b-0 ${className || ''}`}>
+      <div className="text-[10px] md:text-xs text-white/30 uppercase tracking-wider font-medium leading-tight">{label}</div>
+      <div className="text-lg md:text-2xl lg:text-3xl font-bold text-white/70 timer-font leading-tight mt-0.5">{value}</div>
+    </div>
+  );
+}
+
+/* ── Bottom bar cell ── */
+function BottomCell({ label, value, wide, accent }: { label: string; value: string; wide?: boolean; accent?: boolean }) {
+  return (
+    <div className={`flex flex-col items-center justify-center py-2 md:py-3 ${wide ? 'flex-[2]' : 'flex-1'} border-r border-white/[0.06] last:border-r-0`}>
+      <div className="text-[9px] md:text-[11px] text-white/25 uppercase tracking-wider font-medium">{label}</div>
+      <div className={`text-xl md:text-3xl lg:text-4xl font-black timer-font leading-tight mt-0.5 ${accent ? 'text-blue-400' : 'text-white/80'}`}>{value}</div>
     </div>
   );
 }
@@ -33,7 +44,6 @@ function Inner() {
   const [displayMs, setDisplayMs] = useState(0);
   const prevRef = useRef(-1);
   const warnRef = useRef(false);
-  const [trans, setTrans] = useState(false);
 
   useEffect(() => {
     const h = () => unlockAudio();
@@ -67,12 +77,12 @@ function Inner() {
     return () => clearInterval(iv);
   }, [tournament, computeRem]);
 
+  // Sound effects on level change
   useEffect(() => {
     if (!tournament) return;
     if (prevRef.current === -1) { prevRef.current = tournament.currentLevelIndex; return; }
     if (prevRef.current !== tournament.currentLevelIndex) {
       prevRef.current = tournament.currentLevelIndex; warnRef.current = false;
-      setTrans(true); setTimeout(() => setTrans(false), 500);
       if (tournament.status === 'running') {
         const lv = tournament.levels[tournament.currentLevelIndex];
         if (lv?.type === 'break') {
@@ -88,6 +98,7 @@ function Inner() {
     }
   }, [tournament?.currentLevelIndex, tournament?.status, sound]);
 
+  // 1-min warning
   useEffect(() => {
     if (!tournament || tournament.status !== 'running') return;
     if (displayMs <= 60000 && displayMs > 55000 && !warnRef.current) {
@@ -111,18 +122,17 @@ function Inner() {
   const isWarn = displayMs <= 60000 && tournament.status === 'running' && !isBrk;
   const dur = cur ? cur.duration * 1000 : 1;
   const prog = 1 - displayMs / dur;
-  let lvNum = 0;
-  for (let i = 0; i <= tournament.currentLevelIndex; i++) if (tournament.levels[i]?.type === 'play') lvNum++;
   const totalLvs = tournament.levels.filter(l => l.type === 'play').length;
   const ttb = computeTimeToBreak(tournament.levels, tournament.currentLevelIndex, displayMs);
   const tte = computeTimeToEnd(tournament.levels, tournament.currentLevelIndex, displayMs);
   const regClose = computeRegCloseTime(tournament.levels, tournament.currentLevelIndex, displayMs, tournament.regCloseLevel);
   const totalChips = (tournament.entryCount + tournament.rebuyCount + tournament.addonCount) * tournament.startingChips;
   const avg = tournament.entryCount > 0 ? Math.round(totalChips / tournament.entryCount) : 0;
-  const pool = (tournament.entryCount + tournament.rebuyCount) * tournament.buyInAmount;
   const pc = theme?.primaryColor || '#60a5fa';
 
-  const bgStyle = theme?.type === 'gradient'
+  const bgStyle = dt.backgroundImageUrl
+    ? { backgroundImage: `url(${dt.backgroundImageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+    : theme?.type === 'gradient'
     ? { background: `linear-gradient(135deg, ${theme.gradientFrom || '#0f172a'}, ${theme.gradientTo || '#1e3a5f'})` }
     : theme?.type === 'image' && theme.imageUrl
     ? { backgroundImage: `url(${theme.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
@@ -130,172 +140,122 @@ function Inner() {
 
   return (
     <div className={`min-h-screen flex flex-col select-none overflow-hidden relative ${isBrk ? 'break-bg' : ''}`} style={bgStyle}>
-      {/* Background image from display settings */}
-      {dt.backgroundImageUrl && (
-        <div className="absolute inset-0 z-0" style={{ backgroundImage: `url(${dt.backgroundImageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+      {/* Overlay for bg image readability */}
+      {(dt.backgroundImageUrl || (theme?.type === 'image' && theme.imageUrl)) && (
+        <div className="absolute inset-0 bg-black/50 pointer-events-none z-[1]" />
       )}
-      {/* Overlay */}
       {theme && theme.overlayOpacity > 0 && <div className="absolute inset-0 bg-black pointer-events-none z-[1]" style={{ opacity: theme.overlayOpacity / 100 }} />}
-      {dt.backgroundImageUrl && <div className="absolute inset-0 bg-black/40 pointer-events-none z-[1]" />}
 
       {/* Tab bar for multiple tournaments */}
       {running.length > 1 && (
-        <div className="relative z-20 flex justify-center py-2 bg-black/20">
+        <div className="relative z-20 flex justify-center py-1.5 bg-black/30">
           <div className="tab-bar">{running.map(rt => <div key={rt.id} className={`tab-item ${rt.id === activeId ? 'active' : ''}`} onClick={() => setSelectedId(rt.id)}>{rt.name}</div>)}</div>
         </div>
       )}
 
-      {/* Tournament name banner */}
-      {dt.showTournamentName && (
-        <div className="relative z-10 w-full py-2 md:py-3 bg-black/25 border-b border-white/[0.06]">
-          <div className="text-center">
-            <span className="text-base md:text-xl lg:text-2xl font-bold text-white/70 tracking-wide">{tournament.name}</span>
-            {dt.showLevelInfo && <span className="text-xs md:text-sm text-white/20 ml-4 font-medium">Level {lvNum}/{totalLvs}</span>}
+      {/* ═══ TOP BANNER: Logo + Tournament Name ═══ */}
+      <div className="relative z-10 flex items-center px-3 md:px-5 py-2 md:py-3 bg-black/30 border-b border-white/[0.08]">
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-sm md:text-base font-black text-blue-400 tracking-tight">COME ON</span>
+          <span className="text-white/20 font-medium text-[10px] md:text-xs">Timer</span>
+        </div>
+        <div className="flex-1 text-center">
+          <span className="text-base md:text-xl lg:text-2xl font-bold text-white/70 tracking-wide">{tournament.name}</span>
+        </div>
+        {dt.showLevelInfo && (
+          <div className="text-xs md:text-sm text-white/25 font-medium shrink-0">
+            {isBrk ? 'BREAK' : `Lv${cur?.level || '-'}`}/{totalLvs}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
-      {/* Level indicator */}
-      {dt.showLevelInfo && (
-        <div className={`relative z-10 text-center py-2 md:py-3 transition-opacity duration-400 ${trans ? 'opacity-0' : 'opacity-100'}`}>
-          {isBrk ? (
-            <div className="px-8 py-2 inline-block rounded-xl bg-green-500/10 border border-green-500/15">
-              <span className="text-green-400 text-2xl md:text-4xl lg:text-5xl font-black tracking-[0.2em]">BREAK</span>
-            </div>
-          ) : (
-            <span className="text-white/25 text-xl md:text-3xl lg:text-4xl font-black tracking-[0.3em] uppercase">LEVEL {cur?.level || '-'}</span>
-          )}
-        </div>
-      )}
-
-      {/* Main area: Left stats | Timer + Blinds | Right stats */}
-      <div className={`relative z-10 flex-1 flex items-stretch px-2 md:px-4 gap-2 md:gap-3 transition-opacity duration-400 ${trans ? 'opacity-0' : 'opacity-100'}`}>
-        {/* Left panel - desktop only */}
-        <div className="hidden md:flex flex-col w-40 lg:w-52 gap-1.5 py-2">
-          <StatBox label="Rebuy" value={String(tournament.rebuyCount)} />
-          <StatBox label="Add-on" value={String(tournament.addonCount)} />
-          <StatBox label="Avg Stack" value={avg > 0 ? formatChips(avg) : '--'} />
+      {/* ═══ MAIN 3-COLUMN GRID ═══ */}
+      <div className="relative z-10 flex-1 flex border-b border-white/[0.06]">
+        {/* ── LEFT COLUMN: Rebuy / Add-on / Avg Stack ── */}
+        <div className="hidden md:flex flex-col w-[18%] lg:w-[16%] border-r border-white/[0.08] bg-black/15">
+          <StatCell label="Rebuy" value={String(tournament.rebuyCount)} />
+          <StatCell label="Add-on" value={String(tournament.addonCount)} />
+          <StatCell label="Avg Stack" value={avg > 0 ? formatChips(avg) : '--'} />
         </div>
 
-        {/* Center: Timer + Blinds */}
-        <div className="flex-1 flex flex-col items-center justify-center gap-1 md:gap-3 min-w-0">
-          {/* Timer */}
-          {dt.showTimer && (
-            <div className={`text-[16vw] md:text-[13vw] lg:text-[11vw] font-black timer-font leading-none transition-colors duration-300 ${isWarn ? 'text-amber-400 warning-pulse' : isBrk ? 'text-green-400' : 'text-white'}`}>
-              {formatTimer(displayMs)}
-            </div>
-          )}
-
-          {/* Blinds */}
-          {dt.showBlinds && cur && !isBrk && (
-            <div className="text-center">
-              <div className="text-4xl md:text-6xl lg:text-[7vw] font-black leading-none tracking-tight" style={{ color: pc }}>
-                {cur.smallBlind.toLocaleString()} / {cur.bigBlind.toLocaleString()}
-              </div>
-              {cur.ante > 0 && (
-                <div className="text-base md:text-xl lg:text-2xl text-white/25 font-semibold mt-1">
-                  Ante {cur.ante.toLocaleString()}
-                </div>
+        {/* ── CENTER: Level + Timer ── */}
+        <div className="flex-1 flex flex-col items-center justify-center relative">
+          {/* Level indicator */}
+          {dt.showLevelInfo && (
+            <div className="mb-1 md:mb-2">
+              {isBrk ? (
+                <span className="text-green-400 text-2xl md:text-4xl lg:text-5xl font-black tracking-[0.15em]">BREAK</span>
+              ) : (
+                <span className="text-white/30 text-xl md:text-3xl lg:text-4xl font-black tracking-[0.2em]">Level {cur?.level || '-'}</span>
               )}
             </div>
           )}
 
-          {/* Mobile-only: compact stats row */}
-          <div className="flex md:hidden items-center gap-3 mt-2 flex-wrap justify-center">
-            {tournament.rebuyCount > 0 && <div className="text-[10px] text-white/20"><span className="text-white/30 font-bold">{tournament.rebuyCount}</span> Rebuy</div>}
-            {tournament.addonCount > 0 && <div className="text-[10px] text-white/20"><span className="text-white/30 font-bold">{tournament.addonCount}</span> Add-on</div>}
-            {avg > 0 && <div className="text-[10px] text-white/20">Avg <span className="text-white/30 font-bold">{formatChips(avg)}</span></div>}
-            {ttb !== null && <div className="text-[10px] text-white/20">Break <span className="text-white/30 font-bold timer-font">{formatTimer(ttb)}</span></div>}
-            <div className="text-[10px] text-white/20">End <span className="text-white/30 font-bold timer-font">{formatTimerHMS(tte)}</span></div>
+          {/* TIMER (massive) */}
+          {dt.showTimer && (
+            <div className={`text-[18vw] md:text-[14vw] lg:text-[12vw] font-black timer-font leading-[0.9] transition-colors duration-300 ${isWarn ? 'text-amber-400 warning-pulse' : isBrk ? 'text-green-400' : 'text-white'}`}>
+              {formatTimer(displayMs)}
+            </div>
+          )}
+
+          {/* Progress bar (inside center area) */}
+          {dt.showProgressBar && (
+            <div className="w-4/5 h-1.5 md:h-2 bg-white/[0.04] rounded-full mt-2 md:mt-3 overflow-hidden">
+              <div className="h-full rounded-full transition-all duration-500" style={{
+                width: `${Math.min(prog * 100, 100)}%`,
+                background: isWarn ? 'linear-gradient(to right, #f59e0b, #ef4444)' : isBrk ? '#22c55e' : `linear-gradient(to right, ${pc}, ${theme?.accentColor || '#93c5fd'})`
+              }} />
+            </div>
+          )}
+
+          {/* Mobile-only compact stats */}
+          <div className="flex md:hidden items-center gap-3 mt-3 flex-wrap justify-center text-[10px] text-white/25">
+            <span>R:<span className="text-white/40 font-bold">{tournament.rebuyCount}</span></span>
+            <span>A:<span className="text-white/40 font-bold">{tournament.addonCount}</span></span>
+            {avg > 0 && <span>Avg:<span className="text-white/40 font-bold">{formatChips(avg)}</span></span>}
+            {ttb !== null && <span>Brk:<span className="text-white/40 font-bold timer-font">{formatTimer(ttb)}</span></span>}
+            <span>End:<span className="text-white/40 font-bold timer-font">{formatTimerHMS(tte)}</span></span>
           </div>
         </div>
 
-        {/* Right panel - desktop only */}
-        <div className="hidden md:flex flex-col w-40 lg:w-52 gap-1.5 py-2">
-          <StatBox label="Corner Time" value={formatTimerHMS(tte)} />
-          <StatBox label="Reg Close" value={regClose !== null ? formatTimer(regClose) : '--:--'} />
-          <StatBox label="Next Break" value={ttb !== null ? formatTimer(ttb) : '--:--'} />
+        {/* ── RIGHT COLUMN: Corner Time / Reg Close / Next Break ── */}
+        <div className="hidden md:flex flex-col w-[18%] lg:w-[16%] border-l border-white/[0.08] bg-black/15">
+          <StatCell label="Corner Time" value={formatTimerHMS(tte)} />
+          <StatCell label={tournament.regCloseLevel ? `Reg Close Lv${tournament.regCloseLevel}` : 'Reg Close'} value={regClose !== null ? formatTimer(regClose) : 'N/A'} />
+          <StatCell label="Next Break" value={ttb !== null ? formatTimerHMS(ttb) : '--:--:--'} />
         </div>
       </div>
 
-      {/* Progress bar */}
-      {dt.showProgressBar && (
-        <div className="relative z-10 w-full h-1.5 md:h-2 bg-white/[0.03]">
-          <div className="h-full transition-all duration-500" style={{
-            width: `${Math.min(prog * 100, 100)}%`,
-            background: isWarn ? 'linear-gradient(to right, #f59e0b, #ef4444)' : isBrk ? '#22c55e' : `linear-gradient(to right, ${pc}, ${theme?.accentColor || '#93c5fd'})`
-          }} />
-        </div>
-      )}
-
-      {/* Bottom info bar: Players | Buy-in | ... | Ante */}
+      {/* ═══ BOTTOM BAR: Players | Blinds (widest) | BB Ante ═══ */}
       {dt.showFooter && (
-        <div className="relative z-10 flex items-center justify-between px-3 md:px-6 py-2 bg-black/20 border-t border-white/[0.04]">
-          <div className="flex items-center gap-4 md:gap-6">
-            {dt.showEntryCount && tournament.entryCount > 0 && (
-              <div className="text-center">
-                <div className="text-[8px] md:text-[9px] text-white/15 uppercase tracking-wider">Players</div>
-                <div className="text-sm md:text-base font-bold text-white/60">{tournament.entryCount}</div>
-              </div>
-            )}
-            {tournament.buyInAmount > 0 && (
-              <div className="text-center">
-                <div className="text-[8px] md:text-[9px] text-white/15 uppercase tracking-wider">Buy-in</div>
-                <div className="text-sm md:text-base font-bold text-white/60">&yen;{tournament.buyInAmount.toLocaleString()}</div>
-              </div>
-            )}
-            {dt.showChipInfo && totalChips > 0 && (
-              <div className="text-center">
-                <div className="text-[8px] md:text-[9px] text-white/15 uppercase tracking-wider">Total Chips</div>
-                <div className="text-sm md:text-base font-bold text-white/60">{formatChips(totalChips)}</div>
-              </div>
-            )}
-          </div>
-          {/* Prize pool */}
-          {dt.showPrizeStructure && pool > 0 && (
-            <div className="text-center">
-              <div className="text-[8px] md:text-[9px] text-white/15 uppercase tracking-wider">Prize Pool</div>
-              <div className="text-sm md:text-base font-bold text-blue-400">&yen;{pool.toLocaleString()}</div>
-            </div>
-          )}
-          {cur && cur.ante > 0 && (
-            <div className="text-center">
-              <div className="text-[8px] md:text-[9px] text-white/15 uppercase tracking-wider">Ante</div>
-              <div className="text-sm md:text-base font-bold text-white/60">{cur.ante.toLocaleString()}</div>
-            </div>
-          )}
+        <div className="relative z-10 flex bg-black/25 border-b border-white/[0.06]">
+          <BottomCell label="Players" value={`${tournament.entryCount}`} />
+          <BottomCell label="Blinds" value={cur && !isBrk ? `${cur.smallBlind.toLocaleString()}/${cur.bigBlind.toLocaleString()}` : '--'} wide accent />
+          <BottomCell label="BB Ante" value={cur && cur.ante > 0 ? cur.ante.toLocaleString() : '--'} />
         </div>
       )}
 
-      {/* Next blinds */}
+      {/* ═══ NEXT BLINDS ═══ */}
       {dt.showNextLevel && nextPlay && (
-        <div className="relative z-10 text-center py-1.5 md:py-2 bg-black/15 border-t border-white/[0.03]">
-          <span className="text-xs md:text-sm text-white/15 mr-2 uppercase tracking-wider">Next</span>
-          <span className="text-sm md:text-lg font-bold text-white/30">
-            {nextPlay.ante > 0 && <span className="text-white/20">Ante {nextPlay.ante.toLocaleString()}{' '}</span>}
+        <div className="relative z-10 flex items-center justify-center py-1.5 md:py-2 bg-black/15 border-b border-white/[0.04]">
+          <span className="text-[10px] md:text-xs text-white/20 mr-2 uppercase tracking-wider font-medium">Next</span>
+          <span className="text-sm md:text-lg font-bold text-white/40 timer-font">
+            {nextPlay.ante > 0 && <span className="text-white/25">Ante {nextPlay.ante.toLocaleString()} </span>}
             {nextPlay.smallBlind.toLocaleString()} / {nextPlay.bigBlind.toLocaleString()}
           </span>
         </div>
       )}
 
-      {/* Ticker banner */}
+      {/* ═══ TICKER BANNER ═══ */}
       {dt.tickerText && (
-        <div className="relative z-10 w-full py-1.5 md:py-2 bg-black/30 border-t border-white/[0.04] overflow-hidden">
+        <div className="relative z-10 w-full py-1.5 bg-black/30 border-b border-white/[0.04] overflow-hidden">
           <div className="ticker-container">
-            <span className="ticker-scroll text-xs md:text-sm font-medium text-white/35 px-4">
-              {dt.tickerText}
-            </span>
+            <span className="ticker-scroll text-xs md:text-sm font-medium text-white/35 px-4">{dt.tickerText}</span>
           </div>
         </div>
       )}
 
-      {/* COME ON Timer branding - display pages (mobile) */}
-      <div className="md:hidden absolute top-2 left-3 z-30">
-        <span className="text-xs font-black text-blue-400/40 tracking-tight">COME ON</span>
-        <span className="text-white/10 font-medium text-[9px] ml-1">Timer</span>
-      </div>
-
-      {/* Idle overlay */}
+      {/* ═══ OVERLAYS ═══ */}
       {tournament.status === 'idle' && (
         <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/60">
           <div className="text-center space-y-4 fade-in-up">

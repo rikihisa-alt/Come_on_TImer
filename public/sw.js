@@ -1,5 +1,5 @@
-const CACHE_NAME = 'come-on-timer-v5';
-const PRECACHE = ['/', '/operator', '/display/tournament', '/display/cash'];
+const CACHE_NAME = 'come-on-timer-v6';
+const PRECACHE = ['/', '/operator', '/display/tournament', '/display/cash', '/display/split'];
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE)));
   self.skipWaiting();
