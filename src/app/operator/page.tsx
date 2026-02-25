@@ -67,6 +67,7 @@ function TournamentEditor({ id }: { id: string }) {
         <TournamentTimer tournament={t} />
       </div>
       <div className="g-card p-4"><TournamentStats tournament={t} /></div>
+      <div className="g-card p-4"><TickerPanel /></div>
       <div className="g-card p-4"><PrizeEditor tournament={t} /></div>
       <div className="g-card p-4"><BlindEditor tournament={t} /></div>
     </div>
@@ -193,6 +194,32 @@ function TournamentStats({ tournament: t }: { tournament: Tournament }) {
           </div>
           <p className="text-[10px] text-white/15 mt-1">設定すると開催前のディスプレイにカウントダウンが表示されます</p>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function TickerPanel() {
+  const { displayToggles: dt, updateDisplayToggles: up } = useStore();
+  const speedOptions = [
+    { value: 15, label: 'Fast (15s)' },
+    { value: 20, label: 'Medium-Fast (20s)' },
+    { value: 25, label: 'Normal (25s)' },
+    { value: 35, label: 'Slow (35s)' },
+    { value: 50, label: 'Very Slow (50s)' },
+  ];
+  return (
+    <div className="space-y-3">
+      <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Ticker (テロップ)</div>
+      <div>
+        <label className="text-[11px] text-white/25 block mb-1">Ticker Text</label>
+        <input className="input" value={dt.tickerText} onChange={e => up({ tickerText: e.target.value })} placeholder="画面下部に表示するテキストを入力..." />
+      </div>
+      <div>
+        <label className="text-[11px] text-white/25 block mb-1">Ticker Speed</label>
+        <select className="input input-sm" value={dt.tickerSpeed || 25} onChange={e => up({ tickerSpeed: +e.target.value })}>
+          {speedOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
       </div>
     </div>
   );
