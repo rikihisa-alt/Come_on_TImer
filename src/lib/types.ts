@@ -54,6 +54,7 @@ export type DisplayAssignment = {
   route: 'tournament' | 'cash' | 'split';
   targetId: string;
   themeId: string;
+  leftRoute?: 'tournament' | 'cash';
   splitTargetId?: string;
   splitRoute?: 'tournament' | 'cash';
 };

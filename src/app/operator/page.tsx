@@ -332,7 +332,19 @@ function CashEditor({ id, onDelete }: { id: string; onDelete: (id: string) => vo
 function DisplaysTab() {
   const { displays, tournaments, cashGames, themes, setDisplay, removeDisplay } = useStore();
   const [newId, setNewId] = useState('');
-  const allTargets = [...tournaments.map(t => ({ id: t.id, name: t.name, type: 'tournament' as const })), ...cashGames.map(c => ({ id: c.id, name: c.name, type: 'cash' as const }))];
+
+  // Helper: detect type from ID
+  const detectType = (id: string): 'tournament' | 'cash' => {
+    if (cashGames.find(c => c.id === id)) return 'cash';
+    return 'tournament';
+  };
+
+  // All timers combined list
+  const allTimers = [
+    ...tournaments.map(t => ({ id: t.id, name: t.name, kind: 'tournament' as const })),
+    ...cashGames.map(c => ({ id: c.id, name: c.name, kind: 'cash' as const })),
+  ];
+
   return (
     <div className="space-y-4 fade-in">
       <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Display Assignments</div>
@@ -350,41 +362,55 @@ function DisplaysTab() {
             <span className="font-bold text-sm text-blue-400 min-w-[60px]">{d.displayId}</span>
             <select className="input input-sm w-32" value={d.route} onChange={e => {
               const route = e.target.value as 'tournament' | 'cash' | 'split';
-              setDisplay({ ...d, route, ...(route === 'split' ? { splitRoute: 'cash', splitTargetId: cashGames[0]?.id || '' } : {}) });
+              if (route === 'split') {
+                const firstId = allTimers[0]?.id || '';
+                const secondId = allTimers[1]?.id || allTimers[0]?.id || '';
+                setDisplay({ ...d, route, targetId: firstId, leftRoute: detectType(firstId), splitTargetId: secondId, splitRoute: detectType(secondId) });
+              } else {
+                setDisplay({ ...d, route, targetId: route === 'tournament' ? (tournaments[0]?.id || '') : (cashGames[0]?.id || '') });
+              }
             }}>
               <option value="tournament">Tournament</option>
               <option value="cash">Cash</option>
               <option value="split">Split (2画面)</option>
             </select>
-            {d.route !== 'split' ? (
+            {d.route !== 'split' && (
               <select className="input input-sm w-40" value={d.targetId} onChange={e => setDisplay({ ...d, targetId: e.target.value })}>
                 {d.route === 'tournament' ? tournaments.map(t => <option key={t.id} value={t.id}>{t.name}</option>) : cashGames.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
-            ) : (
-              <>
-                <select className="input input-sm w-40" value={d.targetId} onChange={e => setDisplay({ ...d, targetId: e.target.value })}>
-                  <optgroup label="Tournament">{tournaments.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</optgroup>
-                  <optgroup label="Cash">{cashGames.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</optgroup>
-                </select>
-              </>
             )}
             <select className="input input-sm w-32" value={d.themeId} onChange={e => setDisplay({ ...d, themeId: e.target.value })}>{themes.map(th => <option key={th.id} value={th.id}>{th.name}</option>)}</select>
             <button onClick={() => removeDisplay(d.displayId)} className="btn btn-danger btn-sm ml-auto">Remove</button>
           </div>
-          {/* Split: second panel config */}
+          {/* Split: LEFT + RIGHT panel selection (unified list) */}
           {d.route === 'split' && (
-            <div className="flex items-center gap-2 pl-16 flex-wrap">
-              <span className="text-[10px] text-white/25 font-medium">Left:</span>
-              <span className="text-[10px] text-white/40">{allTargets.find(t => t.id === d.targetId)?.type === 'cash' ? 'Cash' : 'Tournament'}</span>
-              <span className="text-white/10">|</span>
-              <span className="text-[10px] text-white/25 font-medium">Right:</span>
-              <select className="input input-sm w-32" value={d.splitRoute || 'cash'} onChange={e => setDisplay({ ...d, splitRoute: e.target.value as 'tournament' | 'cash' })}>
-                <option value="tournament">Tournament</option>
-                <option value="cash">Cash</option>
-              </select>
-              <select className="input input-sm w-40" value={d.splitTargetId || ''} onChange={e => setDisplay({ ...d, splitTargetId: e.target.value })}>
-                {(d.splitRoute || 'cash') === 'tournament' ? tournaments.map(t => <option key={t.id} value={t.id}>{t.name}</option>) : cashGames.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+            <div className="space-y-2 pl-4 border-l-2 border-blue-500/20 ml-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs text-white/40 font-semibold w-16">左パネル</span>
+                <select className="input input-sm flex-1 max-w-[200px]" value={d.targetId} onChange={e => {
+                  const id = e.target.value;
+                  setDisplay({ ...d, targetId: id, leftRoute: detectType(id) });
+                }}>
+                  {tournaments.length > 0 && <optgroup label="Tournament">{tournaments.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</optgroup>}
+                  {cashGames.length > 0 && <optgroup label="Cash Game">{cashGames.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</optgroup>}
+                </select>
+                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${detectType(d.targetId) === 'tournament' ? 'bg-blue-500/20 text-blue-400' : 'bg-green-500/20 text-green-400'}`}>
+                  {detectType(d.targetId) === 'tournament' ? 'Tournament' : 'Cash'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs text-white/40 font-semibold w-16">右パネル</span>
+                <select className="input input-sm flex-1 max-w-[200px]" value={d.splitTargetId || ''} onChange={e => {
+                  const id = e.target.value;
+                  setDisplay({ ...d, splitTargetId: id, splitRoute: detectType(id) });
+                }}>
+                  {tournaments.length > 0 && <optgroup label="Tournament">{tournaments.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</optgroup>}
+                  {cashGames.length > 0 && <optgroup label="Cash Game">{cashGames.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</optgroup>}
+                </select>
+                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${detectType(d.splitTargetId || '') === 'tournament' ? 'bg-blue-500/20 text-blue-400' : 'bg-green-500/20 text-green-400'}`}>
+                  {detectType(d.splitTargetId || '') === 'tournament' ? 'Tournament' : 'Cash'}
+                </span>
+              </div>
             </div>
           )}
         </div>

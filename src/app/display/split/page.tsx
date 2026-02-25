@@ -268,23 +268,23 @@ function SplitInner() {
   const themeId = assignment?.themeId || 'come-on-blue';
   const theme = themes.find(t => t.id === themeId) || themes[0];
 
-  // Left panel config
-  const leftRoute = assignment?.route === 'split' ? (assignment.route === 'split' ? 'tournament' : assignment.route) : (assignment?.route || 'tournament');
-  const leftId = assignment?.targetId || tournaments[0]?.id || '';
+  // Auto-detect type from ID
+  const detectType = (id: string): 'tournament' | 'cash' => {
+    if (cashGames.find(c => c.id === id)) return 'cash';
+    return 'tournament';
+  };
+
+  // Left panel config (from assignment or URL params)
+  const leftId = params.get('left') || assignment?.targetId || tournaments[0]?.id || cashGames[0]?.id || '';
+  const leftType = (params.get('leftType') as 'tournament' | 'cash') || assignment?.leftRoute || detectType(leftId);
   // Right panel config
-  const rightRoute = assignment?.splitRoute || 'cash';
-  const rightId = assignment?.splitTargetId || cashGames[0]?.id || '';
+  const rightId = params.get('right') || assignment?.splitTargetId || (tournaments[1]?.id || cashGames[0]?.id || tournaments[0]?.id || '');
+  const rightType = (params.get('rightType') as 'tournament' | 'cash') || assignment?.splitRoute || detectType(rightId);
 
-  // Also support URL params for quick testing: ?left=id&leftType=tournament&right=id&rightType=cash
-  const pLeftId = params.get('left') || leftId;
-  const pLeftType = (params.get('leftType') as 'tournament' | 'cash') || leftRoute;
-  const pRightId = params.get('right') || rightId;
-  const pRightType = (params.get('rightType') as 'tournament' | 'cash') || rightRoute;
-
-  const leftTournament = pLeftType === 'tournament' ? tournaments.find(t => t.id === pLeftId) : undefined;
-  const leftCash = pLeftType === 'cash' ? cashGames.find(c => c.id === pLeftId) : undefined;
-  const rightTournament = pRightType === 'tournament' ? tournaments.find(t => t.id === pRightId) : undefined;
-  const rightCash = pRightType === 'cash' ? cashGames.find(c => c.id === pRightId) : undefined;
+  const leftTournament = leftType === 'tournament' ? tournaments.find(t => t.id === leftId) : undefined;
+  const leftCash = leftType === 'cash' ? cashGames.find(c => c.id === leftId) : undefined;
+  const rightTournament = rightType === 'tournament' ? tournaments.find(t => t.id === rightId) : undefined;
+  const rightCash = rightType === 'cash' ? cashGames.find(c => c.id === rightId) : undefined;
 
   const bgStyle = displayToggles.backgroundImageUrl
     ? { backgroundImage: `url(${displayToggles.backgroundImageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
