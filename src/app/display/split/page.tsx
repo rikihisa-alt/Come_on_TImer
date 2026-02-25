@@ -8,21 +8,21 @@ import { unlockAudio, playSound, playWarningBeep, speakTTS, fillTTSTemplate } fr
 import { formatTimer, formatChips, formatTimerHMS, computeTimeToBreak, computeTimeToEnd, computeRegCloseTime } from '@/lib/utils';
 import { Tournament, CashGame, ThemeConfig, DisplayToggles, SoundSettings } from '@/lib/types';
 
-/* ═══ Compact stat cell ═══ */
+/* ═══ Compact stat cell (split version) ═══ */
 function SC({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center px-1 py-0.5 border-b border-white/[0.05] last:border-b-0">
-      <div className="text-[8px] lg:text-[10px] text-white/25 uppercase tracking-wider font-medium leading-tight">{label}</div>
-      <div className="text-sm lg:text-lg font-bold text-white/60 timer-font leading-tight">{value}</div>
+    <div className="g-card-inner p-2 lg:p-3 flex-1 min-h-0 text-center">
+      <div className="text-[7px] lg:text-[9px] text-white/30 uppercase tracking-wider font-semibold mb-0.5">{label}</div>
+      <div className="text-xs lg:text-base font-bold text-white/65 timer-font leading-tight">{value}</div>
     </div>
   );
 }
 
 function BC({ label, value, wide, accent }: { label: string; value: string; wide?: boolean; accent?: boolean }) {
   return (
-    <div className={`flex flex-col items-center justify-center py-1 lg:py-2 ${wide ? 'flex-[2]' : 'flex-1'} border-r border-white/[0.05] last:border-r-0`}>
-      <div className="text-[7px] lg:text-[9px] text-white/20 uppercase tracking-wider font-medium">{label}</div>
-      <div className={`text-base lg:text-2xl font-black timer-font leading-tight ${accent ? 'text-blue-400' : 'text-white/70'}`}>{value}</div>
+    <div className={`flex flex-col items-center justify-center py-1.5 lg:py-2.5 ${wide ? 'flex-[2]' : 'flex-1'} border-r border-white/[0.06] last:border-r-0`}>
+      <div className="text-[7px] lg:text-[9px] text-white/25 uppercase tracking-wider font-semibold">{label}</div>
+      <div className={`text-sm lg:text-xl font-black timer-font leading-tight ${accent ? 'text-blue-400' : 'text-white/65'}`}>{value}</div>
     </div>
   );
 }
@@ -83,64 +83,48 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound }: {
   const pc = theme?.primaryColor || '#60a5fa';
 
   return (
-    <div className={`flex-1 flex flex-col overflow-hidden relative ${isBrk ? 'break-bg' : ''}`}>
-      {/* Top banner */}
-      <div className="flex items-center px-2 py-1 lg:py-1.5 bg-black/30 border-b border-white/[0.06]">
-        <div className="flex-1 text-center">
-          <span className="text-xs lg:text-sm font-bold text-white/60 truncate">{tournament.name}</span>
-        </div>
-        <span className="text-[10px] text-white/20 font-medium">{isBrk ? 'BRK' : `Lv${cur?.level || '-'}`}/{totalLvs}</span>
+    <div className={`flex-1 flex flex-col overflow-hidden relative p-2 lg:p-3 gap-2 ${isBrk ? 'break-bg' : ''}`}>
+      {/* Top info bar */}
+      <div className="g-card-inner flex items-center px-3 py-1.5 lg:py-2">
+        <span className="text-xs lg:text-sm font-bold text-white/60 truncate flex-1">{tournament.name}</span>
+        <span className="text-[9px] lg:text-[11px] text-white/25 font-medium">{isBrk ? 'BRK' : `Lv${cur?.level || '-'}`}/{totalLvs}</span>
       </div>
 
-      {/* 3-column main area */}
-      <div className="flex-1 flex border-b border-white/[0.05]">
-        {/* Left stats */}
-        <div className="hidden lg:flex flex-col w-[18%] border-r border-white/[0.06] bg-black/10">
-          <SC label="Rebuy" value={String(tournament.rebuyCount)} />
-          <SC label="Add-on" value={String(tournament.addonCount)} />
-          <SC label="Avg Stack" value={avg > 0 ? formatChips(avg) : '--'} />
+      {/* Main Timer Card */}
+      <div className="g-card flex-1 flex flex-col items-center justify-center p-2 lg:p-4 min-h-0">
+        {isBrk ? (
+          <span className="text-green-400 text-base lg:text-xl font-black tracking-widest">BREAK</span>
+        ) : (
+          <span className="text-white/20 text-xs lg:text-sm font-black tracking-[0.2em]">Level {cur?.level || '-'}</span>
+        )}
+        <div className={`text-[11vw] lg:text-[5.5vw] font-black timer-font leading-[0.85] ${isWarn ? 'text-amber-400 warning-pulse' : isBrk ? 'text-green-400' : 'text-white'}`}>
+          {formatTimer(displayMs)}
         </div>
-
-        {/* Center: Level + Timer */}
-        <div className="flex-1 flex flex-col items-center justify-center">
-          {isBrk ? (
-            <span className="text-green-400 text-lg lg:text-2xl font-black tracking-widest">BREAK</span>
-          ) : (
-            <span className="text-white/25 text-sm lg:text-lg font-black tracking-[0.2em]">Level {cur?.level || '-'}</span>
-          )}
-          <div className={`text-[12vw] lg:text-[6vw] font-black timer-font leading-[0.9] ${isWarn ? 'text-amber-400 warning-pulse' : isBrk ? 'text-green-400' : 'text-white'}`}>
-            {formatTimer(displayMs)}
+        {dt.showProgressBar && (
+          <div className="w-3/4 h-1 bg-white/[0.06] rounded-full mt-1.5 overflow-hidden">
+            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(prog * 100, 100)}%`, background: isWarn ? '#f59e0b' : isBrk ? '#22c55e' : pc }} />
           </div>
-          {dt.showProgressBar && (
-            <div className="w-3/4 h-1 bg-white/[0.04] rounded-full mt-1 overflow-hidden">
-              <div className="h-full rounded-full transition-all duration-500" style={{
-                width: `${Math.min(prog * 100, 100)}%`,
-                background: isWarn ? '#f59e0b' : isBrk ? '#22c55e' : pc
-              }} />
-            </div>
-          )}
-        </div>
-
-        {/* Right stats */}
-        <div className="hidden lg:flex flex-col w-[18%] border-l border-white/[0.06] bg-black/10">
-          <SC label="Corner" value={formatTimerHMS(tte)} />
-          <SC label="Reg Close" value={regClose !== null ? formatTimer(regClose) : 'N/A'} />
-          <SC label="Next Brk" value={ttb !== null ? formatTimer(ttb) : '--'} />
-        </div>
+        )}
+        {cur && !isBrk && (
+          <div className="mt-1.5 text-lg lg:text-2xl font-black timer-font" style={{ color: pc }}>
+            {cur.smallBlind.toLocaleString()}/{cur.bigBlind.toLocaleString()}
+          </div>
+        )}
+        {cur && cur.ante > 0 && !isBrk && <div className="text-[10px] text-white/20 font-semibold">Ante {cur.ante.toLocaleString()}</div>}
       </div>
 
-      {/* Bottom: Players | Blinds | Ante */}
-      <div className="flex bg-black/20">
-        <BC label="Players" value={`${tournament.entryCount}`} />
-        <BC label="Blinds" value={cur && !isBrk ? `${cur.smallBlind.toLocaleString()}/${cur.bigBlind.toLocaleString()}` : '--'} wide accent />
-        <BC label="Ante" value={cur && cur.ante > 0 ? cur.ante.toLocaleString() : '--'} />
+      {/* Stats row */}
+      <div className="hidden lg:flex gap-2">
+        <SC label="Players" value={`${tournament.entryCount}`} />
+        <SC label="Rebuy" value={String(tournament.rebuyCount)} />
+        <SC label="Corner" value={formatTimerHMS(tte)} />
       </div>
 
       {/* Next */}
       {nextPlay && (
-        <div className="flex items-center justify-center py-1 bg-black/10 border-t border-white/[0.03]">
-          <span className="text-[9px] text-white/15 mr-1">Next:</span>
-          <span className="text-xs font-bold text-white/30 timer-font">
+        <div className="g-card-inner flex items-center justify-center py-1 lg:py-1.5 px-2">
+          <span className="text-[8px] text-white/20 mr-1">Next:</span>
+          <span className="text-[10px] lg:text-xs font-bold text-white/35 timer-font">
             {nextPlay.ante > 0 && `A${nextPlay.ante.toLocaleString()} `}{nextPlay.smallBlind.toLocaleString()}/{nextPlay.bigBlind.toLocaleString()}
           </span>
         </div>
@@ -148,13 +132,13 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound }: {
 
       {/* Overlays */}
       {tournament.status === 'idle' && (
-        <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/60">
-          <div className="text-center"><div className="text-xl lg:text-3xl font-black text-blue-400">COME ON Timer</div><div className="text-xs text-white/15 mt-1">{tournament.name}</div></div>
+        <div className="absolute inset-0 z-40 flex items-center justify-center g-overlay-idle rounded-lg">
+          <div className="g-card p-5 text-center"><div className="text-lg lg:text-2xl font-black text-blue-400">COME ON Timer</div><div className="text-[10px] text-white/20 mt-1">{tournament.name}</div></div>
         </div>
       )}
       {tournament.status === 'paused' && (
-        <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/40">
-          <div className="text-xl lg:text-3xl font-black text-white/35 tracking-widest animate-pulse">PAUSED</div>
+        <div className="absolute inset-0 z-40 flex items-center justify-center g-overlay-pause rounded-lg">
+          <div className="g-card px-6 py-4"><div className="text-lg lg:text-2xl font-black text-white/40 tracking-widest animate-pulse">PAUSED</div></div>
         </div>
       )}
     </div>
@@ -188,56 +172,54 @@ function CashPanel({ cashGame, theme, displayToggles: dt }: {
   const isWarn = cashGame.countdownMode && countdown < 300000 && countdown > 0 && cashGame.status === 'running';
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden relative">
-      {/* Top banner */}
-      <div className="flex items-center px-2 py-1 lg:py-1.5 bg-black/30 border-b border-white/[0.06]">
-        <div className="flex-1 text-center">
-          <span className="text-xs lg:text-sm font-bold text-white/60">{cashGame.name}</span>
-        </div>
-        <span className="text-[10px] text-white/20 font-medium">Cash</span>
+    <div className="flex-1 flex flex-col overflow-hidden relative p-2 lg:p-3 gap-2">
+      {/* Top info */}
+      <div className="g-card-inner flex items-center px-3 py-1.5 lg:py-2">
+        <span className="text-xs lg:text-sm font-bold text-white/60 truncate flex-1">{cashGame.name}</span>
+        <span className="text-[9px] lg:text-[11px] text-white/25 font-medium">Cash</span>
       </div>
 
-      {/* Main area */}
-      <div className="flex-1 flex flex-col items-center justify-center gap-2 px-2">
-        <div className="text-[9px] text-white/15 uppercase tracking-widest font-medium">Rate</div>
-        <div className="text-3xl lg:text-5xl font-black leading-none" style={{ color: pc }}>
+      {/* Main Card */}
+      <div className="g-card flex-1 flex flex-col items-center justify-center gap-2 p-3 lg:p-4 min-h-0">
+        <div className="text-[8px] lg:text-[10px] text-white/20 uppercase tracking-widest font-semibold">Rate</div>
+        <div className="text-2xl lg:text-4xl font-black leading-none" style={{ color: pc }}>
           {cashGame.smallBlind.toLocaleString()} / {cashGame.bigBlind.toLocaleString()}
         </div>
-        {cashGame.ante > 0 && <div className="text-sm text-white/20 font-semibold">Ante {cashGame.ante.toLocaleString()}</div>}
-        {dt.showCashMemo && cashGame.memo && <div className="text-xs text-white/25 text-center">{cashGame.memo}</div>}
+        {cashGame.ante > 0 && <div className="text-[10px] lg:text-sm text-white/25 font-semibold">Ante {cashGame.ante.toLocaleString()}</div>}
+        {dt.showCashMemo && cashGame.memo && <div className="text-[10px] text-white/20 text-center">{cashGame.memo}</div>}
         {dt.showCashTimer && (
-          <div className="text-center mt-2">
-            <div className="text-[8px] text-white/15 uppercase tracking-widest">{cashGame.countdownMode ? 'Remaining' : 'Session'}</div>
-            <div className={`text-2xl lg:text-4xl font-black timer-font ${isWarn ? 'text-amber-400 warning-pulse' : 'text-white/40'}`}>
+          <div className="text-center mt-1">
+            <div className="text-[7px] text-white/15 uppercase tracking-widest">{cashGame.countdownMode ? 'Remaining' : 'Session'}</div>
+            <div className={`text-xl lg:text-3xl font-black timer-font ${isWarn ? 'text-amber-400 warning-pulse' : 'text-white/40'}`}>
               {cashGame.countdownMode ? formatTimerHMS(countdown) : formatTimerHMS(elapsed)}
             </div>
           </div>
         )}
       </div>
 
-      {/* Bottom */}
-      <div className="flex bg-black/20 border-t border-white/[0.05]">
-        <BC label="SB" value={cashGame.smallBlind.toLocaleString()} />
-        <BC label="BB" value={cashGame.bigBlind.toLocaleString()} wide accent />
-        {cashGame.ante > 0 && <BC label="Ante" value={cashGame.ante.toLocaleString()} />}
+      {/* Bottom info */}
+      <div className="flex gap-2">
+        <SC label="SB" value={cashGame.smallBlind.toLocaleString()} />
+        <SC label="BB" value={cashGame.bigBlind.toLocaleString()} />
+        {cashGame.ante > 0 && <SC label="Ante" value={cashGame.ante.toLocaleString()} />}
       </div>
 
       {/* Overlays */}
       {cashGame.status === 'idle' && (
-        <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/60">
-          <div className="text-center"><div className="text-xl lg:text-3xl font-black text-blue-400">COME ON Timer</div><div className="text-xs text-white/15 mt-1">Cash Ready</div></div>
+        <div className="absolute inset-0 z-40 flex items-center justify-center g-overlay-idle rounded-lg">
+          <div className="g-card p-5 text-center"><div className="text-lg lg:text-2xl font-black text-blue-400">COME ON Timer</div><div className="text-[10px] text-white/20 mt-1">Cash Ready</div></div>
         </div>
       )}
       {cashGame.status === 'paused' && (
-        <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/40">
-          <div className="text-xl lg:text-3xl font-black text-white/35 tracking-widest animate-pulse">PAUSED</div>
+        <div className="absolute inset-0 z-40 flex items-center justify-center g-overlay-pause rounded-lg">
+          <div className="g-card px-6 py-4"><div className="text-lg lg:text-2xl font-black text-white/40 tracking-widest animate-pulse">PAUSED</div></div>
         </div>
       )}
     </div>
   );
 }
 
-/* ═══ Panel Selector (tap panel header to switch timer) ═══ */
+/* ═══ Panel Selector ═══ */
 function PanelSelector({ selectedId, onSelect, tournaments, cashGames, side }: {
   selectedId: string;
   onSelect: (id: string) => void;
@@ -263,37 +245,30 @@ function PanelSelector({ selectedId, onSelect, tournaments, cashGames, side }: {
 
   return (
     <div ref={ref} className="relative">
-      <button
-        onClick={() => setOpen(!open)}
-        className="flex items-center gap-1 px-2 py-0.5 rounded bg-white/[0.04] hover:bg-white/[0.1] border border-white/[0.06] hover:border-white/[0.15] transition-all duration-200 cursor-pointer"
-      >
-        <span className={`text-[8px] font-bold px-1 rounded ${current?.kind === 'C' ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'}`}>
+      <button onClick={() => setOpen(!open)}
+        className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.1] hover:border-white/[0.2] transition-all duration-200 cursor-pointer">
+        <span className={`text-[8px] font-bold px-1 py-0.5 rounded-md ${current?.kind === 'C' ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'}`}>
           {current?.kind === 'C' ? 'C' : 'T'}
         </span>
-        <span className="text-[10px] lg:text-xs text-white/50 font-medium truncate max-w-[120px]">{current?.name || '選択'}</span>
-        <svg className={`w-2.5 h-2.5 text-white/20 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+        <span className="text-[10px] lg:text-xs text-white/55 font-medium truncate max-w-[120px]">{current?.name || '選択'}</span>
+        <svg className={`w-2.5 h-2.5 text-white/25 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
       </button>
 
       {open && (
-        <div className={`absolute top-full mt-1 ${side === 'right' ? 'right-0' : 'left-0'} z-50 min-w-[180px] bg-black/90 backdrop-blur-xl border border-white/[0.1] rounded-lg shadow-2xl overflow-hidden`}>
-          <div className="py-1">
-            {allTimers.length === 0 && <div className="px-3 py-2 text-xs text-white/20">タイマーなし</div>}
-            {allTimers.map(t => (
-              <button
-                key={t.id}
-                onClick={() => { onSelect(t.id); setOpen(false); }}
-                className={`w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-white/[0.08] transition-colors ${t.id === selectedId ? 'bg-blue-500/10' : ''}`}
-              >
-                <span className={`text-[8px] font-bold px-1 rounded shrink-0 ${t.kind === 'C' ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'}`}>
-                  {t.kind === 'C' ? 'Cash' : 'Trn'}
-                </span>
-                <span className="text-xs text-white/60 truncate flex-1">{t.name}</span>
-                {t.status === 'running' && <span className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0 animate-pulse" />}
-                {t.status === 'paused' && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />}
-                {t.id === selectedId && <svg className="w-3 h-3 text-blue-400 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>}
-              </button>
-            ))}
-          </div>
+        <div className={`absolute top-full mt-1.5 ${side === 'right' ? 'right-0' : 'left-0'} z-50 min-w-[200px] g-card p-1.5 overflow-hidden`}>
+          {allTimers.length === 0 && <div className="px-3 py-2 text-xs text-white/25">タイマーなし</div>}
+          {allTimers.map(t => (
+            <button key={t.id} onClick={() => { onSelect(t.id); setOpen(false); }}
+              className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left hover:bg-white/[0.08] transition-colors ${t.id === selectedId ? 'bg-white/[0.06]' : ''}`}>
+              <span className={`text-[8px] font-bold px-1 py-0.5 rounded-md shrink-0 ${t.kind === 'C' ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'}`}>
+                {t.kind === 'C' ? 'Cash' : 'Trn'}
+              </span>
+              <span className="text-xs text-white/65 truncate flex-1">{t.name}</span>
+              {t.status === 'running' && <span className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0 animate-pulse" />}
+              {t.status === 'paused' && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />}
+              {t.id === selectedId && <svg className="w-3 h-3 text-blue-400 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>}
+            </button>
+          ))}
         </div>
       )}
     </div>
@@ -306,22 +281,18 @@ function SplitInner() {
   const displayId = params.get('display') || '';
   const { tournaments, cashGames, displays, themes, sound, displayToggles } = useStore();
 
-  // Auto-detect type from ID
   const detectType = useCallback((id: string): 'tournament' | 'cash' => {
     if (cashGames.find(c => c.id === id)) return 'cash';
     return 'tournament';
   }, [cashGames]);
 
-  // Get initial IDs from assignment or URL params
   const assignment = displays.find(d => d.displayId === displayId);
   const initLeftId = params.get('left') || assignment?.targetId || tournaments[0]?.id || cashGames[0]?.id || '';
   const initRightId = params.get('right') || assignment?.splitTargetId || (tournaments[1]?.id || cashGames[0]?.id || tournaments[0]?.id || '');
 
-  // Local state for panel selection (can be changed from the display itself)
   const [selLeft, setSelLeft] = useState(initLeftId);
   const [selRight, setSelRight] = useState(initRightId);
 
-  // Sync initial values when assignment changes
   useEffect(() => {
     if (assignment?.targetId) setSelLeft(assignment.targetId);
     if (assignment?.splitTargetId) setSelRight(assignment.splitTargetId);
@@ -362,8 +333,8 @@ function SplitInner() {
   const bgStyle = displayToggles.backgroundImageUrl
     ? { backgroundImage: `url(${displayToggles.backgroundImageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
     : theme?.type === 'gradient'
-    ? { background: `linear-gradient(135deg, ${theme.gradientFrom || '#0f172a'}, ${theme.gradientTo || '#1e3a5f'})` }
-    : { background: theme?.bgColor || '#0a0e1a' };
+    ? { background: `linear-gradient(160deg, ${theme.gradientFrom || '#0e1c36'}, ${theme.gradientTo || '#1c3d6e'})` }
+    : { background: 'linear-gradient(160deg, #0e1c36 0%, #152d52 50%, #1c3d6e 100%)' };
 
   const hasLeft = leftTournament || leftCash;
   const hasRight = rightTournament || rightCash;
@@ -373,55 +344,53 @@ function SplitInner() {
       {displayToggles.backgroundImageUrl && <div className="absolute inset-0 bg-black/50 pointer-events-none z-[1]" />}
       {theme && theme.overlayOpacity > 0 && <div className="absolute inset-0 bg-black pointer-events-none z-[1]" style={{ opacity: theme.overlayOpacity / 100 }} />}
 
-      {/* Header: logo left, selectors center */}
-      <div className="relative z-10 flex items-center px-3 py-1.5 bg-black/30 border-b border-white/[0.06]">
+      {/* Header */}
+      <div className="g-topbar relative z-10 flex items-center px-3 py-2">
         <div className="flex items-center gap-1.5 shrink-0">
           <span className="text-sm font-black text-blue-400 tracking-tight">COME ON</span>
-          <span className="text-white/20 font-medium text-[10px]">Timer</span>
+          <span className="text-white/25 font-medium text-[10px]">Timer</span>
         </div>
         <div className="flex-1 flex items-center justify-center gap-3">
-          <span className="text-[9px] text-white/20 font-medium">左</span>
+          <span className="text-[9px] text-white/25 font-medium">左</span>
           <PanelSelector selectedId={selLeft} onSelect={setSelLeft} tournaments={tournaments} cashGames={cashGames} side="left" />
-          <span className="text-white/10">|</span>
+          <span className="text-white/15">|</span>
           <PanelSelector selectedId={selRight} onSelect={setSelRight} tournaments={tournaments} cashGames={cashGames} side="right" />
-          <span className="text-[9px] text-white/20 font-medium">右</span>
+          <span className="text-[9px] text-white/25 font-medium">右</span>
         </div>
       </div>
 
       {/* Split panels */}
       <div className="relative z-10 flex-1 flex">
         {/* LEFT PANEL */}
-        <div className="flex-1 flex flex-col border-r-2 border-white/[0.1]">
+        <div className="flex-1 flex flex-col border-r border-white/[0.08]">
           {hasLeft ? (
-            leftTournament ? (
-              <TournamentPanel tournament={leftTournament} theme={theme} displayToggles={displayToggles} sound={sound} />
-            ) : leftCash ? (
-              <CashPanel cashGame={leftCash} theme={theme} displayToggles={displayToggles} />
-            ) : null
+            leftTournament ? <TournamentPanel tournament={leftTournament} theme={theme} displayToggles={displayToggles} sound={sound} />
+            : leftCash ? <CashPanel cashGame={leftCash} theme={theme} displayToggles={displayToggles} />
+            : null
           ) : (
-            <div className="flex-1 flex items-center justify-center text-white/15 text-sm">左パネル: タイマーを選択してください ↑</div>
+            <div className="flex-1 flex items-center justify-center"><div className="g-card p-6 text-white/20 text-sm">左パネル: タイマーを選択 ↑</div></div>
           )}
         </div>
 
         {/* RIGHT PANEL */}
         <div className="flex-1 flex flex-col">
           {hasRight ? (
-            rightTournament ? (
-              <TournamentPanel tournament={rightTournament} theme={theme} displayToggles={displayToggles} sound={sound} />
-            ) : rightCash ? (
-              <CashPanel cashGame={rightCash} theme={theme} displayToggles={displayToggles} />
-            ) : null
+            rightTournament ? <TournamentPanel tournament={rightTournament} theme={theme} displayToggles={displayToggles} sound={sound} />
+            : rightCash ? <CashPanel cashGame={rightCash} theme={theme} displayToggles={displayToggles} />
+            : null
           ) : (
-            <div className="flex-1 flex items-center justify-center text-white/15 text-sm">右パネル: タイマーを選択してください ↑</div>
+            <div className="flex-1 flex items-center justify-center"><div className="g-card p-6 text-white/20 text-sm">右パネル: タイマーを選択 ↑</div></div>
           )}
         </div>
       </div>
 
       {/* Ticker */}
       {displayToggles.tickerText && (
-        <div className="relative z-10 w-full py-1 bg-black/30 border-t border-white/[0.04] overflow-hidden">
-          <div className="ticker-container">
-            <span className="ticker-scroll text-xs font-medium text-white/30 px-4">{displayToggles.tickerText}</span>
+        <div className="relative z-10 px-2.5 pb-2">
+          <div className="g-ticker py-1.5 overflow-hidden">
+            <div className="ticker-container">
+              <span className="ticker-scroll text-xs font-medium text-white/35 px-4">{displayToggles.tickerText}</span>
+            </div>
           </div>
         </div>
       )}
@@ -430,5 +399,5 @@ function SplitInner() {
 }
 
 export default function SplitDisplayPage() {
-  return <Suspense fallback={<div className="min-h-screen" style={{ background: '#0a0e1a' }} />}><SplitInner /></Suspense>;
+  return <Suspense fallback={<div className="min-h-screen" style={{ background: 'linear-gradient(160deg, #0e1c36, #152d52, #1c3d6e)' }} />}><SplitInner /></Suspense>;
 }

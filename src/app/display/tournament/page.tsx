@@ -8,7 +8,7 @@ import { unlockAudio, playSound, playWarningBeep, speakTTS, fillTTSTemplate } fr
 import { formatTimer, formatChips, formatTimerHMS, computeTimeToBreak, computeTimeToEnd, computeRegCloseTime } from '@/lib/utils';
 import { Tournament, ThemeConfig } from '@/lib/types';
 
-/* ── Timer Selector dropdown (same style as split page) ── */
+/* ── Timer Selector dropdown ── */
 function TimerSelector({ selectedId, onSelect, tournaments }: {
   selectedId: string;
   onSelect: (id: string) => void;
@@ -30,46 +30,34 @@ function TimerSelector({ selectedId, onSelect, tournaments }: {
   return (
     <div ref={ref} className="relative">
       <button onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-white/[0.04] hover:bg-white/[0.1] border border-white/[0.06] hover:border-white/[0.15] transition-all duration-200 cursor-pointer">
-        <span className="text-[8px] font-bold px-1 rounded bg-blue-500/20 text-blue-400">T</span>
-        <span className="text-[10px] lg:text-xs text-white/50 font-medium truncate max-w-[160px]">{current?.name || '選択'}</span>
-        <svg className={`w-2.5 h-2.5 text-white/20 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.1] hover:border-white/[0.2] transition-all duration-200 cursor-pointer">
+        <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-md bg-blue-500/20 text-blue-400">T</span>
+        <span className="text-[10px] lg:text-xs text-white/60 font-medium truncate max-w-[160px]">{current?.name || '選択'}</span>
+        <svg className={`w-2.5 h-2.5 text-white/30 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
       </button>
       {open && (
-        <div className="absolute top-full mt-1 left-0 z-50 min-w-[200px] bg-black/90 backdrop-blur-xl border border-white/[0.1] rounded-lg shadow-2xl overflow-hidden">
-          <div className="py-1">
-            {tournaments.map(t => (
-              <button key={t.id} onClick={() => { onSelect(t.id); setOpen(false); }}
-                className={`w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-white/[0.08] transition-colors ${t.id === selectedId ? 'bg-blue-500/10' : ''}`}>
-                <span className="text-xs text-white/60 truncate flex-1">{t.name}</span>
-                {t.status === 'running' && <span className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0 animate-pulse" />}
-                {t.status === 'paused' && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />}
-                {t.id === selectedId && <svg className="w-3 h-3 text-blue-400 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>}
-              </button>
-            ))}
-          </div>
+        <div className="absolute top-full mt-1.5 left-0 z-50 min-w-[220px] g-card p-1.5 overflow-hidden">
+          {tournaments.map(t => (
+            <button key={t.id} onClick={() => { onSelect(t.id); setOpen(false); }}
+              className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-left hover:bg-white/[0.08] transition-colors ${t.id === selectedId ? 'bg-white/[0.06]' : ''}`}>
+              <span className="text-xs text-white/70 truncate flex-1">{t.name}</span>
+              {t.status === 'running' && <span className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0 animate-pulse" />}
+              {t.status === 'paused' && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />}
+              {t.id === selectedId && <svg className="w-3.5 h-3.5 text-blue-400 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>}
+            </button>
+          ))}
         </div>
       )}
     </div>
   );
 }
 
-/* ── Reusable stat cell for the left/right columns ── */
-function StatCell({ label, value, className }: { label: string; value: string; className?: string }) {
+/* ── Glass Stat Card ── */
+function GlassStat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
-    <div className={`flex-1 flex flex-col items-center justify-center px-2 py-1 border-b border-white/[0.06] last:border-b-0 ${className || ''}`}>
-      <div className="text-[10px] md:text-xs text-white/30 uppercase tracking-wider font-medium leading-tight">{label}</div>
-      <div className="text-lg md:text-2xl lg:text-3xl font-bold text-white/70 timer-font leading-tight mt-0.5">{value}</div>
-    </div>
-  );
-}
-
-/* ── Bottom bar cell ── */
-function BottomCell({ label, value, wide, accent }: { label: string; value: string; wide?: boolean; accent?: boolean }) {
-  return (
-    <div className={`flex flex-col items-center justify-center py-2 md:py-3 ${wide ? 'flex-[2]' : 'flex-1'} border-r border-white/[0.06] last:border-r-0`}>
-      <div className="text-[9px] md:text-[11px] text-white/25 uppercase tracking-wider font-medium">{label}</div>
-      <div className={`text-xl md:text-3xl lg:text-4xl font-black timer-font leading-tight mt-0.5 ${accent ? 'text-blue-400' : 'text-white/80'}`}>{value}</div>
+    <div className="g-card-inner p-3 lg:p-4 flex-1 min-h-0 text-center">
+      <div className="text-[9px] lg:text-[11px] text-white/35 uppercase tracking-wider font-semibold mb-1.5">{label}</div>
+      <div className={`text-base lg:text-xl xl:text-2xl font-bold timer-font leading-tight ${accent ? 'text-blue-400' : 'text-white/75'}`}>{value}</div>
     </div>
   );
 }
@@ -83,7 +71,6 @@ function Inner() {
   const defaultId = assignment?.targetId || targetIdParam || tournaments[0]?.id || '';
   const themeId = assignment?.themeId || 'come-on-blue';
   const theme: ThemeConfig | undefined = themes.find(t => t.id === themeId) || themes[0];
-  const running = tournaments.filter(t => t.status === 'running' || t.status === 'paused');
   const [selectedId, setSelectedId] = useState(defaultId);
   const activeId = assignment?.targetId || selectedId || defaultId;
   const tournament: Tournament | undefined = tournaments.find(t => t.id === activeId);
@@ -123,7 +110,6 @@ function Inner() {
     return () => clearInterval(iv);
   }, [tournament, computeRem]);
 
-  // Sound effects on level change
   useEffect(() => {
     if (!tournament) return;
     if (prevRef.current === -1) { prevRef.current = tournament.currentLevelIndex; return; }
@@ -144,7 +130,6 @@ function Inner() {
     }
   }, [tournament?.currentLevelIndex, tournament?.status, sound]);
 
-  // 1-min warning
   useEffect(() => {
     if (!tournament || tournament.status !== 'running') return;
     if (displayMs <= 60000 && displayMs > 55000 && !warnRef.current) {
@@ -156,8 +141,8 @@ function Inner() {
   }, [displayMs, tournament, sound]);
 
   if (!tournament) return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: '#0a0e1a' }}>
-      <div className="text-center text-white/25"><p className="text-xl font-bold">No Tournament</p><p className="text-sm mt-2">Operator画面から設定してください</p></div>
+    <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(160deg, #0e1c36, #152d52, #1c3d6e)' }}>
+      <div className="g-card p-8 text-center text-white/40"><p className="text-xl font-bold">No Tournament</p><p className="text-sm mt-2 text-white/25">Operator画面から設定してください</p></div>
     </div>
   );
 
@@ -179,142 +164,168 @@ function Inner() {
   const bgStyle = dt.backgroundImageUrl
     ? { backgroundImage: `url(${dt.backgroundImageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
     : theme?.type === 'gradient'
-    ? { background: `linear-gradient(135deg, ${theme.gradientFrom || '#0f172a'}, ${theme.gradientTo || '#1e3a5f'})` }
+    ? { background: `linear-gradient(160deg, ${theme.gradientFrom || '#0e1c36'}, ${theme.gradientTo || '#1c3d6e'})` }
     : theme?.type === 'image' && theme.imageUrl
     ? { backgroundImage: `url(${theme.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
-    : { background: theme?.bgColor || '#0a0e1a' };
+    : { background: 'linear-gradient(160deg, #0e1c36 0%, #152d52 50%, #1c3d6e 100%)' };
 
   return (
     <div className={`min-h-screen flex flex-col select-none overflow-hidden relative ${isBrk ? 'break-bg' : ''}`} style={bgStyle}>
-      {/* Overlay for bg image readability */}
+      {/* BG Overlays */}
       {(dt.backgroundImageUrl || (theme?.type === 'image' && theme.imageUrl)) && (
         <div className="absolute inset-0 bg-black/50 pointer-events-none z-[1]" />
       )}
       {theme && theme.overlayOpacity > 0 && <div className="absolute inset-0 bg-black pointer-events-none z-[1]" style={{ opacity: theme.overlayOpacity / 100 }} />}
 
-      {/* ═══ TOP BANNER: Logo + Selector + Tournament Name ═══ */}
-      <div className="relative z-10 flex items-center px-3 md:px-5 py-2 md:py-3 bg-black/30 border-b border-white/[0.08]">
+      {/* ═══ Glass Top Bar ═══ */}
+      <div className="g-topbar relative z-10 flex items-center px-4 md:px-6 py-2.5 md:py-3">
         <div className="flex items-center gap-2 shrink-0">
           <span className="text-sm md:text-base font-black text-blue-400 tracking-tight">COME ON</span>
-          <span className="text-white/20 font-medium text-[10px] md:text-xs">Timer</span>
+          <span className="text-white/25 font-medium text-[10px] md:text-xs">Timer</span>
         </div>
         <div className="flex-1 flex items-center justify-center gap-3">
           <TimerSelector selectedId={activeId} onSelect={setSelectedId} tournaments={tournaments} />
-          {tournaments.length <= 1 && <span className="text-base md:text-xl lg:text-2xl font-bold text-white/70 tracking-wide">{tournament.name}</span>}
+          {tournaments.length <= 1 && <span className="text-sm md:text-lg font-bold text-white/60 tracking-wide truncate max-w-[300px]">{tournament.name}</span>}
         </div>
         {dt.showLevelInfo && (
-          <div className="text-xs md:text-sm text-white/25 font-medium shrink-0">
+          <div className="text-xs md:text-sm text-white/30 font-medium shrink-0">
             {isBrk ? 'BREAK' : `Lv${cur?.level || '-'}`}/{totalLvs}
           </div>
         )}
       </div>
 
-      {/* ═══ MAIN 3-COLUMN GRID ═══ */}
-      <div className="relative z-10 flex-1 flex border-b border-white/[0.06]">
-        {/* ── LEFT COLUMN: Rebuy / Add-on / Avg Stack ── */}
-        <div className="hidden md:flex flex-col w-[18%] lg:w-[16%] border-r border-white/[0.08] bg-black/15">
-          <StatCell label="Rebuy" value={String(tournament.rebuyCount)} />
-          <StatCell label="Add-on" value={String(tournament.addonCount)} />
-          <StatCell label="Avg Stack" value={avg > 0 ? formatChips(avg) : '--'} />
+      {/* ═══ Main Dashboard Grid ═══ */}
+      <div className="relative z-10 flex-1 flex p-2.5 md:p-3 lg:p-4 gap-2.5 md:gap-3 lg:gap-4 min-h-0">
+
+        {/* ── Left Stats Column (desktop) ── */}
+        <div className="hidden md:flex flex-col gap-2.5 lg:gap-3 w-[130px] lg:w-[155px] xl:w-[175px]">
+          <GlassStat label="Players" value={`${tournament.entryCount}`} accent />
+          <GlassStat label="Rebuy" value={String(tournament.rebuyCount)} />
+          <GlassStat label="Add-on" value={String(tournament.addonCount)} />
+          <GlassStat label="Avg Stack" value={avg > 0 ? formatChips(avg) : '--'} />
         </div>
 
-        {/* ── CENTER: Level + Timer ── */}
-        <div className="flex-1 flex flex-col items-center justify-center relative">
-          {/* Level indicator */}
-          {dt.showLevelInfo && (
-            <div className="mb-1 md:mb-2">
-              {isBrk ? (
-                <span className="text-green-400 text-2xl md:text-4xl lg:text-5xl font-black tracking-[0.15em]">BREAK</span>
-              ) : (
-                <span className="text-white/30 text-xl md:text-3xl lg:text-4xl font-black tracking-[0.2em]">Level {cur?.level || '-'}</span>
-              )}
+        {/* ── Center Column ── */}
+        <div className="flex-1 flex flex-col gap-2.5 md:gap-3 min-h-0">
+
+          {/* Main Timer Card */}
+          <div className="g-card flex-1 flex flex-col items-center justify-center p-3 md:p-5 relative overflow-hidden min-h-0">
+            {/* Level indicator */}
+            {dt.showLevelInfo && (
+              <div className="mb-1 md:mb-2">
+                {isBrk ? (
+                  <span className="text-green-400 text-xl md:text-3xl lg:text-4xl font-black tracking-[0.15em]">BREAK</span>
+                ) : (
+                  <span className="text-white/25 text-base md:text-2xl lg:text-3xl font-black tracking-[0.2em]">Level {cur?.level || '-'}</span>
+                )}
+              </div>
+            )}
+
+            {/* TIMER */}
+            {dt.showTimer && (
+              <div className={`text-[17vw] md:text-[13vw] lg:text-[11vw] font-black timer-font leading-[0.85] transition-colors duration-300 ${isWarn ? 'text-amber-400 warning-pulse' : isBrk ? 'text-green-400' : 'text-white'}`}>
+                {formatTimer(displayMs)}
+              </div>
+            )}
+
+            {/* Progress bar */}
+            {dt.showProgressBar && (
+              <div className="w-[80%] h-1.5 md:h-2 bg-white/[0.06] rounded-full mt-2 md:mt-4 overflow-hidden">
+                <div className="h-full rounded-full transition-all duration-500" style={{
+                  width: `${Math.min(prog * 100, 100)}%`,
+                  background: isWarn ? 'linear-gradient(to right, #f59e0b, #ef4444)' : isBrk ? '#22c55e' : `linear-gradient(to right, ${pc}, ${theme?.accentColor || '#93c5fd'})`
+                }} />
+              </div>
+            )}
+
+            {/* Blinds */}
+            {dt.showFooter && cur && !isBrk && (
+              <div className="mt-2 md:mt-4 text-center">
+                <div className="text-2xl md:text-4xl lg:text-5xl font-black timer-font" style={{ color: pc }}>
+                  {cur.smallBlind.toLocaleString()} / {cur.bigBlind.toLocaleString()}
+                </div>
+                {cur.ante > 0 && (
+                  <div className="text-sm md:text-lg text-white/30 font-semibold mt-1">Ante {cur.ante.toLocaleString()}</div>
+                )}
+              </div>
+            )}
+
+            {/* Mobile compact stats */}
+            <div className="flex md:hidden items-center gap-3 mt-3 flex-wrap justify-center text-[10px] text-white/30">
+              <span>Players <span className="text-white/50 font-bold">{tournament.entryCount}</span></span>
+              <span>R <span className="text-white/50 font-bold">{tournament.rebuyCount}</span></span>
+              <span>A <span className="text-white/50 font-bold">{tournament.addonCount}</span></span>
+              {avg > 0 && <span>Avg <span className="text-white/50 font-bold">{formatChips(avg)}</span></span>}
+            </div>
+          </div>
+
+          {/* Next Level Card */}
+          {dt.showNextLevel && nextPlay && (
+            <div className="g-card-inner flex items-center justify-center gap-3 px-4 py-2 md:py-3">
+              <span className="text-[10px] md:text-xs text-white/30 uppercase tracking-wider font-semibold">Next</span>
+              <span className="text-sm md:text-lg font-bold text-white/50 timer-font">
+                {nextPlay.ante > 0 && <span className="text-white/30">Ante {nextPlay.ante.toLocaleString()} </span>}
+                {nextPlay.smallBlind.toLocaleString()} / {nextPlay.bigBlind.toLocaleString()}
+              </span>
             </div>
           )}
 
-          {/* TIMER (massive) */}
-          {dt.showTimer && (
-            <div className={`text-[18vw] md:text-[14vw] lg:text-[12vw] font-black timer-font leading-[0.9] transition-colors duration-300 ${isWarn ? 'text-amber-400 warning-pulse' : isBrk ? 'text-green-400' : 'text-white'}`}>
-              {formatTimer(displayMs)}
+          {/* Mobile info row */}
+          <div className="flex md:hidden gap-2">
+            <div className="g-card-inner flex-1 p-2.5 text-center">
+              <div className="text-[8px] text-white/30 uppercase tracking-wider font-semibold">Corner</div>
+              <div className="text-sm font-bold text-white/60 timer-font">{formatTimerHMS(tte)}</div>
             </div>
-          )}
-
-          {/* Progress bar (inside center area) */}
-          {dt.showProgressBar && (
-            <div className="w-4/5 h-1.5 md:h-2 bg-white/[0.04] rounded-full mt-2 md:mt-3 overflow-hidden">
-              <div className="h-full rounded-full transition-all duration-500" style={{
-                width: `${Math.min(prog * 100, 100)}%`,
-                background: isWarn ? 'linear-gradient(to right, #f59e0b, #ef4444)' : isBrk ? '#22c55e' : `linear-gradient(to right, ${pc}, ${theme?.accentColor || '#93c5fd'})`
-              }} />
-            </div>
-          )}
-
-          {/* Mobile-only compact stats */}
-          <div className="flex md:hidden items-center gap-3 mt-3 flex-wrap justify-center text-[10px] text-white/25">
-            <span>R:<span className="text-white/40 font-bold">{tournament.rebuyCount}</span></span>
-            <span>A:<span className="text-white/40 font-bold">{tournament.addonCount}</span></span>
-            {avg > 0 && <span>Avg:<span className="text-white/40 font-bold">{formatChips(avg)}</span></span>}
-            {ttb !== null && <span>Brk:<span className="text-white/40 font-bold timer-font">{formatTimer(ttb)}</span></span>}
-            <span>End:<span className="text-white/40 font-bold timer-font">{formatTimerHMS(tte)}</span></span>
+            {ttb !== null && (
+              <div className="g-card-inner flex-1 p-2.5 text-center">
+                <div className="text-[8px] text-white/30 uppercase tracking-wider font-semibold">Next Brk</div>
+                <div className="text-sm font-bold text-white/60 timer-font">{formatTimerHMS(ttb)}</div>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* ── RIGHT COLUMN: Corner Time / Reg Close / Next Break ── */}
-        <div className="hidden md:flex flex-col w-[18%] lg:w-[16%] border-l border-white/[0.08] bg-black/15">
-          <StatCell label="Corner Time" value={formatTimerHMS(tte)} />
-          <StatCell label={tournament.regCloseLevel ? `Reg Close Lv${tournament.regCloseLevel}` : 'Reg Close'} value={regClose !== null ? formatTimer(regClose) : 'N/A'} />
-          <StatCell label="Next Break" value={ttb !== null ? formatTimerHMS(ttb) : '--:--:--'} />
+        {/* ── Right Stats Column (desktop) ── */}
+        <div className="hidden md:flex flex-col gap-2.5 lg:gap-3 w-[130px] lg:w-[155px] xl:w-[175px]">
+          <GlassStat label="Corner Time" value={formatTimerHMS(tte)} />
+          <GlassStat label={tournament.regCloseLevel ? `Reg Close Lv${tournament.regCloseLevel}` : 'Reg Close'} value={regClose !== null ? formatTimer(regClose) : 'N/A'} />
+          <GlassStat label="Next Break" value={ttb !== null ? formatTimerHMS(ttb) : '--:--:--'} />
         </div>
       </div>
 
-      {/* ═══ BOTTOM BAR: Players | Blinds (widest) | BB Ante ═══ */}
-      {dt.showFooter && (
-        <div className="relative z-10 flex bg-black/25 border-b border-white/[0.06]">
-          <BottomCell label="Players" value={`${tournament.entryCount}`} />
-          <BottomCell label="Blinds" value={cur && !isBrk ? `${cur.smallBlind.toLocaleString()}/${cur.bigBlind.toLocaleString()}` : '--'} wide accent />
-          <BottomCell label="BB Ante" value={cur && cur.ante > 0 ? cur.ante.toLocaleString() : '--'} />
-        </div>
-      )}
-
-      {/* ═══ NEXT BLINDS ═══ */}
-      {dt.showNextLevel && nextPlay && (
-        <div className="relative z-10 flex items-center justify-center py-1.5 md:py-2 bg-black/15 border-b border-white/[0.04]">
-          <span className="text-[10px] md:text-xs text-white/20 mr-2 uppercase tracking-wider font-medium">Next</span>
-          <span className="text-sm md:text-lg font-bold text-white/40 timer-font">
-            {nextPlay.ante > 0 && <span className="text-white/25">Ante {nextPlay.ante.toLocaleString()} </span>}
-            {nextPlay.smallBlind.toLocaleString()} / {nextPlay.bigBlind.toLocaleString()}
-          </span>
-        </div>
-      )}
-
-      {/* ═══ TICKER BANNER ═══ */}
+      {/* ═══ Ticker ═══ */}
       {dt.tickerText && (
-        <div className="relative z-10 w-full py-1.5 bg-black/30 border-b border-white/[0.04] overflow-hidden">
-          <div className="ticker-container">
-            <span className="ticker-scroll text-xs md:text-sm font-medium text-white/35 px-4">{dt.tickerText}</span>
+        <div className="relative z-10 px-2.5 md:px-3 lg:px-4 pb-2.5 md:pb-3">
+          <div className="g-ticker py-2 overflow-hidden">
+            <div className="ticker-container">
+              <span className="ticker-scroll text-xs md:text-sm font-medium text-white/40 px-4">{dt.tickerText}</span>
+            </div>
           </div>
         </div>
       )}
 
-      {/* ═══ OVERLAYS ═══ */}
+      {/* ═══ Overlays ═══ */}
       {tournament.status === 'idle' && (
-        <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/60">
-          <div className="text-center space-y-4 fade-in-up">
-            <div className="text-4xl md:text-6xl font-black text-blue-400 glow-pulse">COME ON Timer</div>
-            <div className="text-lg text-white/20 font-medium">{tournament.name}</div>
-            <div className="text-white/10 text-sm tracking-wider">Waiting to Start</div>
+        <div className="absolute inset-0 z-40 flex items-center justify-center g-overlay-idle">
+          <div className="g-card p-8 md:p-12 text-center fade-in-up">
+            <div className="text-3xl md:text-5xl font-black text-blue-400">COME ON Timer</div>
+            <div className="text-base md:text-lg text-white/30 font-medium mt-3">{tournament.name}</div>
+            <div className="text-white/15 text-sm tracking-wider mt-1">Waiting to Start</div>
           </div>
         </div>
       )}
       {tournament.status === 'paused' && (
-        <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/40">
-          <div className="text-3xl md:text-5xl font-black text-white/40 tracking-widest animate-pulse">PAUSED</div>
+        <div className="absolute inset-0 z-40 flex items-center justify-center g-overlay-pause">
+          <div className="g-card px-12 py-8 md:px-16 md:py-10">
+            <div className="text-3xl md:text-5xl font-black text-white/50 tracking-widest animate-pulse">PAUSED</div>
+          </div>
         </div>
       )}
       {tournament.status === 'finished' && (
-        <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/60">
-          <div className="text-center space-y-4 fade-in-up">
-            <div className="text-4xl md:text-6xl font-black text-blue-400">FINISHED</div>
-            <div className="text-lg text-white/20 font-medium">{tournament.name}</div>
+        <div className="absolute inset-0 z-40 flex items-center justify-center g-overlay-idle">
+          <div className="g-card p-8 md:p-12 text-center fade-in-up">
+            <div className="text-3xl md:text-5xl font-black text-blue-400">FINISHED</div>
+            <div className="text-base md:text-lg text-white/30 font-medium mt-3">{tournament.name}</div>
           </div>
         </div>
       )}
@@ -323,5 +334,5 @@ function Inner() {
 }
 
 export default function TournamentDisplayPage() {
-  return <Suspense fallback={<div className="min-h-screen" style={{ background: '#0a0e1a' }} />}><Inner /></Suspense>;
+  return <Suspense fallback={<div className="min-h-screen" style={{ background: 'linear-gradient(160deg, #0e1c36, #152d52, #1c3d6e)' }} />}><Inner /></Suspense>;
 }
