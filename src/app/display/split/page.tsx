@@ -373,13 +373,13 @@ function SplitInner() {
       {displayToggles.backgroundImageUrl && <div className="absolute inset-0 bg-black/50 pointer-events-none z-[1]" />}
       {theme && theme.overlayOpacity > 0 && <div className="absolute inset-0 bg-black pointer-events-none z-[1]" style={{ opacity: theme.overlayOpacity / 100 }} />}
 
-      {/* Header with panel selectors — centered layout to avoid GlobalNav overlap */}
-      <div className="relative z-10 flex flex-col items-center bg-black/30 border-b border-white/[0.06]">
-        <div className="flex items-center gap-1.5 py-1">
+      {/* Header: logo left, selectors center */}
+      <div className="relative z-10 flex items-center px-3 py-1.5 bg-black/30 border-b border-white/[0.06]">
+        <div className="flex items-center gap-1.5 shrink-0">
           <span className="text-sm font-black text-blue-400 tracking-tight">COME ON</span>
           <span className="text-white/20 font-medium text-[10px]">Timer</span>
         </div>
-        <div className="flex items-center gap-3 pb-1.5">
+        <div className="flex-1 flex items-center justify-center gap-3">
           <span className="text-[9px] text-white/20 font-medium">左</span>
           <PanelSelector selectedId={selLeft} onSelect={setSelLeft} tournaments={tournaments} cashGames={cashGames} side="left" />
           <span className="text-white/10">|</span>
