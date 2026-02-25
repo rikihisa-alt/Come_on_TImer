@@ -8,6 +8,52 @@ import { unlockAudio, playSound, playWarningBeep, speakTTS, fillTTSTemplate } fr
 import { formatTimer, formatChips, formatTimerHMS, computeTimeToBreak, computeTimeToEnd, computeRegCloseTime } from '@/lib/utils';
 import { Tournament, ThemeConfig } from '@/lib/types';
 
+/* ── Timer Selector dropdown (same style as split page) ── */
+function TimerSelector({ selectedId, onSelect, tournaments }: {
+  selectedId: string;
+  onSelect: (id: string) => void;
+  tournaments: Tournament[];
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, [open]);
+
+  const current = tournaments.find(t => t.id === selectedId);
+  if (tournaments.length <= 1) return null;
+
+  return (
+    <div ref={ref} className="relative">
+      <button onClick={() => setOpen(!open)}
+        className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-white/[0.04] hover:bg-white/[0.1] border border-white/[0.06] hover:border-white/[0.15] transition-all duration-200 cursor-pointer">
+        <span className="text-[8px] font-bold px-1 rounded bg-blue-500/20 text-blue-400">T</span>
+        <span className="text-[10px] lg:text-xs text-white/50 font-medium truncate max-w-[160px]">{current?.name || '選択'}</span>
+        <svg className={`w-2.5 h-2.5 text-white/20 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+      </button>
+      {open && (
+        <div className="absolute top-full mt-1 left-0 z-50 min-w-[200px] bg-black/90 backdrop-blur-xl border border-white/[0.1] rounded-lg shadow-2xl overflow-hidden">
+          <div className="py-1">
+            {tournaments.map(t => (
+              <button key={t.id} onClick={() => { onSelect(t.id); setOpen(false); }}
+                className={`w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-white/[0.08] transition-colors ${t.id === selectedId ? 'bg-blue-500/10' : ''}`}>
+                <span className="text-xs text-white/60 truncate flex-1">{t.name}</span>
+                {t.status === 'running' && <span className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0 animate-pulse" />}
+                {t.status === 'paused' && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />}
+                {t.id === selectedId && <svg className="w-3 h-3 text-blue-400 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── Reusable stat cell for the left/right columns ── */
 function StatCell({ label, value, className }: { label: string; value: string; className?: string }) {
   return (
@@ -146,21 +192,15 @@ function Inner() {
       )}
       {theme && theme.overlayOpacity > 0 && <div className="absolute inset-0 bg-black pointer-events-none z-[1]" style={{ opacity: theme.overlayOpacity / 100 }} />}
 
-      {/* Tab bar for multiple tournaments */}
-      {running.length > 1 && (
-        <div className="relative z-20 flex justify-center py-1.5 bg-black/30">
-          <div className="tab-bar">{running.map(rt => <div key={rt.id} className={`tab-item ${rt.id === activeId ? 'active' : ''}`} onClick={() => setSelectedId(rt.id)}>{rt.name}</div>)}</div>
-        </div>
-      )}
-
-      {/* ═══ TOP BANNER: Logo + Tournament Name ═══ */}
+      {/* ═══ TOP BANNER: Logo + Selector + Tournament Name ═══ */}
       <div className="relative z-10 flex items-center px-3 md:px-5 py-2 md:py-3 bg-black/30 border-b border-white/[0.08]">
         <div className="flex items-center gap-2 shrink-0">
           <span className="text-sm md:text-base font-black text-blue-400 tracking-tight">COME ON</span>
           <span className="text-white/20 font-medium text-[10px] md:text-xs">Timer</span>
         </div>
-        <div className="flex-1 text-center">
-          <span className="text-base md:text-xl lg:text-2xl font-bold text-white/70 tracking-wide">{tournament.name}</span>
+        <div className="flex-1 flex items-center justify-center gap-3">
+          <TimerSelector selectedId={activeId} onSelect={setSelectedId} tournaments={tournaments} />
+          {tournaments.length <= 1 && <span className="text-base md:text-xl lg:text-2xl font-bold text-white/70 tracking-wide">{tournament.name}</span>}
         </div>
         {dt.showLevelInfo && (
           <div className="text-xs md:text-sm text-white/25 font-medium shrink-0">

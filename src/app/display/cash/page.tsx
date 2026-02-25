@@ -1,12 +1,58 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useStore } from '@/stores/useStore';
 import { onSync } from '@/lib/sync';
 import { unlockAudio } from '@/lib/audio';
 import { formatTimerHMS } from '@/lib/utils';
 import { CashGame, ThemeConfig } from '@/lib/types';
+
+/* ── Timer Selector dropdown (same style as split page) ── */
+function TimerSelector({ selectedId, onSelect, cashGames }: {
+  selectedId: string;
+  onSelect: (id: string) => void;
+  cashGames: CashGame[];
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, [open]);
+
+  const current = cashGames.find(c => c.id === selectedId);
+  if (cashGames.length <= 1) return null;
+
+  return (
+    <div ref={ref} className="relative">
+      <button onClick={() => setOpen(!open)}
+        className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-white/[0.04] hover:bg-white/[0.1] border border-white/[0.06] hover:border-white/[0.15] transition-all duration-200 cursor-pointer">
+        <span className="text-[8px] font-bold px-1 rounded bg-green-500/20 text-green-400">C</span>
+        <span className="text-[10px] lg:text-xs text-white/50 font-medium truncate max-w-[160px]">{current?.name || '選択'}</span>
+        <svg className={`w-2.5 h-2.5 text-white/20 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+      </button>
+      {open && (
+        <div className="absolute top-full mt-1 left-0 z-50 min-w-[200px] bg-black/90 backdrop-blur-xl border border-white/[0.1] rounded-lg shadow-2xl overflow-hidden">
+          <div className="py-1">
+            {cashGames.map(c => (
+              <button key={c.id} onClick={() => { onSelect(c.id); setOpen(false); }}
+                className={`w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-white/[0.08] transition-colors ${c.id === selectedId ? 'bg-blue-500/10' : ''}`}>
+                <span className="text-xs text-white/60 truncate flex-1">{c.name}</span>
+                {c.status === 'running' && <span className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0 animate-pulse" />}
+                {c.status === 'paused' && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />}
+                {c.id === selectedId && <svg className="w-3 h-3 text-blue-400 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function CashDisplayInner() {
   const params = useSearchParams();
@@ -92,32 +138,18 @@ function CashDisplayInner() {
         <div className="absolute inset-0 bg-black pointer-events-none" style={{ opacity: theme.overlayOpacity / 100 }} />
       )}
 
-      {/* COME ON Timer branding (mobile) */}
-      <div className="md:hidden absolute top-2 left-3 z-30">
-        <span className="text-xs font-black text-blue-400/40 tracking-tight">COME ON</span>
-        <span className="text-white/10 font-medium text-[9px] ml-1">Timer</span>
+      {/* ═══ TOP BANNER: Logo + Selector + Cash Game Name ═══ */}
+      <div className="relative z-10 flex items-center px-3 md:px-5 py-2 md:py-3 bg-black/30 border-b border-white/[0.08]">
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-sm md:text-base font-black text-blue-400 tracking-tight">COME ON</span>
+          <span className="text-white/20 font-medium text-[10px] md:text-xs">Timer</span>
+        </div>
+        <div className="flex-1 flex items-center justify-center gap-3">
+          <TimerSelector selectedId={activeId} onSelect={setSelectedId} cashGames={cashGames} />
+          {cashGames.length <= 1 && <span className="text-base md:text-xl lg:text-2xl font-bold text-white/70 tracking-wide">{cashGame.name}</span>}
+        </div>
+        <div className="text-xs md:text-sm text-white/25 font-medium shrink-0 uppercase tracking-wider">Cash Game</div>
       </div>
-
-      {runningCash.length > 1 && (
-        <div className="relative z-20 flex justify-center py-2 bg-black/20">
-          <div className="tab-bar">
-            {runningCash.map(rc => (
-              <div key={rc.id} className={`tab-item ${rc.id === activeId ? 'active' : ''}`} onClick={() => setSelectedId(rc.id)}>
-                {rc.name}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <header className="relative z-10 flex items-center justify-between px-5 md:px-8 py-2.5 bg-black/20 border-b border-white/[0.04]">
-        <div className="flex items-center gap-3">
-          <span className="hidden md:inline text-base md:text-lg font-black text-blue-400 tracking-tight">COME ON</span>
-          <span className="hidden md:inline text-white/20 font-medium text-xs">Timer</span>
-          <span className="text-white/25 text-sm md:ml-3 font-medium">{cashGame.name}</span>
-        </div>
-        <div className="text-xs text-white/15 font-medium tracking-wider uppercase">Cash Game</div>
-      </header>
 
       <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 gap-4 md:gap-6">
         {dt.showCashRate && (
