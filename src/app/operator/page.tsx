@@ -84,14 +84,10 @@ function TournamentEditor({ id }: { id: string }) {
   const [showSettings, setShowSettings] = useState(false);
   if (!t) return null;
   return (
-    <div className="flex flex-col lg:flex-row gap-4 fade-in" style={{ alignItems: 'flex-start' }}>
-      {/* ── Left: Live Preview (sticky on desktop) ── */}
-      <div className="lg:w-[55%] xl:w-[60%] shrink-0 lg:sticky lg:top-4 lg:self-start" style={{ maxHeight: 'calc(100vh - 2rem)', overflow: 'auto' }}>
+    <>
+      {/* ── Mobile: stacked ── */}
+      <div className="lg:hidden space-y-4 fade-in">
         <InlinePreview timerId={id} timerType="tournament" sticky />
-      </div>
-
-      {/* ── Right: Settings (scrollable) ── */}
-      <div className="flex-1 space-y-4 min-w-0">
         <div className="g-card p-4 space-y-4">
           <div className="flex items-center gap-3">
             <input className="input flex-1" value={t.name} onChange={e => store.updateTournament(id, { name: e.target.value })} placeholder="Tournament name" />
@@ -102,16 +98,9 @@ function TournamentEditor({ id }: { id: string }) {
         <div className="g-card p-4"><TournamentStats tournament={t} /></div>
         <div className="g-card p-4"><PrizeEditor tournament={t} /></div>
         <div className="g-card p-4"><BlindEditor tournament={t} /></div>
-
-        {/* Collapsible Display & Sound Settings */}
-        <button
-          onClick={() => setShowSettings(!showSettings)}
-          className="w-full flex items-center justify-between px-4 py-3 g-card hover:bg-white/[0.04] transition-colors"
-        >
+        <button onClick={() => setShowSettings(!showSettings)} className="w-full flex items-center justify-between px-4 py-3 g-card hover:bg-white/[0.04] transition-colors">
           <span className="text-xs text-white/40 font-semibold uppercase tracking-wider">Display & Sound Settings</span>
-          <svg className={`w-4 h-4 text-white/30 transition-transform duration-200 ${showSettings ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-          </svg>
+          <svg className={`w-4 h-4 text-white/30 transition-transform duration-200 ${showSettings ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
         </button>
         {showSettings && (
           <div className="space-y-4 fade-in">
@@ -123,7 +112,41 @@ function TournamentEditor({ id }: { id: string }) {
           </div>
         )}
       </div>
-    </div>
+
+      {/* ── Desktop: two independent scroll columns ── */}
+      <div className="hidden lg:flex gap-4 fade-in" style={{ height: 'calc(100vh - 120px)' }}>
+        {/* Left: Preview (固定・独立スクロール) */}
+        <div className="w-[55%] xl:w-[60%] shrink-0 overflow-y-auto min-h-0 pr-1 custom-scrollbar">
+          <InlinePreview timerId={id} timerType="tournament" sticky />
+        </div>
+        {/* Right: Settings (独立スクロール) */}
+        <div className="flex-1 overflow-y-auto min-h-0 space-y-4 min-w-0 pr-1 custom-scrollbar">
+          <div className="g-card p-4 space-y-4">
+            <div className="flex items-center gap-3">
+              <input className="input flex-1" value={t.name} onChange={e => store.updateTournament(id, { name: e.target.value })} placeholder="Tournament name" />
+              <button onClick={() => store.removeTournament(id)} className="btn btn-danger btn-sm">Delete</button>
+            </div>
+            <TournamentTimer tournament={t} />
+          </div>
+          <div className="g-card p-4"><TournamentStats tournament={t} /></div>
+          <div className="g-card p-4"><PrizeEditor tournament={t} /></div>
+          <div className="g-card p-4"><BlindEditor tournament={t} /></div>
+          <button onClick={() => setShowSettings(!showSettings)} className="w-full flex items-center justify-between px-4 py-3 g-card hover:bg-white/[0.04] transition-colors">
+            <span className="text-xs text-white/40 font-semibold uppercase tracking-wider">Display & Sound Settings</span>
+            <svg className={`w-4 h-4 text-white/30 transition-transform duration-200 ${showSettings ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+          </button>
+          {showSettings && (
+            <div className="space-y-4 fade-in">
+              <div className="g-card p-4"><ThemeSelector timerId={id} timerType="tournament" /></div>
+              <div className="g-card p-4"><TickerPanel timerId={id} timerType="tournament" /></div>
+              <div className="g-card p-4"><TogglesPanel timerId={id} timerType="tournament" /></div>
+              <div className="g-card p-4"><DisplaySettingsPanel timerId={id} timerType="tournament" /></div>
+              <div className="g-card p-4"><SoundPanel timerId={id} timerType="tournament" /></div>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -215,15 +238,15 @@ function TournamentStats({ tournament: t }: { tournament: Tournament }) {
   const avg = activePlayers > 0 ? Math.round(totalChips / activePlayers) : 0;
 
   const CountRow = ({ label, count, countKey, chips, chipsKey }: { label: string; count: number; countKey: keyof Tournament; chips?: number; chipsKey?: keyof Tournament }) => (
-    <div className="flex items-center gap-2 flex-wrap">
+    <div className="flex items-center gap-2">
       <span className="text-[11px] text-white/30 w-24 shrink-0">{label}</span>
-      <div className="flex gap-0.5 items-center">
+      <div className="flex gap-0.5 items-center shrink-0">
         <button className="btn btn-ghost btn-sm px-1.5" onClick={() => up({ [countKey]: Math.max(0, count - 1) } as Partial<Tournament>)}>-</button>
         <input type="number" className="input input-sm w-14 text-center" value={count} onChange={e => up({ [countKey]: Math.max(0, +e.target.value) } as Partial<Tournament>)} />
         <button className="btn btn-ghost btn-sm px-1.5" onClick={() => up({ [countKey]: count + 1 } as Partial<Tournament>)}>+</button>
       </div>
       {chipsKey && (
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 shrink-0">
           <input type="number" className="input input-sm w-20 text-center" value={chips || 0} onChange={e => up({ [chipsKey]: Math.max(0, +e.target.value) } as Partial<Tournament>)} />
           <span className="text-[10px] text-white/20">chips</span>
         </div>
@@ -624,78 +647,87 @@ function CashEditor({ id, onDelete }: { id: string; onDelete: (id: string) => vo
 
   if (!c) return null;
 
-  return (
-    <div className="flex flex-col lg:flex-row gap-4 fade-in" style={{ alignItems: 'flex-start' }}>
-      {/* ── Left: Live Preview (sticky on desktop) ── */}
-      <div className="lg:w-[55%] xl:w-[60%] shrink-0 lg:sticky lg:top-4 lg:self-start" style={{ maxHeight: 'calc(100vh - 2rem)', overflow: 'auto' }}>
-        <InlinePreview timerId={id} timerType="cash" sticky />
+  const cashSettings = (
+    <div className="g-card p-4 space-y-4">
+      <div className="flex items-center gap-3">
+        <input className="input flex-1" value={c.name} onChange={e => store.updateCashGame(id, { name: e.target.value })} placeholder="Cash game name" />
+        <button onClick={() => onDelete(id)} className="btn btn-danger btn-sm">Delete</button>
       </div>
-
-      {/* ── Right: Settings (scrollable) ── */}
-      <div className="flex-1 space-y-4 min-w-0">
-        <div className="g-card p-4 space-y-4">
-          <div className="flex items-center gap-3">
-            <input className="input flex-1" value={c.name} onChange={e => store.updateCashGame(id, { name: e.target.value })} placeholder="Cash game name" />
-            <button onClick={() => onDelete(id)} className="btn btn-danger btn-sm">Delete</button>
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div><label className="text-[11px] text-white/25 block mb-1">SB</label><input type="number" className="input input-sm" value={c.smallBlind} onChange={e => store.updateCashGame(id, { smallBlind: +e.target.value })} /></div>
-            <div><label className="text-[11px] text-white/25 block mb-1">BB</label><input type="number" className="input input-sm" value={c.bigBlind} onChange={e => store.updateCashGame(id, { bigBlind: +e.target.value })} /></div>
-            <div><label className="text-[11px] text-white/25 block mb-1">Ante</label><input type="number" className="input input-sm" value={c.ante} onChange={e => store.updateCashGame(id, { ante: +e.target.value })} /></div>
-          </div>
-          <div><label className="text-[11px] text-white/25 block mb-1">Memo</label><input className="input" value={c.memo} onChange={e => store.updateCashGame(id, { memo: e.target.value })} placeholder="Table info" /></div>
-          <div>
-            <label className="text-[11px] text-white/25 block mb-1">Pre-Level (開始前カウントダウン)</label>
-            <div className="flex items-center gap-2">
-              <input type="number" className="input input-sm w-20 text-center" value={Math.floor((c.preLevelDuration || 0) / 60)} onChange={e => store.updateCashGame(id, { preLevelDuration: Math.max(0, +e.target.value) * 60 })} min={0} />
-              <span className="text-xs text-white/25">min</span>
-            </div>
-            <p className="text-[10px] text-white/15 mt-1">Start押下後、この時間のカウントダウン後にゲームが開始します</p>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2"><div className={`toggle ${!c.countdownMode ? 'on' : ''}`} onClick={() => store.updateCashGame(id, { countdownMode: false })} /><span className="text-xs text-white/40">Count Up</span></div>
-            <div className="flex items-center gap-2"><div className={`toggle ${c.countdownMode ? 'on' : ''}`} onClick={() => store.updateCashGame(id, { countdownMode: true })} /><span className="text-xs text-white/40">Countdown</span></div>
-            {c.countdownMode && <div className="flex items-center gap-1 ml-2"><input type="number" className="input input-sm w-16" value={Math.floor(c.countdownTotalMs / 60000)} onChange={e => { const ms = +e.target.value * 60000; store.updateCashGame(id, { countdownTotalMs: ms, countdownRemainingMs: ms }); }} min={1} /><span className="text-xs text-white/20">min</span></div>}
-          </div>
-          <div className="text-center py-2">
-            {preLevelMs > 0 && c.status === 'running' ? (
-              <div>
-                <div className="text-[10px] text-blue-400/60 uppercase tracking-widest font-semibold mb-1">Starting In</div>
-                <div className="text-4xl font-bold timer-font text-blue-400">{formatTimerHMS(preLevelMs)}</div>
-              </div>
-            ) : (
-              <div className="text-4xl font-bold timer-font text-white">{c.countdownMode ? formatTimerHMS(countdown) : formatTimerHMS(elapsed)}</div>
-            )}
-          </div>
-          <div className="flex items-center justify-center gap-2">
-            {c.status === 'idle' && <button onClick={() => store.cStart(id)} className="btn btn-primary">Start</button>}
-            {c.status === 'running' && <button onClick={() => store.cPause(id)} className="btn btn-warning">Pause</button>}
-            {c.status === 'paused' && <button onClick={() => store.cResume(id)} className="btn btn-success">Resume</button>}
-            {c.status !== 'idle' && <button onClick={() => store.cReset(id)} className="btn btn-danger btn-sm">Reset</button>}
-          </div>
+      <div className="grid grid-cols-3 gap-3">
+        <div><label className="text-[11px] text-white/25 block mb-1">SB</label><input type="number" className="input input-sm" value={c.smallBlind} onChange={e => store.updateCashGame(id, { smallBlind: +e.target.value })} /></div>
+        <div><label className="text-[11px] text-white/25 block mb-1">BB</label><input type="number" className="input input-sm" value={c.bigBlind} onChange={e => store.updateCashGame(id, { bigBlind: +e.target.value })} /></div>
+        <div><label className="text-[11px] text-white/25 block mb-1">Ante</label><input type="number" className="input input-sm" value={c.ante} onChange={e => store.updateCashGame(id, { ante: +e.target.value })} /></div>
+      </div>
+      <div><label className="text-[11px] text-white/25 block mb-1">Memo</label><input className="input" value={c.memo} onChange={e => store.updateCashGame(id, { memo: e.target.value })} placeholder="Table info" /></div>
+      <div>
+        <label className="text-[11px] text-white/25 block mb-1">Pre-Level (開始前カウントダウン)</label>
+        <div className="flex items-center gap-2">
+          <input type="number" className="input input-sm w-20 text-center" value={Math.floor((c.preLevelDuration || 0) / 60)} onChange={e => store.updateCashGame(id, { preLevelDuration: Math.max(0, +e.target.value) * 60 })} min={0} />
+          <span className="text-xs text-white/25">min</span>
         </div>
-
-        {/* Collapsible Display & Sound Settings */}
-        <button
-          onClick={() => setShowSettings(!showSettings)}
-          className="w-full flex items-center justify-between px-4 py-3 g-card hover:bg-white/[0.04] transition-colors"
-        >
-          <span className="text-xs text-white/40 font-semibold uppercase tracking-wider">Display & Sound Settings</span>
-          <svg className={`w-4 h-4 text-white/30 transition-transform duration-200 ${showSettings ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-          </svg>
-        </button>
-        {showSettings && (
-          <div className="space-y-4 fade-in">
-            <div className="g-card p-4"><ThemeSelector timerId={id} timerType="cash" /></div>
-            <div className="g-card p-4"><TickerPanel timerId={id} timerType="cash" /></div>
-            <div className="g-card p-4"><TogglesPanel timerId={id} timerType="cash" /></div>
-            <div className="g-card p-4"><DisplaySettingsPanel timerId={id} timerType="cash" /></div>
-            <div className="g-card p-4"><SoundPanel timerId={id} timerType="cash" /></div>
+        <p className="text-[10px] text-white/15 mt-1">Start押下後、この時間のカウントダウン後にゲームが開始します</p>
+      </div>
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2"><div className={`toggle ${!c.countdownMode ? 'on' : ''}`} onClick={() => store.updateCashGame(id, { countdownMode: false })} /><span className="text-xs text-white/40">Count Up</span></div>
+        <div className="flex items-center gap-2"><div className={`toggle ${c.countdownMode ? 'on' : ''}`} onClick={() => store.updateCashGame(id, { countdownMode: true })} /><span className="text-xs text-white/40">Countdown</span></div>
+        {c.countdownMode && <div className="flex items-center gap-1 ml-2"><input type="number" className="input input-sm w-16" value={Math.floor(c.countdownTotalMs / 60000)} onChange={e => { const ms = +e.target.value * 60000; store.updateCashGame(id, { countdownTotalMs: ms, countdownRemainingMs: ms }); }} min={1} /><span className="text-xs text-white/20">min</span></div>}
+      </div>
+      <div className="text-center py-2">
+        {preLevelMs > 0 && c.status === 'running' ? (
+          <div>
+            <div className="text-[10px] text-blue-400/60 uppercase tracking-widest font-semibold mb-1">Starting In</div>
+            <div className="text-4xl font-bold timer-font text-blue-400">{formatTimerHMS(preLevelMs)}</div>
           </div>
+        ) : (
+          <div className="text-4xl font-bold timer-font text-white">{c.countdownMode ? formatTimerHMS(countdown) : formatTimerHMS(elapsed)}</div>
         )}
       </div>
+      <div className="flex items-center justify-center gap-2">
+        {c.status === 'idle' && <button onClick={() => store.cStart(id)} className="btn btn-primary">Start</button>}
+        {c.status === 'running' && <button onClick={() => store.cPause(id)} className="btn btn-warning">Pause</button>}
+        {c.status === 'paused' && <button onClick={() => store.cResume(id)} className="btn btn-success">Resume</button>}
+        {c.status !== 'idle' && <button onClick={() => store.cReset(id)} className="btn btn-danger btn-sm">Reset</button>}
+      </div>
     </div>
+  );
+
+  const cashDisplaySettings = (
+    <>
+      <button onClick={() => setShowSettings(!showSettings)} className="w-full flex items-center justify-between px-4 py-3 g-card hover:bg-white/[0.04] transition-colors">
+        <span className="text-xs text-white/40 font-semibold uppercase tracking-wider">Display & Sound Settings</span>
+        <svg className={`w-4 h-4 text-white/30 transition-transform duration-200 ${showSettings ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+      </button>
+      {showSettings && (
+        <div className="space-y-4 fade-in">
+          <div className="g-card p-4"><ThemeSelector timerId={id} timerType="cash" /></div>
+          <div className="g-card p-4"><TickerPanel timerId={id} timerType="cash" /></div>
+          <div className="g-card p-4"><TogglesPanel timerId={id} timerType="cash" /></div>
+          <div className="g-card p-4"><DisplaySettingsPanel timerId={id} timerType="cash" /></div>
+          <div className="g-card p-4"><SoundPanel timerId={id} timerType="cash" /></div>
+        </div>
+      )}
+    </>
+  );
+
+  return (
+    <>
+      {/* Mobile: stacked */}
+      <div className="lg:hidden space-y-4 fade-in">
+        <InlinePreview timerId={id} timerType="cash" sticky />
+        {cashSettings}
+        {cashDisplaySettings}
+      </div>
+      {/* Desktop: two independent scroll columns */}
+      <div className="hidden lg:flex gap-4 fade-in" style={{ height: 'calc(100vh - 120px)' }}>
+        <div className="w-[55%] xl:w-[60%] shrink-0 overflow-y-auto min-h-0 pr-1 custom-scrollbar">
+          <InlinePreview timerId={id} timerType="cash" sticky />
+        </div>
+        <div className="flex-1 overflow-y-auto min-h-0 space-y-4 min-w-0 pr-1 custom-scrollbar">
+          {cashSettings}
+          {cashDisplaySettings}
+        </div>
+      </div>
+    </>
   );
 }
 
