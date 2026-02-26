@@ -7,7 +7,7 @@ import { onSync } from '@/lib/sync';
 import { unlockAudio, playSound, playWarningBeep, speakTTS, fillTTSTemplate } from '@/lib/audio';
 import { formatTimer, formatChips, formatTimerHMS, computeTimeToBreak, computeTimeToEnd, computeRegCloseTime } from '@/lib/utils';
 import { Tournament, ThemeConfig, DisplayToggles, SoundSettings, SectionLayout, SectionPosition } from '@/lib/types';
-import { DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND, DEFAULT_SECTION_LAYOUT } from '@/lib/presets';
+import { DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND, DEFAULT_SECTION_LAYOUT, DEFAULT_SYSTEM_STYLE } from '@/lib/presets';
 import { FullscreenButton } from '@/components/FullscreenButton';
 import { AbsoluteSection } from '@/components/AbsoluteSection';
 import { DisplayWrapper } from '@/components/DisplayWrapper';
@@ -190,6 +190,7 @@ function Inner() {
   const ttb = computeTimeToBreak(tournament.levels, tournament.currentLevelIndex, displayMs);
   const tte = computeTimeToEnd(tournament.levels, tournament.currentLevelIndex, displayMs);
   const regClose = computeRegCloseTime(tournament.levels, tournament.currentLevelIndex, displayMs, tournament.regCloseLevel);
+  const fs = useStore(s => s.systemStyle?.displayFontScale) || 1;
   const activePlayers = tournament.initialEntries + tournament.reEntryCount;
   const totalChips = tournament.initialEntries * tournament.startingChips
     + tournament.reEntryCount * tournament.reEntryChips
@@ -289,7 +290,7 @@ function Inner() {
             )}
             {dt.showTimer && (
               <div className={`font-black timer-font leading-[0.85] transition-colors duration-300 ${isWarn ? 'text-amber-400 warning-pulse' : isBrk ? 'text-green-400' : 'text-white'}`}
-                style={{ fontSize: 'calc(11vw * var(--fs, 1))' }}>
+                style={{ fontSize: `${11 * fs}vw` }}>
                 {formatTimer(displayMs)}
               </div>
             )}
@@ -303,11 +304,11 @@ function Inner() {
             )}
             {dt.showFooter && cur && !isBrk && (
               <div className="mt-4 text-center">
-                <div className="font-black timer-font" style={{ color: pc, fontSize: 'calc(3.5vw * var(--fs, 1))' }}>
+                <div className="font-black timer-font" style={{ color: pc, fontSize: `${3.5 * fs}vw` }}>
                   {cur.smallBlind.toLocaleString()} / {cur.bigBlind.toLocaleString()}
                 </div>
                 {cur.ante > 0 && (
-                  <div className="text-white/30 font-semibold mt-1" style={{ fontSize: 'calc(1.2vw * var(--fs, 1))' }}>Ante {cur.ante.toLocaleString()}</div>
+                  <div className="text-white/30 font-semibold mt-1" style={{ fontSize: `${1.2 * fs}vw` }}>Ante {cur.ante.toLocaleString()}</div>
                 )}
               </div>
             )}
@@ -374,7 +375,7 @@ function Inner() {
           )}
           {dt.showTimer && (
             <div className={`font-black timer-font leading-[0.85] transition-colors duration-300 ${isWarn ? 'text-amber-400 warning-pulse' : isBrk ? 'text-green-400' : 'text-white'}`}
-              style={{ fontSize: 'calc(17vw * var(--fs, 1))' }}>
+              style={{ fontSize: `${17 * fs}vw` }}>
               {formatTimer(displayMs)}
             </div>
           )}

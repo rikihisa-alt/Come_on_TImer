@@ -65,6 +65,7 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
   const ttb = computeTimeToBreak(tournament.levels, tournament.currentLevelIndex, displayMs);
   const tte = computeTimeToEnd(tournament.levels, tournament.currentLevelIndex, displayMs);
   const regClose = computeRegCloseTime(tournament.levels, tournament.currentLevelIndex, displayMs, tournament.regCloseLevel);
+  const fs = useStore(s => s.systemStyle?.displayFontScale) || 1;
   const activePlayers = tournament.initialEntries + tournament.reEntryCount;
   const totalChips = tournament.initialEntries * tournament.startingChips
     + tournament.reEntryCount * tournament.reEntryChips
@@ -134,7 +135,7 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
             </div>
           )}
           <div className={`font-black timer-font leading-[0.85] ${isWarn ? 'text-amber-400 warning-pulse' : isBrk ? 'text-green-400' : 'text-white'}`}
-            style={{ fontSize: 'calc(5.5vw * var(--fs, 1))' }}>
+            style={{ fontSize: `${5.5 * fs}vw` }}>
             {formatTimer(displayMs)}
           </div>
           {dt.showProgressBar && (
@@ -143,7 +144,7 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
             </div>
           )}
           {dt.showFooter && cur && !isBrk && (
-            <div className="mt-1 font-black timer-font" style={{ color: pc, fontSize: 'calc(1.8vw * var(--fs, 1))' }}>
+            <div className="mt-1 font-black timer-font" style={{ color: pc, fontSize: `${1.8 * fs}vw` }}>
               {cur.smallBlind.toLocaleString()}/{cur.bigBlind.toLocaleString()}
             </div>
           )}

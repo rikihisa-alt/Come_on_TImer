@@ -43,8 +43,8 @@ export default function OperatorPage() {
           </button>
         ))}
       </nav>
-      <div className="p-4 max-w-7xl mx-auto overflow-hidden">
-        <div key={animKey} className={slideClass}>
+      <div className="p-4 max-w-7xl mx-auto">
+        <div key={animKey} className={slideClass} style={{ overflow: 'visible' }}>
           {tab === 'tournaments' && <TournamentsTab />}
           {tab === 'cash' && <CashTab />}
           {tab === 'split' && <SplitTab />}
@@ -84,12 +84,10 @@ function TournamentEditor({ id }: { id: string }) {
   const [showSettings, setShowSettings] = useState(false);
   if (!t) return null;
   return (
-    <div className="flex flex-col lg:flex-row gap-4 fade-in">
+    <div className="flex flex-col lg:flex-row gap-4 fade-in" style={{ alignItems: 'flex-start' }}>
       {/* ── Left: Live Preview (sticky on desktop) ── */}
-      <div className="lg:w-[55%] xl:w-[60%] shrink-0">
-        <div className="lg:sticky lg:top-4">
-          <InlinePreview timerId={id} timerType="tournament" sticky />
-        </div>
+      <div className="lg:w-[55%] xl:w-[60%] shrink-0 lg:sticky lg:top-4 lg:self-start" style={{ maxHeight: 'calc(100vh - 2rem)', overflow: 'auto' }}>
+        <InlinePreview timerId={id} timerType="tournament" sticky />
       </div>
 
       {/* ── Right: Settings (scrollable) ── */}
@@ -627,12 +625,10 @@ function CashEditor({ id, onDelete }: { id: string; onDelete: (id: string) => vo
   if (!c) return null;
 
   return (
-    <div className="flex flex-col lg:flex-row gap-4 fade-in">
+    <div className="flex flex-col lg:flex-row gap-4 fade-in" style={{ alignItems: 'flex-start' }}>
       {/* ── Left: Live Preview (sticky on desktop) ── */}
-      <div className="lg:w-[55%] xl:w-[60%] shrink-0">
-        <div className="lg:sticky lg:top-4">
-          <InlinePreview timerId={id} timerType="cash" sticky />
-        </div>
+      <div className="lg:w-[55%] xl:w-[60%] shrink-0 lg:sticky lg:top-4 lg:self-start" style={{ maxHeight: 'calc(100vh - 2rem)', overflow: 'auto' }}>
+        <InlinePreview timerId={id} timerType="cash" sticky />
       </div>
 
       {/* ── Right: Settings (scrollable) ── */}
