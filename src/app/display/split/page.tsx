@@ -255,19 +255,19 @@ function PanelSelector({ selectedId, onSelect, tournaments, cashGames, side }: {
       </button>
 
       {open && (
-        <div className={`absolute top-full mt-1.5 ${side === 'right' ? 'right-0' : 'left-0'} z-50 min-w-[220px] p-1.5 overflow-hidden rounded-2xl border border-white/[0.15] shadow-2xl shadow-black/40`}
-          style={{ background: 'rgba(15, 23, 42, 0.95)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}>
-          {allTimers.length === 0 && <div className="px-3 py-2 text-xs text-white/40">タイマーなし</div>}
+        <div className={`absolute top-full mt-1.5 ${side === 'right' ? 'right-0' : 'left-0'} z-50 min-w-[260px] p-2 overflow-hidden rounded-2xl border border-white/[0.25] shadow-2xl shadow-black/60`}
+          style={{ background: 'rgba(10, 15, 30, 0.98)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}>
+          {allTimers.length === 0 && <div className="px-3 py-2 text-sm text-white/60">タイマーなし</div>}
           {allTimers.map(t => (
             <button key={t.id} onClick={() => { onSelect(t.id); setOpen(false); }}
-              className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-left hover:bg-white/[0.12] transition-colors ${t.id === selectedId ? 'bg-white/[0.1]' : ''}`}>
-              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md shrink-0 ${t.kind === 'C' ? 'bg-green-500/30 text-green-300' : 'bg-blue-500/30 text-blue-300'}`}>
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors ${t.id === selectedId ? 'bg-blue-500/20 hover:bg-blue-500/25' : 'hover:bg-white/[0.1]'}`}>
+              <span className={`text-[10px] font-bold px-2 py-1 rounded-md shrink-0 ${t.kind === 'C' ? 'bg-green-500/40 text-green-200' : 'bg-blue-500/40 text-blue-200'}`}>
                 {t.kind === 'C' ? 'Cash' : 'Trn'}
               </span>
-              <span className="text-sm text-white/80 font-medium truncate flex-1">{t.name}</span>
-              {t.status === 'running' && <span className="w-2 h-2 rounded-full bg-green-400 shrink-0 animate-pulse" />}
-              {t.status === 'paused' && <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />}
-              {t.id === selectedId && <svg className="w-3.5 h-3.5 text-blue-400 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>}
+              <span className="text-base text-white font-semibold truncate flex-1">{t.name}</span>
+              {t.status === 'running' && <span className="w-2.5 h-2.5 rounded-full bg-green-400 shrink-0 animate-pulse" />}
+              {t.status === 'paused' && <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0" />}
+              {t.id === selectedId && <svg className="w-4 h-4 text-blue-400 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>}
             </button>
           ))}
         </div>
