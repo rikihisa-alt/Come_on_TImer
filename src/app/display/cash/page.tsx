@@ -6,9 +6,10 @@ import { useStore } from '@/stores/useStore';
 import { onSync } from '@/lib/sync';
 import { unlockAudio } from '@/lib/audio';
 import { formatTimerHMS } from '@/lib/utils';
-import { CashGame, ThemeConfig, DisplayToggles } from '@/lib/types';
-import { DEFAULT_DISPLAY_TOGGLES } from '@/lib/presets';
+import { CashGame, ThemeConfig, DisplayToggles, CashSectionLayout } from '@/lib/types';
+import { DEFAULT_DISPLAY_TOGGLES, DEFAULT_CASH_SECTION_LAYOUT } from '@/lib/presets';
 import { FullscreenButton } from '@/components/FullscreenButton';
+import { AbsoluteSection } from '@/components/AbsoluteSection';
 
 /* ── Timer Selector dropdown ── */
 function TimerSelector({ selectedId, onSelect, cashGames }: {
@@ -140,6 +141,7 @@ function CashDisplayInner() {
 
   const primaryColor = theme?.primaryColor || '#60a5fa';
   const isCountdownWarning = cashGame.countdownMode && countdown < 300000 && countdown > 0 && cashGame.status === 'running';
+  const layout = cashGame.sectionLayout || DEFAULT_CASH_SECTION_LAYOUT;
 
   return (
     <div className="min-h-screen flex flex-col select-none overflow-hidden relative" style={bgStyle}>
@@ -157,7 +159,6 @@ function CashDisplayInner() {
           <span className="text-white/25 font-medium text-[10px] md:text-xs">Timer</span>
         </div>
         <div className="flex-1 flex items-center justify-center gap-2 md:gap-3 min-w-0">
-          <span className="text-lg md:text-2xl lg:text-3xl font-black text-white/70 tracking-wide truncate">{cashGame.name}</span>
           <TimerSelector selectedId={activeId} onSelect={setSelectedId} cashGames={cashGames} />
         </div>
         <div className="flex items-center gap-2 shrink-0 ml-2">
@@ -170,76 +171,130 @@ function CashDisplayInner() {
         <FullscreenButton />
       </div>
 
-      {/* ═══ Main Content Area ═══ */}
-      <main className="relative z-10 flex-1 flex flex-col items-center justify-center p-3 md:p-4 lg:p-6 gap-3 md:gap-4">
+      {/* ═══ Desktop: Absolute Section Layout ═══ */}
+      <div className="relative z-10 flex-1 hidden md:block min-h-0">
+        {/* Cash Name */}
+        <AbsoluteSection pos={layout.cashName}>
+          <div className="h-full flex items-center justify-center">
+            <span className="font-black text-white/70 tracking-wide truncate" style={{ fontSize: '2em' }}>{cashGame.name}</span>
+          </div>
+        </AbsoluteSection>
 
-        {/* Rate Card (main) */}
+        {/* Rate */}
         {dt.showCashRate && (
-          <div className="g-card w-full max-w-2xl p-5 md:p-8 text-center fade-in">
-            <div className="text-white/25 text-xs md:text-sm font-semibold tracking-[0.3em] uppercase mb-3">Rate</div>
-            <div className="text-5xl md:text-7xl lg:text-[9vw] font-black leading-none tracking-tight" style={{ color: primaryColor }}>
+          <AbsoluteSection pos={layout.rate}>
+            <div className="g-card h-full flex flex-col items-center justify-center p-4">
+              <div className="text-white/25 text-xs font-semibold tracking-[0.3em] uppercase mb-2">Rate</div>
+              <div className="text-5xl lg:text-7xl font-black leading-none tracking-tight" style={{ color: primaryColor }}>
+                {cashGame.smallBlind.toLocaleString()} / {cashGame.bigBlind.toLocaleString()}
+              </div>
+              {cashGame.ante > 0 && (
+                <div className="text-lg text-white/30 font-semibold mt-2">Ante {cashGame.ante.toLocaleString()}</div>
+              )}
+            </div>
+          </AbsoluteSection>
+        )}
+
+        {/* Memo */}
+        {dt.showCashMemo && cashGame.memo && (
+          <AbsoluteSection pos={layout.memo}>
+            <div className="g-card-inner h-full flex items-center justify-center px-4">
+              <span className="text-base text-white/40 font-medium text-center">{cashGame.memo}</span>
+            </div>
+          </AbsoluteSection>
+        )}
+
+        {/* Timer */}
+        {dt.showCashTimer && (
+          <AbsoluteSection pos={layout.timer}>
+            <div className="g-card h-full flex flex-col items-center justify-center p-4">
+              <div className="text-[10px] text-white/25 uppercase tracking-widest font-semibold mb-2">
+                {cashGame.countdownMode ? 'Remaining' : 'Session Time'}
+              </div>
+              <div className={`text-4xl lg:text-6xl font-black timer-font leading-none transition-colors duration-300 ${isCountdownWarning ? 'text-amber-400 warning-pulse' : 'text-white/50'}`}>
+                {cashGame.countdownMode ? formatTimerHMS(countdown) : formatTimerHMS(elapsed)}
+              </div>
+            </div>
+          </AbsoluteSection>
+        )}
+
+        {/* SB / BB / Ante cards */}
+        {dt.showCashRate && (
+          <>
+            <AbsoluteSection pos={layout.sbCard}>
+              <div className="g-card-inner h-full flex flex-col items-center justify-center">
+                <div className="text-[9px] text-white/30 uppercase tracking-wider font-semibold mb-1">SB</div>
+                <div className="text-lg lg:text-2xl font-bold text-white/70 timer-font">{cashGame.smallBlind.toLocaleString()}</div>
+              </div>
+            </AbsoluteSection>
+            <AbsoluteSection pos={layout.bbCard}>
+              <div className="g-card-inner h-full flex flex-col items-center justify-center">
+                <div className="text-[9px] text-white/30 uppercase tracking-wider font-semibold mb-1">BB</div>
+                <div className="text-lg lg:text-2xl font-bold text-blue-400 timer-font">{cashGame.bigBlind.toLocaleString()}</div>
+              </div>
+            </AbsoluteSection>
+            {cashGame.ante > 0 && (
+              <AbsoluteSection pos={layout.anteCard}>
+                <div className="g-card-inner h-full flex flex-col items-center justify-center">
+                  <div className="text-[9px] text-white/30 uppercase tracking-wider font-semibold mb-1">Ante</div>
+                  <div className="text-lg lg:text-2xl font-bold text-white/70 timer-font">{cashGame.ante.toLocaleString()}</div>
+                </div>
+              </AbsoluteSection>
+            )}
+          </>
+        )}
+
+        {/* Ticker */}
+        {dt.tickerText && (
+          <AbsoluteSection pos={layout.ticker}>
+            <div className="g-ticker h-full flex items-center overflow-hidden">
+              <div className="ticker-container">
+                <span className="ticker-scroll text-lg lg:text-xl font-semibold text-white/40 px-4" style={{ animationDuration: `${tickerSpeed}s` }}>{dt.tickerText}</span>
+              </div>
+            </div>
+          </AbsoluteSection>
+        )}
+      </div>
+
+      {/* ═══ Mobile: Flex Layout ═══ */}
+      <main className="relative z-10 flex-1 flex md:hidden flex-col items-center justify-center p-3 gap-3">
+        {dt.showCashRate && (
+          <div className="g-card w-full p-5 text-center">
+            <div className="text-white/25 text-xs font-semibold tracking-[0.3em] uppercase mb-3">Rate</div>
+            <div className="text-5xl font-black leading-none tracking-tight" style={{ color: primaryColor }}>
               {cashGame.smallBlind.toLocaleString()} / {cashGame.bigBlind.toLocaleString()}
             </div>
-            {cashGame.ante > 0 && (
-              <div className="text-lg md:text-2xl text-white/30 font-semibold mt-2">
-                Ante {cashGame.ante.toLocaleString()}
-              </div>
-            )}
+            {cashGame.ante > 0 && <div className="text-lg text-white/30 font-semibold mt-2">Ante {cashGame.ante.toLocaleString()}</div>}
           </div>
         )}
-
-        {/* Memo Card */}
         {dt.showCashMemo && cashGame.memo && (
-          <div className="g-card-inner px-5 py-3 text-base md:text-lg text-white/40 font-medium text-center max-w-md">
-            {cashGame.memo}
-          </div>
+          <div className="g-card-inner px-5 py-3 text-base text-white/40 font-medium text-center">{cashGame.memo}</div>
         )}
-
-        {/* Timer Card */}
         {dt.showCashTimer && (
-          <div className="g-card w-full max-w-md p-4 md:p-6 text-center">
-            <div className="text-[10px] md:text-xs text-white/25 uppercase tracking-widest font-semibold mb-2">
-              {cashGame.countdownMode ? 'Remaining' : 'Session Time'}
-            </div>
-            <div className={`text-4xl md:text-6xl font-black timer-font leading-none transition-colors duration-300 ${
-              isCountdownWarning ? 'text-amber-400 warning-pulse' : 'text-white/50'
-            }`}>
+          <div className="g-card w-full p-4 text-center">
+            <div className="text-[10px] text-white/25 uppercase tracking-widest font-semibold mb-2">{cashGame.countdownMode ? 'Remaining' : 'Session Time'}</div>
+            <div className={`text-4xl font-black timer-font leading-none ${isCountdownWarning ? 'text-amber-400 warning-pulse' : 'text-white/50'}`}>
               {cashGame.countdownMode ? formatTimerHMS(countdown) : formatTimerHMS(elapsed)}
             </div>
           </div>
         )}
-
-        {/* Info Cards Row */}
-        <div className="flex gap-2.5 md:gap-3 w-full max-w-lg">
-          <div className="g-card-inner flex-1 p-3 md:p-4 text-center">
-            <div className="text-[9px] md:text-[11px] text-white/30 uppercase tracking-wider font-semibold mb-1">SB</div>
-            <div className="text-lg md:text-2xl font-bold text-white/70 timer-font">{cashGame.smallBlind.toLocaleString()}</div>
+        <div className="flex gap-2.5 w-full">
+          <div className="g-card-inner flex-1 p-3 text-center">
+            <div className="text-[9px] text-white/30 uppercase tracking-wider font-semibold mb-1">SB</div>
+            <div className="text-lg font-bold text-white/70 timer-font">{cashGame.smallBlind.toLocaleString()}</div>
           </div>
-          <div className="g-card-inner flex-1 p-3 md:p-4 text-center">
-            <div className="text-[9px] md:text-[11px] text-white/30 uppercase tracking-wider font-semibold mb-1">BB</div>
-            <div className="text-lg md:text-2xl font-bold text-blue-400 timer-font">{cashGame.bigBlind.toLocaleString()}</div>
+          <div className="g-card-inner flex-1 p-3 text-center">
+            <div className="text-[9px] text-white/30 uppercase tracking-wider font-semibold mb-1">BB</div>
+            <div className="text-lg font-bold text-blue-400 timer-font">{cashGame.bigBlind.toLocaleString()}</div>
           </div>
           {cashGame.ante > 0 && (
-            <div className="g-card-inner flex-1 p-3 md:p-4 text-center">
-              <div className="text-[9px] md:text-[11px] text-white/30 uppercase tracking-wider font-semibold mb-1">Ante</div>
-              <div className="text-lg md:text-2xl font-bold text-white/70 timer-font">{cashGame.ante.toLocaleString()}</div>
+            <div className="g-card-inner flex-1 p-3 text-center">
+              <div className="text-[9px] text-white/30 uppercase tracking-wider font-semibold mb-1">Ante</div>
+              <div className="text-lg font-bold text-white/70 timer-font">{cashGame.ante.toLocaleString()}</div>
             </div>
           )}
         </div>
       </main>
-
-      {/* ═══ Ticker ═══ */}
-      {dt.tickerText && (
-        <div className="relative z-10 px-2.5 md:px-3 lg:px-4 pb-2.5 md:pb-3">
-          <div className="g-ticker py-2.5 md:py-3 overflow-hidden">
-            <div className="ticker-container">
-              <span className="ticker-scroll text-sm md:text-lg lg:text-xl font-semibold text-white/40 px-4" style={{ animationDuration: `${tickerSpeed}s` }}>
-                {dt.tickerText}
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ═══ Overlays ═══ */}
       {/* Pre-level countdown */}

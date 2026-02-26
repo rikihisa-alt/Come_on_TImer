@@ -1,9 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Tournament, CashGame, DisplayAssignment, ThemeConfig, SoundSettings, DisplayToggles, BlindLevel, PrizeEntry, SectionLayout, TournamentSectionId, SectionPosition } from '@/lib/types';
+import { Tournament, CashGame, DisplayAssignment, ThemeConfig, SoundSettings, DisplayToggles, BlindLevel, PrizeEntry, SectionLayout, TournamentSectionId, SectionPosition, CashSectionId, CashSectionLayout } from '@/lib/types';
 import { uid } from '@/lib/utils';
 import { broadcast } from '@/lib/sync';
-import { DEFAULT_THEMES, STANDARD_PRESET, DEFAULT_TTS_MESSAGES, DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND, DEFAULT_SECTION_LAYOUT } from '@/lib/presets';
+import { DEFAULT_THEMES, STANDARD_PRESET, DEFAULT_TTS_MESSAGES, DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND, DEFAULT_SECTION_LAYOUT, DEFAULT_CASH_SECTION_LAYOUT } from '@/lib/presets';
 
 interface AppState {
   tournaments: Tournament[];
@@ -48,6 +48,8 @@ interface AppState {
   updateSectionLayout: (id: string, layout: SectionLayout) => void;
   updateSectionPosition: (id: string, sectionId: TournamentSectionId, pos: SectionPosition) => void;
   resetSectionLayout: (id: string) => void;
+  updateCashSectionPosition: (id: string, sectionId: CashSectionId, pos: SectionPosition) => void;
+  resetCashSectionLayout: (id: string) => void;
   addTheme: (theme: ThemeConfig) => void;
   updateTheme: (id: string, partial: Partial<ThemeConfig>) => void;
   removeTheme: (id: string) => void;
@@ -289,6 +291,18 @@ export const useStore = create<AppState>()(
         set(s => ({ tournaments: s.tournaments.map(t => t.id === id ? { ...t, sectionLayout: undefined } : t) }));
         get().broadcastAll();
       },
+      updateCashSectionPosition: (id, sectionId, pos) => {
+        set(s => ({ cashGames: s.cashGames.map(c => {
+          if (c.id !== id) return c;
+          const current = c.sectionLayout || { ...DEFAULT_CASH_SECTION_LAYOUT };
+          return { ...c, sectionLayout: { ...current, [sectionId]: pos } };
+        }) }));
+        get().broadcastAll();
+      },
+      resetCashSectionLayout: (id) => {
+        set(s => ({ cashGames: s.cashGames.map(c => c.id === id ? { ...c, sectionLayout: undefined } : c) }));
+        get().broadcastAll();
+      },
       addTheme: (theme) => { set(s => ({ themes: [...s.themes, theme] })); get().broadcastAll(); },
       updateTheme: (id, partial) => { set(s => ({ themes: s.themes.map(t => t.id === id ? { ...t, ...partial } : t) })); get().broadcastAll(); },
       removeTheme: (id) => { set(s => ({ themes: s.themes.filter(t => t.id !== id) })); get().broadcastAll(); },
@@ -299,7 +313,7 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'come-on-timer-v3',
-      version: 8,
+      version: 9,
       migrate: (persisted: unknown, version: number) => {
         const state = persisted as Record<string, unknown>;
         if (version < 4) {
@@ -355,6 +369,16 @@ export const useStore = create<AppState>()(
           state.cashGames = cashes.map((c) => ({
             ...c, preLevelDuration: 0, preLevelRemainingMs: 0,
           }));
+        }
+        if (version < 9) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const tours = (state.tournaments as any[]) || [];
+          state.tournaments = tours.map((t) => {
+            if (t.sectionLayout && !t.sectionLayout.tournamentName) {
+              return { ...t, sectionLayout: { ...t.sectionLayout, tournamentName: { x: 25, y: 0.5, w: 50, h: 7 } } };
+            }
+            return t;
+          });
         }
         return state as unknown as AppState;
       },

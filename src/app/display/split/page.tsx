@@ -4,32 +4,14 @@ import { useEffect, useState, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useStore } from '@/stores/useStore';
 import { onSync } from '@/lib/sync';
-import { unlockAudio, playSound, playWarningBeep, speakTTS, fillTTSTemplate } from '@/lib/audio';
+import { unlockAudio, playSound, playWarningBeep } from '@/lib/audio';
 import { formatTimer, formatChips, formatTimerHMS, computeTimeToBreak, computeTimeToEnd, computeRegCloseTime } from '@/lib/utils';
 import { Tournament, CashGame, ThemeConfig, DisplayToggles, SoundSettings } from '@/lib/types';
-import { DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND } from '@/lib/presets';
+import { DEFAULT_SECTION_LAYOUT, DEFAULT_CASH_SECTION_LAYOUT } from '@/lib/presets';
 import { FullscreenButton } from '@/components/FullscreenButton';
+import { AbsoluteSection } from '@/components/AbsoluteSection';
 
-/* ═══ Compact stat cell (split version) ═══ */
-function SC({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="g-card-inner p-2 lg:p-3 flex-1 min-h-0 text-center">
-      <div className="text-[7px] lg:text-[9px] text-white/30 uppercase tracking-wider font-semibold mb-0.5">{label}</div>
-      <div className="text-xs lg:text-base font-bold text-white/65 timer-font leading-tight">{value}</div>
-    </div>
-  );
-}
-
-function BC({ label, value, wide, accent }: { label: string; value: string; wide?: boolean; accent?: boolean }) {
-  return (
-    <div className={`flex flex-col items-center justify-center py-1.5 lg:py-2.5 ${wide ? 'flex-[2]' : 'flex-1'} border-r border-white/[0.06] last:border-r-0`}>
-      <div className="text-[7px] lg:text-[9px] text-white/25 uppercase tracking-wider font-semibold">{label}</div>
-      <div className={`text-sm lg:text-xl font-black timer-font leading-tight ${accent ? 'text-blue-400' : 'text-white/65'}`}>{value}</div>
-    </div>
-  );
-}
-
-/* ═══ Tournament Panel (compact for split) ═══ */
+/* ═══ Tournament Panel (AbsoluteSection layout) ═══ */
 function TournamentPanel({ tournament, theme, displayToggles: dt, sound }: {
   tournament: Tournament;
   theme: ThemeConfig;
@@ -70,69 +52,176 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound }: {
     }
   }, [displayMs, tournament.status, sound]);
 
+  const layout = tournament.sectionLayout || DEFAULT_SECTION_LAYOUT;
   const cur = tournament.levels[tournament.currentLevelIndex];
   const nextPlay = tournament.levels.slice(tournament.currentLevelIndex + 1).find(l => l.type === 'play');
   const isBrk = cur?.type === 'break';
   const isWarn = displayMs <= 60000 && tournament.status === 'running' && !isBrk;
   const dur = cur ? cur.duration * 1000 : 1;
   const prog = 1 - displayMs / dur;
-  const totalLvs = tournament.levels.filter(l => l.type === 'play').length;
   const ttb = computeTimeToBreak(tournament.levels, tournament.currentLevelIndex, displayMs);
   const tte = computeTimeToEnd(tournament.levels, tournament.currentLevelIndex, displayMs);
   const regClose = computeRegCloseTime(tournament.levels, tournament.currentLevelIndex, displayMs, tournament.regCloseLevel);
   const totalChips = (tournament.entryCount + tournament.rebuyCount + tournament.addonCount) * tournament.startingChips;
   const avg = tournament.entryCount > 0 ? Math.round(totalChips / tournament.entryCount) : 0;
   const pc = theme?.primaryColor || '#60a5fa';
+  const pool = (tournament.entryCount + tournament.rebuyCount) * tournament.buyInAmount;
+  const tickerSpeed = dt.tickerSpeed || 25;
+  const isPreLevel = tournament.status === 'running' && tournament.currentLevelIndex === -1;
 
   return (
-    <div className={`flex-1 flex flex-col overflow-hidden relative p-2 lg:p-3 gap-2 ${isBrk ? 'break-bg' : ''}`}>
-      {/* Top info bar */}
-      <div className="g-card-inner flex items-center px-3 py-1.5 lg:py-2">
-        <span className="text-xs lg:text-sm font-bold text-white/60 truncate flex-1">{tournament.name}</span>
-        <span className="text-[9px] lg:text-[11px] text-white/25 font-medium">{isBrk ? 'BRK' : `Lv${cur?.level || '-'}`}/{totalLvs}</span>
-      </div>
-
-      {/* Main Timer Card */}
-      <div className="g-card flex-1 flex flex-col items-center justify-center p-2 lg:p-4 min-h-0">
-        {isBrk ? (
-          <span className="text-green-400 text-base lg:text-xl font-black tracking-widest">BREAK</span>
-        ) : (
-          <span className="text-white/20 text-xs lg:text-sm font-black tracking-[0.2em]">Level {cur?.level || '-'}</span>
-        )}
-        <div className={`text-[11vw] lg:text-[5.5vw] font-black timer-font leading-[0.85] ${isWarn ? 'text-amber-400 warning-pulse' : isBrk ? 'text-green-400' : 'text-white'}`}>
-          {formatTimer(displayMs)}
-        </div>
-        {dt.showProgressBar && (
-          <div className="w-3/4 h-1 bg-white/[0.06] rounded-full mt-1.5 overflow-hidden">
-            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(prog * 100, 100)}%`, background: isWarn ? '#f59e0b' : isBrk ? '#22c55e' : pc }} />
+    <div className={`flex-1 relative overflow-hidden ${isBrk ? 'break-bg' : ''}`}>
+      {/* Tournament Name */}
+      {dt.showTournamentName && (
+        <AbsoluteSection pos={layout.tournamentName}>
+          <div className="h-full flex items-center justify-center">
+            <span className="font-black text-white/60 tracking-wide truncate" style={{ fontSize: '1.5em' }}>{tournament.name}</span>
           </div>
-        )}
-        {cur && !isBrk && (
-          <div className="mt-1.5 text-lg lg:text-2xl font-black timer-font" style={{ color: pc }}>
-            {cur.smallBlind.toLocaleString()}/{cur.bigBlind.toLocaleString()}
-          </div>
-        )}
-        {cur && cur.ante > 0 && !isBrk && <div className="text-[10px] text-white/20 font-semibold">Ante {cur.ante.toLocaleString()}</div>}
-      </div>
-
-      {/* Stats row */}
-      <div className="hidden lg:flex gap-2">
-        <SC label="Players" value={`${tournament.entryCount}`} />
-        <SC label="Rebuy" value={String(tournament.rebuyCount)} />
-        <SC label="Corner" value={formatTimerHMS(tte)} />
-      </div>
-
-      {/* Next */}
-      {nextPlay && (
-        <div className="g-card-inner flex items-center justify-center py-1 lg:py-1.5 px-2">
-          <span className="text-[8px] text-white/20 mr-1">Next:</span>
-          <span className="text-[10px] lg:text-xs font-bold text-white/35 timer-font">
-            {nextPlay.ante > 0 && `A${nextPlay.ante.toLocaleString()} `}{nextPlay.smallBlind.toLocaleString()}/{nextPlay.bigBlind.toLocaleString()}
-          </span>
-        </div>
+        </AbsoluteSection>
       )}
 
-      {/* Overlays */}
+      {/* Stats */}
+      {dt.showEntryCount && (
+        <AbsoluteSection pos={layout.players}>
+          <div className="g-card-inner h-full flex flex-col items-center justify-center p-1">
+            <div className="text-[7px] lg:text-[9px] text-white/30 uppercase tracking-wider font-semibold">Players</div>
+            <div className="text-xs lg:text-base font-bold text-white/65 timer-font">{tournament.entryCount}</div>
+          </div>
+        </AbsoluteSection>
+      )}
+      {dt.showEntryCount && (
+        <AbsoluteSection pos={layout.rebuy}>
+          <div className="g-card-inner h-full flex flex-col items-center justify-center p-1">
+            <div className="text-[7px] lg:text-[9px] text-white/30 uppercase tracking-wider font-semibold">Rebuy</div>
+            <div className="text-xs lg:text-base font-bold text-white/65 timer-font">{tournament.rebuyCount}</div>
+          </div>
+        </AbsoluteSection>
+      )}
+      {dt.showEntryCount && (
+        <AbsoluteSection pos={layout.addon}>
+          <div className="g-card-inner h-full flex flex-col items-center justify-center p-1">
+            <div className="text-[7px] lg:text-[9px] text-white/30 uppercase tracking-wider font-semibold">Add-on</div>
+            <div className="text-xs lg:text-base font-bold text-white/65 timer-font">{tournament.addonCount}</div>
+          </div>
+        </AbsoluteSection>
+      )}
+      {dt.showChipInfo && (
+        <AbsoluteSection pos={layout.avgStack}>
+          <div className="g-card-inner h-full flex flex-col items-center justify-center p-1">
+            <div className="text-[7px] lg:text-[9px] text-white/30 uppercase tracking-wider font-semibold">Avg Stack</div>
+            <div className="text-xs lg:text-base font-bold text-white/65 timer-font">{avg > 0 ? formatChips(avg) : '--'}</div>
+          </div>
+        </AbsoluteSection>
+      )}
+
+      {/* Timer */}
+      <AbsoluteSection pos={layout.timer}>
+        <div className="g-card h-full flex flex-col items-center justify-center p-2 overflow-hidden">
+          {dt.showLevelInfo && (
+            <div className="mb-0.5">
+              {isBrk ? (
+                <span className="text-green-400 text-base lg:text-xl font-black tracking-[0.15em]">BREAK</span>
+              ) : (
+                <span className="text-white/20 text-xs lg:text-sm font-black tracking-[0.2em]">Level {cur?.level || '-'}</span>
+              )}
+            </div>
+          )}
+          <div className={`text-[11vw] lg:text-[5.5vw] font-black timer-font leading-[0.85] ${isWarn ? 'text-amber-400 warning-pulse' : isBrk ? 'text-green-400' : 'text-white'}`}>
+            {formatTimer(displayMs)}
+          </div>
+          {dt.showProgressBar && (
+            <div className="w-3/4 h-1 bg-white/[0.06] rounded-full mt-1 overflow-hidden">
+              <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(prog * 100, 100)}%`, background: isWarn ? '#f59e0b' : isBrk ? '#22c55e' : pc }} />
+            </div>
+          )}
+          {dt.showFooter && cur && !isBrk && (
+            <div className="mt-1 text-lg lg:text-2xl font-black timer-font" style={{ color: pc }}>
+              {cur.smallBlind.toLocaleString()}/{cur.bigBlind.toLocaleString()}
+            </div>
+          )}
+          {cur && cur.ante > 0 && !isBrk && <div className="text-[10px] text-white/20 font-semibold">Ante {cur.ante.toLocaleString()}</div>}
+        </div>
+      </AbsoluteSection>
+
+      {/* Next Level */}
+      {dt.showNextLevel && nextPlay && (
+        <AbsoluteSection pos={layout.nextLevel}>
+          <div className="g-card-inner h-full flex items-center justify-center gap-2 px-2">
+            <span className="text-[8px] text-white/25 uppercase tracking-wider font-semibold">Next</span>
+            <span className="text-[10px] lg:text-xs font-bold text-white/40 timer-font">
+              {nextPlay.ante > 0 && `A${nextPlay.ante.toLocaleString()} `}{nextPlay.smallBlind.toLocaleString()}/{nextPlay.bigBlind.toLocaleString()}
+            </span>
+          </div>
+        </AbsoluteSection>
+      )}
+
+      {/* Corner Time */}
+      {dt.showTimeToEnd && (
+        <AbsoluteSection pos={layout.cornerTime}>
+          <div className="g-card-inner h-full flex flex-col items-center justify-center p-1">
+            <div className="text-[7px] lg:text-[9px] text-white/30 uppercase tracking-wider font-semibold">Corner</div>
+            <div className="text-xs lg:text-base font-bold text-white/65 timer-font">{formatTimerHMS(tte)}</div>
+          </div>
+        </AbsoluteSection>
+      )}
+
+      {/* Reg Close */}
+      <AbsoluteSection pos={layout.regClose}>
+        <div className="g-card-inner h-full flex flex-col items-center justify-center p-1">
+          <div className="text-[7px] lg:text-[9px] text-white/30 uppercase tracking-wider font-semibold">{tournament.regCloseLevel ? `Reg Lv${tournament.regCloseLevel}` : 'Reg Close'}</div>
+          <div className="text-xs lg:text-base font-bold text-white/65 timer-font">{regClose !== null ? formatTimer(regClose) : 'N/A'}</div>
+        </div>
+      </AbsoluteSection>
+
+      {/* Next Break */}
+      {dt.showTimeToBreak && (
+        <AbsoluteSection pos={layout.nextBreak}>
+          <div className="g-card-inner h-full flex flex-col items-center justify-center p-1">
+            <div className="text-[7px] lg:text-[9px] text-white/30 uppercase tracking-wider font-semibold">Next Break</div>
+            <div className="text-xs lg:text-base font-bold text-white/65 timer-font">{ttb !== null ? formatTimerHMS(ttb) : '--:--:--'}</div>
+          </div>
+        </AbsoluteSection>
+      )}
+
+      {/* Prize Table */}
+      {dt.showPrizeStructure && tournament.prizeStructure.length > 0 && (
+        <AbsoluteSection pos={layout.prizeTable}>
+          <div className="g-card-inner p-2 h-full overflow-auto">
+            <div className="text-[7px] text-white/30 uppercase tracking-wider font-semibold mb-1 text-center">Prize</div>
+            <div className="space-y-0.5">
+              {tournament.prizeStructure.map(p => (
+                <div key={p.place} className="flex items-center justify-between text-[10px] gap-1">
+                  <span className="text-white/40">{p.place}位</span>
+                  <span className="text-white/25">{p.percent}%</span>
+                  {pool > 0 && <span className="font-bold timer-font" style={{ color: p.place === 1 ? pc : 'rgba(255,255,255,0.5)' }}>&yen;{Math.round(pool * p.percent / 100).toLocaleString()}</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+        </AbsoluteSection>
+      )}
+
+      {/* Ticker */}
+      {dt.tickerText && (
+        <AbsoluteSection pos={layout.ticker}>
+          <div className="g-ticker h-full flex items-center overflow-hidden">
+            <div className="ticker-container">
+              <span className="ticker-scroll text-xs font-semibold text-white/35 px-2" style={{ animationDuration: `${tickerSpeed}s` }}>{dt.tickerText}</span>
+            </div>
+          </div>
+        </AbsoluteSection>
+      )}
+
+      {/* ═══ Overlays ═══ */}
+      {isPreLevel && (
+        <div className="absolute inset-0 z-40 flex items-center justify-center g-overlay-idle rounded-lg">
+          <div className="g-card p-5 text-center fade-in-up">
+            <div className="text-base lg:text-xl font-black text-white/50 tracking-wide mb-2">{tournament.name}</div>
+            <div className="text-[10px] text-white/25 uppercase tracking-[0.3em] font-semibold mb-2">Starting In</div>
+            <div className="text-3xl lg:text-5xl font-black timer-font text-blue-400 leading-none">{formatTimerHMS(displayMs)}</div>
+          </div>
+        </div>
+      )}
       {tournament.status === 'idle' && (
         <div className="absolute inset-0 z-40 flex items-center justify-center g-overlay-idle rounded-lg">
           <div className="g-card p-5 text-center"><div className="text-lg lg:text-2xl font-black text-blue-400">COME ON Timer</div><div className="text-[10px] text-white/20 mt-1">{tournament.name}</div></div>
@@ -147,7 +236,7 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound }: {
   );
 }
 
-/* ═══ Cash Panel (compact for split) ═══ */
+/* ═══ Cash Panel (AbsoluteSection layout) ═══ */
 function CashPanel({ cashGame, theme, displayToggles: dt }: {
   cashGame: CashGame;
   theme: ThemeConfig;
@@ -155,58 +244,127 @@ function CashPanel({ cashGame, theme, displayToggles: dt }: {
 }) {
   const [elapsed, setElapsed] = useState(0);
   const [countdown, setCountdown] = useState(0);
+  const [preLevelMs, setPreLevelMs] = useState(0);
 
   useEffect(() => {
     const iv = setInterval(() => {
       if (cashGame.status === 'running' && cashGame.timerStartedAt) {
         const e = Date.now() - cashGame.timerStartedAt;
-        setElapsed(cashGame.elapsedMs + e);
-        if (cashGame.countdownMode) setCountdown(Math.max(0, cashGame.countdownRemainingMs - e));
+        if (cashGame.preLevelRemainingMs > 0) {
+          const rem = Math.max(0, cashGame.preLevelRemainingMs - e);
+          setPreLevelMs(rem);
+          if (rem <= 0) useStore.getState().cEndPreLevel(cashGame.id);
+        } else {
+          setPreLevelMs(0);
+          setElapsed(cashGame.elapsedMs + e);
+          if (cashGame.countdownMode) setCountdown(Math.max(0, cashGame.countdownRemainingMs - e));
+        }
       } else {
         setElapsed(cashGame.elapsedMs);
         setCountdown(cashGame.countdownRemainingMs);
+        setPreLevelMs(cashGame.preLevelRemainingMs);
       }
     }, 500);
     return () => clearInterval(iv);
   }, [cashGame]);
 
+  const layout = cashGame.sectionLayout || DEFAULT_CASH_SECTION_LAYOUT;
   const pc = theme?.primaryColor || '#60a5fa';
   const isWarn = cashGame.countdownMode && countdown < 300000 && countdown > 0 && cashGame.status === 'running';
+  const tickerSpeed = dt.tickerSpeed || 25;
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden relative p-2 lg:p-3 gap-2">
-      {/* Top info */}
-      <div className="g-card-inner flex items-center px-3 py-1.5 lg:py-2">
-        <span className="text-xs lg:text-sm font-bold text-white/60 truncate flex-1">{cashGame.name}</span>
-        <span className="text-[9px] lg:text-[11px] text-white/25 font-medium">Cash</span>
-      </div>
-
-      {/* Main Card */}
-      <div className="g-card flex-1 flex flex-col items-center justify-center gap-2 p-3 lg:p-4 min-h-0">
-        <div className="text-[8px] lg:text-[10px] text-white/20 uppercase tracking-widest font-semibold">Rate</div>
-        <div className="text-2xl lg:text-4xl font-black leading-none" style={{ color: pc }}>
-          {cashGame.smallBlind.toLocaleString()} / {cashGame.bigBlind.toLocaleString()}
+    <div className="flex-1 relative overflow-hidden">
+      {/* Cash Name */}
+      <AbsoluteSection pos={layout.cashName}>
+        <div className="h-full flex items-center justify-center">
+          <span className="font-black text-white/60 tracking-wide truncate" style={{ fontSize: '1.5em' }}>{cashGame.name}</span>
         </div>
-        {cashGame.ante > 0 && <div className="text-[10px] lg:text-sm text-white/25 font-semibold">Ante {cashGame.ante.toLocaleString()}</div>}
-        {dt.showCashMemo && cashGame.memo && <div className="text-[10px] text-white/20 text-center">{cashGame.memo}</div>}
-        {dt.showCashTimer && (
-          <div className="text-center mt-1">
-            <div className="text-[7px] text-white/15 uppercase tracking-widest">{cashGame.countdownMode ? 'Remaining' : 'Session'}</div>
-            <div className={`text-xl lg:text-3xl font-black timer-font ${isWarn ? 'text-amber-400 warning-pulse' : 'text-white/40'}`}>
+      </AbsoluteSection>
+
+      {/* Rate */}
+      {dt.showCashRate && (
+        <AbsoluteSection pos={layout.rate}>
+          <div className="g-card h-full flex flex-col items-center justify-center p-2">
+            <div className="text-[8px] lg:text-[10px] text-white/25 uppercase tracking-widest font-semibold mb-1">Rate</div>
+            <div className="text-2xl lg:text-4xl font-black leading-none tracking-tight" style={{ color: pc }}>
+              {cashGame.smallBlind.toLocaleString()} / {cashGame.bigBlind.toLocaleString()}
+            </div>
+            {cashGame.ante > 0 && <div className="text-[10px] lg:text-sm text-white/25 font-semibold mt-1">Ante {cashGame.ante.toLocaleString()}</div>}
+          </div>
+        </AbsoluteSection>
+      )}
+
+      {/* Memo */}
+      {dt.showCashMemo && cashGame.memo && (
+        <AbsoluteSection pos={layout.memo}>
+          <div className="g-card-inner h-full flex items-center justify-center px-2">
+            <span className="text-xs text-white/40 font-medium text-center">{cashGame.memo}</span>
+          </div>
+        </AbsoluteSection>
+      )}
+
+      {/* Timer */}
+      {dt.showCashTimer && (
+        <AbsoluteSection pos={layout.timer}>
+          <div className="g-card h-full flex flex-col items-center justify-center p-2">
+            <div className="text-[7px] text-white/20 uppercase tracking-widest font-semibold mb-1">
+              {cashGame.countdownMode ? 'Remaining' : 'Session'}
+            </div>
+            <div className={`text-xl lg:text-3xl font-black timer-font leading-none ${isWarn ? 'text-amber-400 warning-pulse' : 'text-white/40'}`}>
               {cashGame.countdownMode ? formatTimerHMS(countdown) : formatTimerHMS(elapsed)}
             </div>
           </div>
-        )}
-      </div>
+        </AbsoluteSection>
+      )}
 
-      {/* Bottom info */}
-      <div className="flex gap-2">
-        <SC label="SB" value={cashGame.smallBlind.toLocaleString()} />
-        <SC label="BB" value={cashGame.bigBlind.toLocaleString()} />
-        {cashGame.ante > 0 && <SC label="Ante" value={cashGame.ante.toLocaleString()} />}
-      </div>
+      {/* SB / BB / Ante cards */}
+      {dt.showCashRate && (
+        <>
+          <AbsoluteSection pos={layout.sbCard}>
+            <div className="g-card-inner h-full flex flex-col items-center justify-center p-1">
+              <div className="text-[7px] text-white/30 uppercase tracking-wider font-semibold">SB</div>
+              <div className="text-xs lg:text-base font-bold text-white/65 timer-font">{cashGame.smallBlind.toLocaleString()}</div>
+            </div>
+          </AbsoluteSection>
+          <AbsoluteSection pos={layout.bbCard}>
+            <div className="g-card-inner h-full flex flex-col items-center justify-center p-1">
+              <div className="text-[7px] text-white/30 uppercase tracking-wider font-semibold">BB</div>
+              <div className="text-xs lg:text-base font-bold text-blue-400 timer-font">{cashGame.bigBlind.toLocaleString()}</div>
+            </div>
+          </AbsoluteSection>
+          {cashGame.ante > 0 && (
+            <AbsoluteSection pos={layout.anteCard}>
+              <div className="g-card-inner h-full flex flex-col items-center justify-center p-1">
+                <div className="text-[7px] text-white/30 uppercase tracking-wider font-semibold">Ante</div>
+                <div className="text-xs lg:text-base font-bold text-white/65 timer-font">{cashGame.ante.toLocaleString()}</div>
+              </div>
+            </AbsoluteSection>
+          )}
+        </>
+      )}
 
-      {/* Overlays */}
+      {/* Ticker */}
+      {dt.tickerText && (
+        <AbsoluteSection pos={layout.ticker}>
+          <div className="g-ticker h-full flex items-center overflow-hidden">
+            <div className="ticker-container">
+              <span className="ticker-scroll text-xs font-semibold text-white/35 px-2" style={{ animationDuration: `${tickerSpeed}s` }}>{dt.tickerText}</span>
+            </div>
+          </div>
+        </AbsoluteSection>
+      )}
+
+      {/* ═══ Overlays ═══ */}
+      {cashGame.status === 'running' && preLevelMs > 0 && (
+        <div className="absolute inset-0 z-40 flex items-center justify-center g-overlay-idle rounded-lg">
+          <div className="g-card p-5 text-center fade-in-up">
+            <div className="text-base lg:text-xl font-black text-white/50 tracking-wide mb-2">{cashGame.name}</div>
+            <div className="text-[10px] text-white/25 uppercase tracking-[0.3em] font-semibold mb-2">Starting In</div>
+            <div className="text-3xl lg:text-5xl font-black timer-font text-blue-400 leading-none">{formatTimerHMS(preLevelMs)}</div>
+          </div>
+        </div>
+      )}
       {cashGame.status === 'idle' && (
         <div className="absolute inset-0 z-40 flex items-center justify-center g-overlay-idle rounded-lg">
           <div className="g-card p-5 text-center"><div className="text-lg lg:text-2xl font-black text-blue-400">COME ON Timer</div><div className="text-[10px] text-white/20 mt-1">Cash Ready</div></div>
@@ -342,10 +500,6 @@ function SplitInner() {
     ? { background: `linear-gradient(160deg, ${theme.gradientFrom || '#0e1c36'}, ${theme.gradientTo || '#1c3d6e'})` }
     : { background: 'linear-gradient(160deg, #0e1c36 0%, #152d52 50%, #1c3d6e 100%)' };
 
-  /* Ticker: left panel first, then right */
-  const tickerText = leftDt.tickerText || rightDt.tickerText;
-  const tickerSpeed = (leftDt.tickerText ? leftDt.tickerSpeed : rightDt.tickerSpeed) || 25;
-
   const hasLeft = leftTournament || leftCash;
   const hasRight = rightTournament || rightCash;
   const leftName = leftTournament?.name || leftCash?.name || '左';
@@ -405,17 +559,6 @@ function SplitInner() {
           )}
         </div>
       </div>
-
-      {/* Ticker */}
-      {tickerText && (
-        <div className="relative z-10 px-2.5 pb-2">
-          <div className="g-ticker py-2 overflow-hidden">
-            <div className="ticker-container">
-              <span className="ticker-scroll text-sm md:text-base font-semibold text-white/35 px-4" style={{ animationDuration: `${tickerSpeed}s` }}>{tickerText}</span>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

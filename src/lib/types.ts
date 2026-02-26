@@ -19,16 +19,24 @@ export type TournamentSectionId =
   | 'players' | 'rebuy' | 'addon' | 'avgStack'
   | 'timer' | 'nextLevel'
   | 'cornerTime' | 'regClose' | 'nextBreak'
-  | 'prizeTable' | 'ticker';
+  | 'prizeTable' | 'ticker'
+  | 'tournamentName';
 
 export type SectionPosition = {
   x: number;
   y: number;
   w: number;
   h: number;
+  fontSize?: number;
 };
 
 export type SectionLayout = Record<TournamentSectionId, SectionPosition>;
+
+export type CashSectionId =
+  | 'cashName' | 'rate' | 'memo'
+  | 'timer' | 'sbCard' | 'bbCard' | 'anteCard' | 'ticker';
+
+export type CashSectionLayout = Record<CashSectionId, SectionPosition>;
 
 export type Tournament = {
   id: string;
@@ -72,6 +80,7 @@ export type CashGame = {
   displayToggles?: DisplayToggles;
   sound?: SoundSettings;
   themeId?: string;
+  sectionLayout?: CashSectionLayout;
 };
 
 export type DisplayAssignment = {

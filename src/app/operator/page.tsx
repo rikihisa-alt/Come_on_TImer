@@ -3,9 +3,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useStore } from '@/stores/useStore';
 import { formatTimer, formatTimerHMS, formatChips, uid } from '@/lib/utils';
-import { PRESET_OPTIONS, DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND, DEFAULT_SECTION_LAYOUT } from '@/lib/presets';
+import { PRESET_OPTIONS, DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND, DEFAULT_SECTION_LAYOUT, DEFAULT_CASH_SECTION_LAYOUT } from '@/lib/presets';
 import { playSound, playTestSound, playWarningBeep, speakTTS, fillTTSTemplate, PRESET_LABELS } from '@/lib/audio';
-import { BlindLevel, Tournament, CashGame, SoundPreset, PrizeEntry, SoundSettings, DisplayToggles, ThemeConfig, TournamentSectionId, SectionPosition, SectionLayout } from '@/lib/types';
+import { BlindLevel, Tournament, CashGame, SoundPreset, PrizeEntry, SoundSettings, DisplayToggles, ThemeConfig, TournamentSectionId, SectionPosition, SectionLayout, CashSectionId, CashSectionLayout } from '@/lib/types';
 
 const TAB_ORDER = ['tournaments', 'cash', 'split', 'settings'] as const;
 
@@ -597,13 +597,19 @@ function CashEditor({ id, onDelete }: { id: string; onDelete: (id: string) => vo
   );
 }
 
-/* ── Layout Editor (tournament only) ── */
+/* ── Layout Editor (generic) ── */
 
 const SECTION_LABELS: Record<TournamentSectionId, string> = {
   players: 'Players', rebuy: 'Rebuy', addon: 'Add-on', avgStack: 'Avg Stack',
   timer: 'Timer', nextLevel: 'Next Level',
   cornerTime: 'Time', regClose: 'Reg Close', nextBreak: 'Next Break',
-  prizeTable: 'Prize', ticker: 'Ticker',
+  prizeTable: 'Prize', ticker: 'Ticker', tournamentName: 'Name',
+};
+
+const CASH_SECTION_LABELS: Record<CashSectionId, string> = {
+  cashName: 'Name', rate: 'Rate', memo: 'Memo',
+  timer: 'Timer', sbCard: 'SB', bbCard: 'BB',
+  anteCard: 'Ante', ticker: 'Ticker',
 };
 
 function isSectionVisible(id: TournamentSectionId, dt: DisplayToggles): boolean {
@@ -617,65 +623,116 @@ function isSectionVisible(id: TournamentSectionId, dt: DisplayToggles): boolean 
     case 'nextBreak': return dt.showTimeToBreak;
     case 'prizeTable': return dt.showPrizeStructure;
     case 'ticker': return !!dt.tickerText;
+    case 'tournamentName': return dt.showTournamentName;
   }
 }
 
-function LayoutEditor({ tournament: t }: { tournament: Tournament }) {
+function isCashSectionVisible(id: CashSectionId, dt: DisplayToggles): boolean {
+  switch (id) {
+    case 'cashName': return true;
+    case 'rate': return dt.showCashRate;
+    case 'memo': return dt.showCashMemo;
+    case 'timer': return dt.showCashTimer;
+    case 'sbCard': case 'bbCard': case 'anteCard': return dt.showCashRate;
+    case 'ticker': return !!dt.tickerText;
+  }
+}
+
+type ResizeHandle = 'n' | 's' | 'e' | 'w' | 'nw' | 'ne' | 'sw' | 'se';
+const RESIZE_HANDLES: { handle: ResizeHandle; pos: React.CSSProperties; cursor: string }[] = [
+  { handle: 'nw', pos: { top: -3, left: -3, width: 7, height: 7 }, cursor: 'nwse-resize' },
+  { handle: 'ne', pos: { top: -3, right: -3, width: 7, height: 7 }, cursor: 'nesw-resize' },
+  { handle: 'sw', pos: { bottom: -3, left: -3, width: 7, height: 7 }, cursor: 'nesw-resize' },
+  { handle: 'se', pos: { bottom: -3, right: -3, width: 7, height: 7 }, cursor: 'nwse-resize' },
+  { handle: 'n', pos: { top: -3, left: '50%', transform: 'translateX(-50%)', width: 14, height: 5 }, cursor: 'ns-resize' },
+  { handle: 's', pos: { bottom: -3, left: '50%', transform: 'translateX(-50%)', width: 14, height: 5 }, cursor: 'ns-resize' },
+  { handle: 'e', pos: { right: -3, top: '50%', transform: 'translateY(-50%)', width: 5, height: 14 }, cursor: 'ew-resize' },
+  { handle: 'w', pos: { left: -3, top: '50%', transform: 'translateY(-50%)', width: 5, height: 14 }, cursor: 'ew-resize' },
+];
+
+function GenericLayoutEditor<T extends string>({
+  layout, defaultLayout, labels, timerName, themeId: timerThemeId,
+  visibleIds, onUpdatePosition, onReset,
+}: {
+  layout: Record<T, SectionPosition>;
+  defaultLayout: Record<T, SectionPosition>;
+  labels: Record<T, string>;
+  timerName: string;
+  themeId?: string;
+  visibleIds: T[];
+  onUpdatePosition: (sectionId: T, pos: SectionPosition) => void;
+  onReset: () => void;
+}) {
   const store = useStore();
-  const layout = t.sectionLayout || DEFAULT_SECTION_LAYOUT;
-  const dt = t.displayToggles || DEFAULT_DISPLAY_TOGGLES;
-  const theme = store.themes.find(th => th.id === (t.themeId || store.defaultThemeId)) || store.themes[0];
-
+  const theme = store.themes.find(th => th.id === (timerThemeId || store.defaultThemeId)) || store.themes[0];
   const canvasRef = useRef<HTMLDivElement>(null);
-  const [selected, setSelected] = useState<TournamentSectionId | null>(null);
-  const [dragging, setDragging] = useState<TournamentSectionId | null>(null);
-  const [localPositions, setLocalPositions] = useState<SectionLayout>(layout);
+  const [selected, setSelected] = useState<T | null>(null);
+  const [dragging, setDragging] = useState<T | null>(null);
+  const [resizing, setResizing] = useState<{ sectionId: T; handle: ResizeHandle } | null>(null);
+  const [localPositions, setLocalPositions] = useState<Record<T, SectionPosition>>(layout);
   const dragStartRef = useRef<{ mx: number; my: number; ox: number; oy: number } | null>(null);
+  const resizeStartRef = useRef<{ mx: number; my: number; orig: SectionPosition } | null>(null);
 
-  // Sync from store
-  useEffect(() => { setLocalPositions(t.sectionLayout || DEFAULT_SECTION_LAYOUT); }, [t.sectionLayout]);
+  useEffect(() => { setLocalPositions(layout); }, [layout]);
 
-  const handlePointerDown = (e: React.PointerEvent, sectionId: TournamentSectionId) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handlePointerDown = (e: React.PointerEvent, sectionId: T) => {
+    e.preventDefault(); e.stopPropagation();
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
     const pos = localPositions[sectionId];
     dragStartRef.current = { mx: e.clientX, my: e.clientY, ox: pos.x, oy: pos.y };
-    setDragging(sectionId);
-    setSelected(sectionId);
+    setDragging(sectionId); setSelected(sectionId);
+  };
+
+  const handleResizeDown = (e: React.PointerEvent, sectionId: T, handle: ResizeHandle) => {
+    e.preventDefault(); e.stopPropagation();
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    resizeStartRef.current = { mx: e.clientX, my: e.clientY, orig: { ...localPositions[sectionId] } };
+    setResizing({ sectionId, handle }); setSelected(sectionId);
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
-    if (!dragging || !dragStartRef.current || !canvasRef.current) return;
+    if (!canvasRef.current) return;
     const rect = canvasRef.current.getBoundingClientRect();
-    const dx = ((e.clientX - dragStartRef.current.mx) / rect.width) * 100;
-    const dy = ((e.clientY - dragStartRef.current.my) / rect.height) * 100;
-    const pos = localPositions[dragging];
-    const nx = Math.max(0, Math.min(100 - pos.w, dragStartRef.current.ox + dx));
-    const ny = Math.max(0, Math.min(100 - pos.h, dragStartRef.current.oy + dy));
-    setLocalPositions(prev => ({ ...prev, [dragging]: { ...prev[dragging], x: Math.round(nx * 10) / 10, y: Math.round(ny * 10) / 10 } }));
+    // Resize mode
+    if (resizing && resizeStartRef.current) {
+      const dx = ((e.clientX - resizeStartRef.current.mx) / rect.width) * 100;
+      const dy = ((e.clientY - resizeStartRef.current.my) / rect.height) * 100;
+      const o = resizeStartRef.current.orig;
+      let { x, y, w, h } = o;
+      const hd = resizing.handle;
+      if (hd.includes('e')) w = Math.max(3, Math.min(100 - x, o.w + dx));
+      if (hd.includes('w')) { const nx = Math.max(0, o.x + dx); w = Math.max(3, o.w - (nx - o.x)); x = nx; }
+      if (hd.includes('s')) h = Math.max(3, Math.min(100 - y, o.h + dy));
+      if (hd.includes('n')) { const ny = Math.max(0, o.y + dy); h = Math.max(3, o.h - (ny - o.y)); y = ny; }
+      const r = (v: number) => Math.round(v * 10) / 10;
+      setLocalPositions(prev => ({ ...prev, [resizing.sectionId]: { ...prev[resizing.sectionId], x: r(x), y: r(y), w: r(w), h: r(h) } }));
+      return;
+    }
+    // Drag mode
+    if (dragging && dragStartRef.current) {
+      const dx = ((e.clientX - dragStartRef.current.mx) / rect.width) * 100;
+      const dy = ((e.clientY - dragStartRef.current.my) / rect.height) * 100;
+      const pos = localPositions[dragging];
+      const nx = Math.max(0, Math.min(100 - pos.w, dragStartRef.current.ox + dx));
+      const ny = Math.max(0, Math.min(100 - pos.h, dragStartRef.current.oy + dy));
+      setLocalPositions(prev => ({ ...prev, [dragging as T]: { ...prev[dragging as T], x: Math.round(nx * 10) / 10, y: Math.round(ny * 10) / 10 } }));
+    }
   };
 
   const handlePointerUp = () => {
-    if (dragging) {
-      store.updateSectionPosition(t.id, dragging, localPositions[dragging]);
-    }
-    setDragging(null);
-    dragStartRef.current = null;
+    if (resizing) { onUpdatePosition(resizing.sectionId, localPositions[resizing.sectionId]); setResizing(null); resizeStartRef.current = null; return; }
+    if (dragging) { onUpdatePosition(dragging, localPositions[dragging]); }
+    setDragging(null); dragStartRef.current = null;
   };
 
-  const updateField = (field: 'x' | 'y' | 'w' | 'h', val: number) => {
+  const updateField = (field: 'x' | 'y' | 'w' | 'h' | 'fontSize', val: number) => {
     if (!selected) return;
     const newPos = { ...localPositions[selected], [field]: val };
-    setLocalPositions(prev => ({ ...prev, [selected]: newPos }));
-    store.updateSectionPosition(t.id, selected, newPos);
+    setLocalPositions(prev => ({ ...prev, [selected as T]: newPos }));
+    onUpdatePosition(selected, newPos);
   };
 
-  const handleReset = () => {
-    store.resetSectionLayout(t.id);
-    setLocalPositions(DEFAULT_SECTION_LAYOUT);
-    setSelected(null);
-  };
+  const handleReset = () => { onReset(); setLocalPositions(defaultLayout); setSelected(null); };
 
   const bgStyle = theme?.type === 'gradient'
     ? { background: `linear-gradient(160deg, ${theme.gradientFrom || '#0f172a'}, ${theme.gradientTo || '#1e3a5f'})` }
@@ -683,83 +740,109 @@ function LayoutEditor({ tournament: t }: { tournament: Tournament }) {
     ? { backgroundImage: `url(${theme.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
     : { background: theme?.bgColor || '#0a0e1a' };
 
-  const visibleSections = (Object.keys(layout) as TournamentSectionId[]).filter(id => isSectionVisible(id, dt));
-
   return (
     <div className="space-y-3">
-      {/* Toolbar */}
       <div className="flex items-center justify-between">
         <span className="text-xs text-white/30 font-semibold uppercase tracking-wider">Layout Editor</span>
         <button className="btn btn-ghost btn-sm" onClick={handleReset}>Reset Layout</button>
       </div>
 
-      {/* 16:9 Canvas */}
-      <div
-        ref={canvasRef}
+      <div ref={canvasRef}
         className="relative rounded-xl overflow-hidden border border-white/[0.1] select-none"
         style={{ ...bgStyle, aspectRatio: '16/9' }}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerLeave={handlePointerUp}
+        onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerLeave={handlePointerUp}
         onClick={() => setSelected(null)}
       >
-        {/* Top bar mock */}
         <div className="absolute inset-x-0 top-0 h-[7%] bg-black/30 flex items-center px-[2%] z-10">
-          <span className="text-[0.7vw] text-white/60 font-bold truncate" style={{ fontSize: 'clamp(6px, 0.8vw, 12px)' }}>COME ON Timer — {t.name}</span>
+          <span className="text-white/60 font-bold truncate" style={{ fontSize: 'clamp(6px, 0.8vw, 12px)' }}>COME ON Timer — {timerName}</span>
         </div>
 
-        {/* Sections */}
-        {visibleSections.map(sectionId => {
+        {visibleIds.map(sectionId => {
           const pos = localPositions[sectionId];
+          if (!pos) return null;
           const isSelected = selected === sectionId;
           const isDragging = dragging === sectionId;
           return (
-            <div
-              key={sectionId}
-              className={`absolute rounded-lg border-2 transition-shadow cursor-grab flex flex-col items-center justify-center overflow-hidden
+            <div key={sectionId}
+              className={`absolute rounded-lg border-2 transition-shadow cursor-grab flex flex-col items-center justify-center overflow-visible
                 ${isDragging ? 'cursor-grabbing opacity-80 z-30' : 'z-20'}
                 ${isSelected ? 'border-blue-400 shadow-[0_0_12px_rgba(96,165,250,0.4)]' : 'border-white/20 hover:border-white/40'}`}
-              style={{
-                left: `${pos.x}%`, top: `${pos.y}%`,
-                width: `${pos.w}%`, height: `${pos.h}%`,
-                background: 'rgba(255,255,255,0.06)',
-                backdropFilter: 'blur(4px)',
-                touchAction: 'none',
-              }}
+              style={{ left: `${pos.x}%`, top: `${pos.y}%`, width: `${pos.w}%`, height: `${pos.h}%`,
+                background: 'rgba(255,255,255,0.06)', backdropFilter: 'blur(4px)', touchAction: 'none' }}
               onPointerDown={e => handlePointerDown(e, sectionId)}
               onClick={e => { e.stopPropagation(); setSelected(sectionId); }}
             >
               <span className="text-white/60 font-semibold text-center leading-tight pointer-events-none" style={{ fontSize: 'clamp(6px, 0.7vw, 11px)' }}>
-                {SECTION_LABELS[sectionId]}
+                {labels[sectionId]}
               </span>
-              {sectionId === 'timer' && (
+              {(sectionId === 'timer' || sectionId === ('rate' as T)) && (
                 <span className="text-white/40 font-bold pointer-events-none" style={{ fontSize: 'clamp(10px, 2.5vw, 32px)' }}>12:00</span>
               )}
+              {/* Resize handles */}
+              {isSelected && !isDragging && RESIZE_HANDLES.map(rh => (
+                <div key={rh.handle}
+                  className="absolute bg-blue-400 rounded-sm z-40 hover:bg-blue-300 hover:scale-125 transition-transform"
+                  style={{ ...rh.pos, cursor: rh.cursor }}
+                  onPointerDown={e => handleResizeDown(e, sectionId, rh.handle)}
+                />
+              ))}
             </div>
           );
         })}
       </div>
 
-      {/* Position panel */}
-      {selected && (
+      {selected && localPositions[selected] && (
         <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] space-y-2 fade-in">
-          <div className="text-xs text-white/40 font-semibold">{SECTION_LABELS[selected]} — Position</div>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="text-xs text-white/40 font-semibold">{labels[selected]} — Position & Size</div>
+          <div className="grid grid-cols-5 gap-2">
             {(['x', 'y', 'w', 'h'] as const).map(f => (
               <div key={f}>
                 <label className="text-[11px] text-white/25 block mb-1 uppercase">{f} (%)</label>
-                <input
-                  type="number" step={0.1} min={0} max={100}
-                  className="input input-sm text-center"
-                  value={localPositions[selected][f]}
-                  onChange={e => updateField(f, +e.target.value)}
-                />
+                <input type="number" step={0.1} min={0} max={100} className="input input-sm text-center"
+                  value={localPositions[selected!][f]} onChange={e => updateField(f, +e.target.value)} />
               </div>
             ))}
+            <div>
+              <label className="text-[11px] text-white/25 block mb-1">Font</label>
+              <input type="number" step={0.1} min={0.3} max={3.0} className="input input-sm text-center"
+                value={localPositions[selected!].fontSize ?? 1.0} onChange={e => updateField('fontSize', +e.target.value)} />
+            </div>
           </div>
         </div>
       )}
     </div>
+  );
+}
+
+/* Wrapper for tournament layout editor */
+function LayoutEditor({ tournament: t }: { tournament: Tournament }) {
+  const store = useStore();
+  const layout = t.sectionLayout || DEFAULT_SECTION_LAYOUT;
+  const dt = t.displayToggles || DEFAULT_DISPLAY_TOGGLES;
+  const visibleIds = (Object.keys(DEFAULT_SECTION_LAYOUT) as TournamentSectionId[]).filter(id => isSectionVisible(id, dt));
+  return (
+    <GenericLayoutEditor<TournamentSectionId>
+      layout={layout} defaultLayout={DEFAULT_SECTION_LAYOUT} labels={SECTION_LABELS}
+      timerName={t.name} themeId={t.themeId} visibleIds={visibleIds}
+      onUpdatePosition={(sid, pos) => store.updateSectionPosition(t.id, sid, pos)}
+      onReset={() => store.resetSectionLayout(t.id)}
+    />
+  );
+}
+
+/* Wrapper for cash layout editor */
+function CashLayoutEditor({ cashGame: c }: { cashGame: CashGame }) {
+  const store = useStore();
+  const layout = c.sectionLayout || DEFAULT_CASH_SECTION_LAYOUT;
+  const dt = c.displayToggles || DEFAULT_DISPLAY_TOGGLES;
+  const visibleIds = (Object.keys(DEFAULT_CASH_SECTION_LAYOUT) as CashSectionId[]).filter(id => isCashSectionVisible(id, dt));
+  return (
+    <GenericLayoutEditor<CashSectionId>
+      layout={layout} defaultLayout={DEFAULT_CASH_SECTION_LAYOUT} labels={CASH_SECTION_LABELS}
+      timerName={c.name} themeId={c.themeId} visibleIds={visibleIds}
+      onUpdatePosition={(sid, pos) => store.updateCashSectionPosition(c.id, sid, pos)}
+      onReset={() => store.resetCashSectionLayout(c.id)}
+    />
   );
 }
 
@@ -822,7 +905,7 @@ function InlinePreview({ timerId, timerType, sticky }: { timerId: string; timerT
   const themeId = timer?.themeId || store.defaultThemeId || 'come-on-blue';
   const themeName = store.themes.find(th => th.id === themeId)?.name || '';
   const [showPreview, setShowPreview] = useState(sticky ? true : false);
-  const [previewMode, setPreviewMode] = useState<'layout' | 'live'>(timerType === 'tournament' ? 'layout' : 'live');
+  const [previewMode, setPreviewMode] = useState<'layout' | 'live'>('layout');
 
   const route = timerType === 'tournament' ? 'tournament' : 'cash';
 
@@ -841,27 +924,25 @@ function InlinePreview({ timerId, timerType, sticky }: { timerId: string; timerT
       )}
       {showPreview && (
         <>
-          {/* Mode toggle (tournament only) */}
-          {timerType === 'tournament' && (
-            <div className="flex gap-1 mb-0 mt-2">
-              <button
-                onClick={() => setPreviewMode('layout')}
-                className={`flex-1 py-2 rounded-t-xl text-xs font-semibold transition-all duration-200 ${previewMode === 'layout' ? 'bg-blue-500/15 text-blue-400 border border-blue-500/25 border-b-0' : 'text-white/25 hover:text-white/40 bg-white/[0.02] border border-white/[0.06] border-b-0'}`}
-              >
-                Layout Editor
-              </button>
-              <button
-                onClick={() => setPreviewMode('live')}
-                className={`flex-1 py-2 rounded-t-xl text-xs font-semibold transition-all duration-200 ${previewMode === 'live' ? 'bg-blue-500/15 text-blue-400 border border-blue-500/25 border-b-0' : 'text-white/25 hover:text-white/40 bg-white/[0.02] border border-white/[0.06] border-b-0'}`}
-              >
-                Live Preview
-              </button>
-            </div>
-          )}
+          {/* Mode toggle */}
+          <div className="flex gap-1 mb-0 mt-2">
+            <button onClick={() => setPreviewMode('layout')}
+              className={`flex-1 py-2 rounded-t-xl text-xs font-semibold transition-all duration-200 ${previewMode === 'layout' ? 'bg-blue-500/15 text-blue-400 border border-blue-500/25 border-b-0' : 'text-white/25 hover:text-white/40 bg-white/[0.02] border border-white/[0.06] border-b-0'}`}>
+              Layout Editor
+            </button>
+            <button onClick={() => setPreviewMode('live')}
+              className={`flex-1 py-2 rounded-t-xl text-xs font-semibold transition-all duration-200 ${previewMode === 'live' ? 'bg-blue-500/15 text-blue-400 border border-blue-500/25 border-b-0' : 'text-white/25 hover:text-white/40 bg-white/[0.02] border border-white/[0.06] border-b-0'}`}>
+              Live Preview
+            </button>
+          </div>
 
-          {previewMode === 'layout' && timerType === 'tournament' && timer ? (
+          {previewMode === 'layout' && timer ? (
             <div className="g-card p-4 rounded-t-none border-t-0">
-              <LayoutEditor tournament={timer as Tournament} />
+              {timerType === 'tournament' ? (
+                <LayoutEditor tournament={timer as Tournament} />
+              ) : (
+                <CashLayoutEditor cashGame={timer as CashGame} />
+              )}
             </div>
           ) : (
             <DisplayPreview

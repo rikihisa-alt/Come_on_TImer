@@ -9,6 +9,7 @@ import { formatTimer, formatChips, formatTimerHMS, computeTimeToBreak, computeTi
 import { Tournament, ThemeConfig, DisplayToggles, SoundSettings, SectionLayout, SectionPosition } from '@/lib/types';
 import { DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND, DEFAULT_SECTION_LAYOUT } from '@/lib/presets';
 import { FullscreenButton } from '@/components/FullscreenButton';
+import { AbsoluteSection } from '@/components/AbsoluteSection';
 
 /* ── Timer Selector dropdown ── */
 function TimerSelector({ selectedId, onSelect, tournaments }: {
@@ -92,18 +93,6 @@ function PrizeTable({ tournament, primaryColor }: { tournament: Tournament; prim
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-/* ── Absolute Section (for custom layout) ── */
-function AbsoluteSection({ pos, children }: { pos: SectionPosition; children: React.ReactNode }) {
-  return (
-    <div className="absolute" style={{
-      left: `${pos.x}%`, top: `${pos.y}%`,
-      width: `${pos.w}%`, height: `${pos.h}%`,
-    }}>
-      <div className="w-full h-full">{children}</div>
     </div>
   );
 }
@@ -240,9 +229,6 @@ function Inner() {
           <span className="text-white/25 font-medium text-[10px] md:text-xs">Timer</span>
         </div>
         <div className="flex-1 flex items-center justify-center gap-2 md:gap-3 min-w-0">
-          {dt.showTournamentName && (
-            <span className="text-lg md:text-2xl lg:text-3xl font-black text-white/70 tracking-wide truncate">{tournament.name}</span>
-          )}
           <TimerSelector selectedId={activeId} onSelect={setSelectedId} tournaments={tournaments} />
         </div>
         <div className="flex items-center gap-2 shrink-0 ml-2">
@@ -261,6 +247,15 @@ function Inner() {
 
       {/* ═══ Desktop: Absolute Section Layout ═══ */}
       <div className="relative z-10 flex-1 hidden md:block min-h-0">
+        {/* Tournament Name section */}
+        {dt.showTournamentName && (
+          <AbsoluteSection pos={layout.tournamentName}>
+            <div className="h-full flex items-center justify-center">
+              <span className="font-black text-white/70 tracking-wide truncate" style={{ fontSize: '2em' }}>{tournament.name}</span>
+            </div>
+          </AbsoluteSection>
+        )}
+
         {/* Left column sections */}
         {dt.showEntryCount && (
           <AbsoluteSection pos={layout.players}>
