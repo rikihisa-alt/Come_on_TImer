@@ -6,18 +6,20 @@ import { useStore } from '@/stores/useStore';
 import { onSync } from '@/lib/sync';
 import { unlockAudio, playSound, playWarningBeep } from '@/lib/audio';
 import { formatTimer, formatChips, formatTimerHMS, computeTimeToBreak, computeTimeToEnd, computeRegCloseTime } from '@/lib/utils';
-import { Tournament, CashGame, ThemeConfig, DisplayToggles, SoundSettings } from '@/lib/types';
+import { Tournament, CashGame, ThemeConfig, DisplayToggles, SoundSettings, SectionLayout } from '@/lib/types';
 import { DEFAULT_SECTION_LAYOUT, DEFAULT_CASH_SECTION_LAYOUT } from '@/lib/presets';
 import { FullscreenButton } from '@/components/FullscreenButton';
 import { AbsoluteSection } from '@/components/AbsoluteSection';
 import { DisplayWrapper } from '@/components/DisplayWrapper';
+import { RoomSync } from '@/components/RoomSync';
 
 /* ═══ Tournament Panel (AbsoluteSection layout) ═══ */
-function TournamentPanel({ tournament, theme, displayToggles: dt, sound }: {
+function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutOverride }: {
   tournament: Tournament;
   theme: ThemeConfig;
   displayToggles: DisplayToggles;
   sound: SoundSettings;
+  layoutOverride?: SectionLayout;
 }) {
   const [displayMs, setDisplayMs] = useState(0);
   const prevRef = useRef(-1);
@@ -53,7 +55,7 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound }: {
     }
   }, [displayMs, tournament.status, sound]);
 
-  const layout = tournament.sectionLayout || DEFAULT_SECTION_LAYOUT;
+  const layout = layoutOverride || tournament.splitSectionLayout || tournament.sectionLayout || DEFAULT_SECTION_LAYOUT;
   const cur = tournament.levels[tournament.currentLevelIndex];
   const nextPlay = tournament.levels.slice(tournament.currentLevelIndex + 1).find(l => l.type === 'play');
   const isBrk = cur?.type === 'break';
@@ -63,10 +65,10 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound }: {
   const ttb = computeTimeToBreak(tournament.levels, tournament.currentLevelIndex, displayMs);
   const tte = computeTimeToEnd(tournament.levels, tournament.currentLevelIndex, displayMs);
   const regClose = computeRegCloseTime(tournament.levels, tournament.currentLevelIndex, displayMs, tournament.regCloseLevel);
-  const totalChips = (tournament.entryCount + tournament.rebuyCount + tournament.addonCount) * tournament.startingChips;
-  const avg = tournament.entryCount > 0 ? Math.round(totalChips / tournament.entryCount) : 0;
+  const activePlayers = tournament.initialEntries + tournament.reEntryCount;
+  const totalChips = (activePlayers + tournament.rebuyCount + tournament.addonCount) * tournament.startingChips;
+  const avg = activePlayers > 0 ? Math.round(totalChips / activePlayers) : 0;
   const pc = theme?.primaryColor || '#60a5fa';
-  const pool = (tournament.entryCount + tournament.rebuyCount) * tournament.buyInAmount;
   const tickerSpeed = dt.tickerSpeed || 25;
   const isPreLevel = tournament.status === 'running' && tournament.currentLevelIndex === -1;
 
@@ -86,7 +88,15 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound }: {
         <AbsoluteSection pos={layout.players}>
           <div className="g-card-inner h-full flex flex-col items-center justify-center p-1">
             <div className="text-[7px] lg:text-[9px] text-white/30 uppercase tracking-wider font-semibold">Players</div>
-            <div className="text-xs lg:text-base font-bold text-white/65 timer-font">{tournament.entryCount}</div>
+            <div className="text-xs lg:text-base font-bold text-white/65 timer-font">{activePlayers}</div>
+          </div>
+        </AbsoluteSection>
+      )}
+      {dt.showEntryCount && (
+        <AbsoluteSection pos={layout.reEntry}>
+          <div className="g-card-inner h-full flex flex-col items-center justify-center p-1">
+            <div className="text-[7px] lg:text-[9px] text-white/30 uppercase tracking-wider font-semibold">Re-Entry</div>
+            <div className="text-xs lg:text-base font-bold text-white/65 timer-font">{tournament.reEntryCount}</div>
           </div>
         </AbsoluteSection>
       )}
@@ -193,8 +203,9 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound }: {
               {tournament.prizeStructure.map(p => (
                 <div key={p.place} className="flex items-center justify-between text-[10px] gap-1">
                   <span className="text-white/40">{p.place}位</span>
-                  <span className="text-white/25">{p.percent}%</span>
-                  {pool > 0 && <span className="font-bold timer-font" style={{ color: p.place === 1 ? pc : 'rgba(255,255,255,0.5)' }}>&yen;{Math.round(pool * p.percent / 100).toLocaleString()}</span>}
+                  <span className="font-bold timer-font" style={{ color: p.place === 1 ? pc : 'rgba(255,255,255,0.5)' }}>
+                    {p.amount > 0 ? `\u00A5${p.amount.toLocaleString()}` : '--'}
+                  </span>
                 </div>
               ))}
             </div>
@@ -484,9 +495,13 @@ function SplitInner() {
   const rightTournament = rightType === 'tournament' ? tournaments.find(t => t.id === selRight) : undefined;
   const rightCash = rightType === 'cash' ? cashGames.find(c => c.id === selRight) : undefined;
 
+  const leftThemeParam = params.get('leftTheme') || '';
+  const rightThemeParam = params.get('rightTheme') || '';
   const leftTimerThemeId = leftTournament?.themeId || leftCash?.themeId;
-  const themeId = leftTimerThemeId || assignment?.themeId || defaultThemeId || 'come-on-blue';
-  const theme = themes.find(t => t.id === themeId) || themes[0];
+  const baseThemeId = leftTimerThemeId || assignment?.themeId || defaultThemeId || 'come-on-blue';
+  const theme = themes.find(t => t.id === baseThemeId) || themes[0];
+  const leftTheme = (leftThemeParam ? themes.find(t => t.id === leftThemeParam) : undefined) || theme;
+  const rightTheme = (rightThemeParam ? themes.find(t => t.id === rightThemeParam) : undefined) || theme;
 
   /* per-timer settings for each panel */
   const leftDt = (leftTournament?.displayToggles || leftCash?.displayToggles) || globalToggles;
@@ -494,13 +509,18 @@ function SplitInner() {
   const rightDt = (rightTournament?.displayToggles || rightCash?.displayToggles) || globalToggles;
   const rightSnd = (rightTournament?.sound || rightCash?.sound) || globalSound;
 
-  /* Background: use left panel's bg image, or theme */
-  const bgImgUrl = leftDt.backgroundImageUrl || rightDt.backgroundImageUrl;
-  const bgStyle = bgImgUrl
-    ? { backgroundImage: `url(${bgImgUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
-    : theme?.type === 'gradient'
-    ? { background: `linear-gradient(160deg, ${theme.gradientFrom || '#0e1c36'}, ${theme.gradientTo || '#1c3d6e'})` }
-    : { background: 'linear-gradient(160deg, #0e1c36 0%, #152d52 50%, #1c3d6e 100%)' };
+  /* Helper: theme → bg style */
+  const themeBgStyle = (t: ThemeConfig, dtBgUrl?: string): React.CSSProperties => {
+    if (dtBgUrl) return { backgroundImage: `url(${dtBgUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' };
+    if (t?.type === 'gradient') return { background: `linear-gradient(160deg, ${t.gradientFrom || '#0e1c36'}, ${t.gradientTo || '#1c3d6e'})` };
+    if (t?.type === 'image' && t.imageUrl) return { backgroundImage: `url(${t.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' };
+    return { background: 'linear-gradient(160deg, #0e1c36 0%, #152d52 50%, #1c3d6e 100%)' };
+  };
+
+  const bgStyle = themeBgStyle(theme, leftDt.backgroundImageUrl || rightDt.backgroundImageUrl);
+  const leftBgStyle = themeBgStyle(leftTheme, leftDt.backgroundImageUrl);
+  const rightBgStyle = themeBgStyle(rightTheme, rightDt.backgroundImageUrl);
+  const hasSeparateThemes = leftThemeParam || rightThemeParam;
 
   const hasLeft = leftTournament || leftCash;
   const hasRight = rightTournament || rightCash;
@@ -509,8 +529,8 @@ function SplitInner() {
 
   return (
     <DisplayWrapper bgStyle={bgStyle} className="flex flex-col select-none">
-      {bgImgUrl && <div className="absolute inset-0 bg-black/50 pointer-events-none z-[1]" />}
-      {theme && theme.overlayOpacity > 0 && <div className="absolute inset-0 bg-black pointer-events-none z-[1]" style={{ opacity: theme.overlayOpacity / 100 }} />}
+      {(leftDt.backgroundImageUrl || rightDt.backgroundImageUrl) && !hasSeparateThemes && <div className="absolute inset-0 bg-black/50 pointer-events-none z-[1]" />}
+      {!hasSeparateThemes && theme && theme.overlayOpacity > 0 && <div className="absolute inset-0 bg-black pointer-events-none z-[1]" style={{ opacity: theme.overlayOpacity / 100 }} />}
 
       {/* Header */}
       <div className="g-topbar relative z-10 flex items-center px-4 md:px-6 py-2.5 md:py-3">
@@ -529,7 +549,9 @@ function SplitInner() {
             <SplitTimerSelector label="右" selectedId={selRight} onSelect={setSelRight} tournaments={tournaments} cashGames={cashGames} />
           </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0 ml-2" />
+        <div className="flex items-center gap-2 shrink-0 ml-2">
+          <RoomSync />
+        </div>
       </div>
 
       {/* Fullscreen button (below top bar, right) */}
@@ -540,25 +562,33 @@ function SplitInner() {
       {/* Split panels */}
       <div className="relative z-10 flex-1 flex">
         {/* LEFT PANEL */}
-        <div className="flex-1 flex flex-col border-r border-white/[0.08]">
-          {hasLeft ? (
-            leftTournament ? <TournamentPanel tournament={leftTournament} theme={theme} displayToggles={leftDt} sound={leftSnd} />
-            : leftCash ? <CashPanel cashGame={leftCash} theme={theme} displayToggles={leftDt} />
-            : null
-          ) : (
-            <div className="flex-1 flex items-center justify-center"><div className="g-card p-6 text-white/20 text-sm">左パネル: タイマーを選択 ↑</div></div>
-          )}
+        <div className="flex-1 flex flex-col border-r border-white/[0.08] relative overflow-hidden">
+          {hasSeparateThemes && <div className="absolute inset-0 z-0" style={leftBgStyle} />}
+          {hasSeparateThemes && leftTheme && leftTheme.overlayOpacity > 0 && <div className="absolute inset-0 bg-black z-0" style={{ opacity: leftTheme.overlayOpacity / 100 }} />}
+          <div className="relative z-[1] flex-1 flex flex-col">
+            {hasLeft ? (
+              leftTournament ? <TournamentPanel tournament={leftTournament} theme={leftTheme} displayToggles={leftDt} sound={leftSnd} />
+              : leftCash ? <CashPanel cashGame={leftCash} theme={leftTheme} displayToggles={leftDt} />
+              : null
+            ) : (
+              <div className="flex-1 flex items-center justify-center"><div className="g-card p-6 text-white/20 text-sm">左パネル: タイマーを選択 ↑</div></div>
+            )}
+          </div>
         </div>
 
         {/* RIGHT PANEL */}
-        <div className="flex-1 flex flex-col">
-          {hasRight ? (
-            rightTournament ? <TournamentPanel tournament={rightTournament} theme={theme} displayToggles={rightDt} sound={rightSnd} />
-            : rightCash ? <CashPanel cashGame={rightCash} theme={theme} displayToggles={rightDt} />
-            : null
-          ) : (
-            <div className="flex-1 flex items-center justify-center"><div className="g-card p-6 text-white/20 text-sm">右パネル: タイマーを選択 ↑</div></div>
-          )}
+        <div className="flex-1 flex flex-col relative overflow-hidden">
+          {hasSeparateThemes && <div className="absolute inset-0 z-0" style={rightBgStyle} />}
+          {hasSeparateThemes && rightTheme && rightTheme.overlayOpacity > 0 && <div className="absolute inset-0 bg-black z-0" style={{ opacity: rightTheme.overlayOpacity / 100 }} />}
+          <div className="relative z-[1] flex-1 flex flex-col">
+            {hasRight ? (
+              rightTournament ? <TournamentPanel tournament={rightTournament} theme={rightTheme} displayToggles={rightDt} sound={rightSnd} />
+              : rightCash ? <CashPanel cashGame={rightCash} theme={rightTheme} displayToggles={rightDt} />
+              : null
+            ) : (
+              <div className="flex-1 flex items-center justify-center"><div className="g-card p-6 text-white/20 text-sm">右パネル: タイマーを選択 ↑</div></div>
+            )}
+          </div>
         </div>
       </div>
     </DisplayWrapper>

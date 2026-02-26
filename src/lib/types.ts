@@ -12,11 +12,20 @@ export type CashGameStatus = 'idle' | 'running' | 'paused';
 
 export type PrizeEntry = {
   place: number;
-  percent: number;
+  amount: number;  // 直接金額（円）
+};
+
+export type RakeType = 'fixed' | 'percent';
+
+export type BlindTemplate = {
+  id: string;
+  name: string;
+  levels: BlindLevel[];
+  createdAt: number;
 };
 
 export type TournamentSectionId =
-  | 'players' | 'rebuy' | 'addon' | 'avgStack'
+  | 'players' | 'reEntry' | 'rebuy' | 'addon' | 'avgStack'
   | 'timer' | 'nextLevel'
   | 'cornerTime' | 'regClose' | 'nextBreak'
   | 'prizeTable' | 'ticker'
@@ -47,10 +56,19 @@ export type Tournament = {
   timerStartedAt: number | null;
   remainingMs: number;
   startingChips: number;
-  entryCount: number;
-  rebuyCount: number;
+  // F5: リエントリー/リバイ分離
+  initialEntries: number;   // 初回参加者数
+  reEntryCount: number;     // リエントリー数（プレイヤー増加）
+  rebuyCount: number;       // リバイ数（チップのみ）
   addonCount: number;
-  buyInAmount: number;
+  // F4: 個別単価 + Rake
+  buyInAmount: number;      // 初回バイイン
+  reEntryAmount: number;    // リエントリー単価
+  rebuyAmount: number;      // リバイ単価
+  addonAmount: number;      // アドオン単価
+  rakeType: RakeType;
+  rakeValue: number;        // 固定額 or %
+  // F3: プライズ（金額直接入力）
   prizeStructure: PrizeEntry[];
   createdAt: number;
   regCloseLevel?: number;
@@ -59,6 +77,8 @@ export type Tournament = {
   sound?: SoundSettings;
   themeId?: string;
   sectionLayout?: SectionLayout;
+  // F6: Split用別レイアウト
+  splitSectionLayout?: SectionLayout;
 };
 
 export type CashGame = {

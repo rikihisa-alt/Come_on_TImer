@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useStore } from '@/stores/useStore';
-import { formatTimer, formatTimerHMS, formatChips, uid } from '@/lib/utils';
+import { formatTimer, formatTimerHMS, formatChips, uid, computeRevenue, computeRake } from '@/lib/utils';
 import { PRESET_OPTIONS, DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND, DEFAULT_SECTION_LAYOUT, DEFAULT_CASH_SECTION_LAYOUT, FONT_OPTIONS, DEFAULT_SYSTEM_STYLE, ASPECT_RATIO_OPTIONS } from '@/lib/presets';
 import { playSound, playTestSound, playWarningBeep, speakTTS, fillTTSTemplate, PRESET_LABELS } from '@/lib/audio';
-import { BlindLevel, Tournament, CashGame, SoundPreset, PrizeEntry, SoundSettings, DisplayToggles, ThemeConfig, TournamentSectionId, SectionPosition, SectionLayout, CashSectionId, CashSectionLayout, AspectRatioMode } from '@/lib/types';
+import { BlindLevel, Tournament, CashGame, SoundPreset, PrizeEntry, SoundSettings, DisplayToggles, ThemeConfig, TournamentSectionId, SectionPosition, SectionLayout, CashSectionId, CashSectionLayout, AspectRatioMode, RakeType } from '@/lib/types';
+import { RoomSync } from '@/components/RoomSync';
 
 const TAB_ORDER = ['tournaments', 'cash', 'split', 'settings'] as const;
 
@@ -25,6 +26,14 @@ export default function OperatorPage() {
 
   return (
     <div className="min-h-screen" style={{ background: 'linear-gradient(160deg, #0e1c36 0%, #152d52 50%, #1c3d6e 100%)' }}>
+      {/* Room Sync Bar */}
+      <div className="flex items-center justify-between px-4 py-2 border-b border-white/[0.04]">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-black text-blue-400 tracking-tight">COME ON</span>
+          <span className="text-white/25 font-medium text-[10px]">Timer</span>
+        </div>
+        <RoomSync />
+      </div>
       {/* Glass Tab Nav */}
       <nav className="flex px-3 py-2 gap-1.5 border-b border-white/[0.06]">
         {TAB_ORDER.map(t => (
@@ -199,18 +208,28 @@ function TournamentTimer({ tournament: t }: { tournament: Tournament }) {
 function TournamentStats({ tournament: t }: { tournament: Tournament }) {
   const up = (p: Partial<Tournament>) => useStore.getState().updateTournament(t.id, p);
   const totalPlayLevels = t.levels.filter(l => l.type === 'play').length;
+  const revenue = computeRevenue(t);
+  const rake = computeRake(revenue, t.rakeType, t.rakeValue);
+  const prizePool = Math.max(0, revenue - rake);
+
+  const CountRow = ({ label, count, countKey, amount, amountKey }: { label: string; count: number; countKey: keyof Tournament; amount: number; amountKey: keyof Tournament }) => (
+    <div className="flex items-center gap-2 flex-wrap">
+      <span className="text-[11px] text-white/30 w-20 shrink-0">{label}</span>
+      <div className="flex gap-0.5 items-center">
+        <button className="btn btn-ghost btn-sm px-1.5" onClick={() => up({ [countKey]: Math.max(0, count - 1) } as Partial<Tournament>)}>-</button>
+        <input type="number" className="input input-sm w-14 text-center" value={count} onChange={e => up({ [countKey]: Math.max(0, +e.target.value) } as Partial<Tournament>)} />
+        <button className="btn btn-ghost btn-sm px-1.5" onClick={() => up({ [countKey]: count + 1 } as Partial<Tournament>)}>+</button>
+      </div>
+      <span className="text-[10px] text-white/15 mx-1">&yen;</span>
+      <input type="number" className="input input-sm w-20" value={amount} onChange={e => up({ [amountKey]: Math.max(0, +e.target.value) } as Partial<Tournament>)} placeholder="単価" />
+    </div>
+  );
 
   return (
     <div className="space-y-3">
       <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Tournament Info</div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 gap-3">
         <div><label className="text-[11px] text-white/25 block mb-1">Starting Chips</label><input type="number" className="input input-sm" value={t.startingChips} onChange={e => up({ startingChips: +e.target.value })} /></div>
-        <div><label className="text-[11px] text-white/25 block mb-1">Entries</label><div className="flex gap-1"><button className="btn btn-ghost btn-sm" onClick={() => up({ entryCount: Math.max(0, t.entryCount - 1) })}>-</button><input type="number" className="input input-sm text-center" value={t.entryCount} onChange={e => up({ entryCount: Math.max(0, +e.target.value) })} /><button className="btn btn-ghost btn-sm" onClick={() => up({ entryCount: t.entryCount + 1 })}>+</button></div></div>
-        <div><label className="text-[11px] text-white/25 block mb-1">Rebuys</label><div className="flex gap-1"><button className="btn btn-ghost btn-sm" onClick={() => up({ rebuyCount: Math.max(0, t.rebuyCount - 1) })}>-</button><input type="number" className="input input-sm text-center" value={t.rebuyCount} onChange={e => up({ rebuyCount: Math.max(0, +e.target.value) })} /><button className="btn btn-ghost btn-sm" onClick={() => up({ rebuyCount: t.rebuyCount + 1 })}>+</button></div></div>
-        <div><label className="text-[11px] text-white/25 block mb-1">Add-ons</label><div className="flex gap-1"><button className="btn btn-ghost btn-sm" onClick={() => up({ addonCount: Math.max(0, (t.addonCount || 0) - 1) })}>-</button><input type="number" className="input input-sm text-center" value={t.addonCount || 0} onChange={e => up({ addonCount: Math.max(0, +e.target.value) })} /><button className="btn btn-ghost btn-sm" onClick={() => up({ addonCount: (t.addonCount || 0) + 1 })}>+</button></div></div>
-      </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div><label className="text-[11px] text-white/25 block mb-1">Buy-in (&yen;)</label><input type="number" className="input input-sm" value={t.buyInAmount} onChange={e => up({ buyInAmount: +e.target.value })} /></div>
         <div>
           <label className="text-[11px] text-white/25 block mb-1">Reg Close Level</label>
           <select className="input input-sm" value={t.regCloseLevel || 0} onChange={e => up({ regCloseLevel: +e.target.value || undefined })}>
@@ -220,19 +239,44 @@ function TournamentStats({ tournament: t }: { tournament: Tournament }) {
             ))}
           </select>
         </div>
-        <div className="col-span-2">
-          <label className="text-[11px] text-white/25 block mb-1">Pre-Level (開始前カウントダウン)</label>
+      </div>
+
+      <div className="border-t border-white/[0.06] pt-3 space-y-2">
+        <CountRow label="Entries" count={t.initialEntries} countKey="initialEntries" amount={t.buyInAmount} amountKey="buyInAmount" />
+        <CountRow label="Re-Entries" count={t.reEntryCount} countKey="reEntryCount" amount={t.reEntryAmount} amountKey="reEntryAmount" />
+        <CountRow label="Rebuys" count={t.rebuyCount} countKey="rebuyCount" amount={t.rebuyAmount} amountKey="rebuyAmount" />
+        <CountRow label="Add-ons" count={t.addonCount} countKey="addonCount" amount={t.addonAmount} amountKey="addonAmount" />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-[11px] text-white/25 block mb-1">Pre-Level (開始前)</label>
           <div className="flex items-center gap-2">
-            <input
-              type="number"
-              className="input input-sm w-20 text-center"
-              value={Math.floor((t.preLevelDuration || 0) / 60)}
-              onChange={e => up({ preLevelDuration: Math.max(0, +e.target.value) * 60 })}
-              min={0}
-            />
+            <input type="number" className="input input-sm w-20 text-center" value={Math.floor((t.preLevelDuration || 0) / 60)} onChange={e => up({ preLevelDuration: Math.max(0, +e.target.value) * 60 })} min={0} />
             <span className="text-xs text-white/25">min</span>
           </div>
-          <p className="text-[10px] text-white/15 mt-1">Start押下後、この時間のカウントダウン後にLevel 1が開始します</p>
+        </div>
+      </div>
+
+      {/* Revenue Summary */}
+      <div className="border-t border-white/[0.06] pt-3">
+        <div className="text-[11px] text-white/25 font-semibold mb-2">Revenue Summary</div>
+        <div className="space-y-1 text-[11px]">
+          {t.initialEntries > 0 && <div className="flex justify-between text-white/30"><span>Entry {t.initialEntries} x &yen;{t.buyInAmount.toLocaleString()}</span><span>&yen;{(t.initialEntries * t.buyInAmount).toLocaleString()}</span></div>}
+          {t.reEntryCount > 0 && <div className="flex justify-between text-white/30"><span>Re-Entry {t.reEntryCount} x &yen;{t.reEntryAmount.toLocaleString()}</span><span>&yen;{(t.reEntryCount * t.reEntryAmount).toLocaleString()}</span></div>}
+          {t.rebuyCount > 0 && <div className="flex justify-between text-white/30"><span>Rebuy {t.rebuyCount} x &yen;{t.rebuyAmount.toLocaleString()}</span><span>&yen;{(t.rebuyCount * t.rebuyAmount).toLocaleString()}</span></div>}
+          {t.addonCount > 0 && <div className="flex justify-between text-white/30"><span>Add-on {t.addonCount} x &yen;{t.addonAmount.toLocaleString()}</span><span>&yen;{(t.addonCount * t.addonAmount).toLocaleString()}</span></div>}
+          <div className="flex justify-between text-white/40 font-semibold pt-1 border-t border-white/[0.04]"><span>Total Revenue</span><span>&yen;{revenue.toLocaleString()}</span></div>
+          <div className="flex items-center gap-2 pt-1">
+            <span className="text-white/25">Rake</span>
+            <select className="input input-sm w-20 text-[10px]" value={t.rakeType} onChange={e => up({ rakeType: e.target.value as RakeType })}>
+              <option value="fixed">Fixed</option>
+              <option value="percent">%</option>
+            </select>
+            <input type="number" className="input input-sm w-20" value={t.rakeValue} onChange={e => up({ rakeValue: Math.max(0, +e.target.value) })} />
+            <span className="text-white/20 ml-auto">-&yen;{rake.toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between text-blue-400 font-bold pt-1 border-t border-white/[0.04]"><span>Prize Pool</span><span>&yen;{prizePool.toLocaleString()}</span></div>
         </div>
       </div>
     </div>
@@ -389,28 +433,35 @@ function SoundPanel({ timerId, timerType }: { timerId: string; timerType: 'tourn
 
 function PrizeEditor({ tournament: t }: { tournament: Tournament }) {
   const update = (p: PrizeEntry[]) => useStore.getState().updateTournament(t.id, { prizeStructure: p });
-  const pool = (t.entryCount + t.rebuyCount) * t.buyInAmount;
+  const total = t.prizeStructure.reduce((sum, p) => sum + (p.amount || 0), 0);
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Prize Structure</div>
-        <button className="btn btn-ghost btn-sm" onClick={() => update([...t.prizeStructure, { place: t.prizeStructure.length + 1, percent: 0 }])}>+ Add</button>
+        <button className="btn btn-ghost btn-sm" onClick={() => update([...t.prizeStructure, { place: t.prizeStructure.length + 1, amount: 0 }])}>+ Add</button>
       </div>
       {t.prizeStructure.map((p, i) => (
         <div key={i} className="flex items-center gap-2">
           <span className="text-xs text-white/30 w-6">{p.place}位</span>
-          <input type="number" className="input input-sm w-20" value={p.percent} onChange={e => { const arr = [...t.prizeStructure]; arr[i] = { ...arr[i], percent: +e.target.value }; update(arr); }} min={0} max={100} />
-          <span className="text-xs text-white/20">%</span>
-          <span className="text-xs text-white/40 ml-2">&yen;{pool > 0 ? Math.round(pool * p.percent / 100).toLocaleString() : '0'}</span>
+          <span className="text-xs text-white/20">&yen;</span>
+          <input type="number" className="input input-sm w-28" value={p.amount} onChange={e => { const arr = [...t.prizeStructure]; arr[i] = { ...arr[i], amount: Math.max(0, +e.target.value) }; update(arr); }} min={0} />
           <button className="btn btn-danger btn-sm ml-auto" onClick={() => update(t.prizeStructure.filter((_, j) => j !== i))}>x</button>
         </div>
       ))}
+      {total > 0 && (
+        <div className="flex justify-between text-xs border-t border-white/[0.06] pt-2">
+          <span className="text-white/30">合計</span>
+          <span className="text-white/50 font-bold">&yen;{total.toLocaleString()}</span>
+        </div>
+      )}
     </div>
   );
 }
 
 function BlindEditor({ tournament: t }: { tournament: Tournament }) {
   const store = useStore();
+  const [templateName, setTemplateName] = useState('');
+  const [showSave, setShowSave] = useState(false);
   const addLevel = (type: 'play' | 'break') => {
     const levels = [...t.levels];
     const last = [...levels].reverse().find(l => l.type === 'play');
@@ -421,12 +472,43 @@ function BlindEditor({ tournament: t }: { tournament: Tournament }) {
   const upLv = (i: number, p: Partial<BlindLevel>) => { const lvs = t.levels.map((l, j) => j === i ? { ...l, ...p } : l); store.updateTournament(t.id, { levels: lvs }); };
   const rmLv = (i: number) => store.updateTournament(t.id, { levels: t.levels.filter((_, j) => j !== i) });
   const loadPreset = (p: typeof PRESET_OPTIONS[number]) => store.updateTournament(t.id, { levels: [...p.levels], currentLevelIndex: 0, remainingMs: p.levels[0].duration * 1000, status: 'idle', timerStartedAt: null });
+  const saveTemplate = () => {
+    if (!templateName.trim()) return;
+    store.addBlindTemplate(templateName.trim(), t.levels);
+    setTemplateName('');
+    setShowSave(false);
+  };
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Blind Structure</div>
         <div className="flex gap-1">{PRESET_OPTIONS.map(p => <button key={p.value} onClick={() => loadPreset(p)} className="btn btn-ghost btn-sm">{p.label}</button>)}</div>
       </div>
+
+      {/* My Templates (F1) */}
+      {store.blindTemplates.length > 0 && (
+        <div className="space-y-1">
+          <div className="text-[10px] text-white/20 font-semibold uppercase tracking-wider">My Templates</div>
+          {store.blindTemplates.map(tmpl => (
+            <div key={tmpl.id} className="flex items-center gap-2 py-1">
+              <span className="text-xs text-white/40 flex-1 truncate">{tmpl.name}</span>
+              <span className="text-[10px] text-white/15">{tmpl.levels.filter(l => l.type === 'play').length}lvl</span>
+              <button className="btn btn-ghost btn-sm text-[10px]" onClick={() => store.loadBlindTemplate(t.id, tmpl.id)}>Load</button>
+              <button className="text-white/15 hover:text-red-400 text-xs transition-colors" onClick={() => store.removeBlindTemplate(tmpl.id)}>x</button>
+            </div>
+          ))}
+        </div>
+      )}
+      {showSave ? (
+        <div className="flex items-center gap-2">
+          <input className="input input-sm flex-1" value={templateName} onChange={e => setTemplateName(e.target.value)} placeholder="テンプレート名" onKeyDown={e => e.key === 'Enter' && saveTemplate()} autoFocus />
+          <button className="btn btn-primary btn-sm" onClick={saveTemplate}>Save</button>
+          <button className="btn btn-ghost btn-sm" onClick={() => setShowSave(false)}>Cancel</button>
+        </div>
+      ) : (
+        <button className="btn btn-ghost btn-sm text-[10px]" onClick={() => setShowSave(true)}>Save Current as Template</button>
+      )}
+
       <div className="space-y-1">
         {t.levels.map((lv, i) => (
           <div key={i} className={`flex items-center gap-2 p-2 rounded-xl transition-colors ${i === t.currentLevelIndex ? 'bg-blue-500/10 border border-blue-500/20' : 'hover:bg-white/[0.02]'}`}>
@@ -600,7 +682,7 @@ function CashEditor({ id, onDelete }: { id: string; onDelete: (id: string) => vo
 /* ── Layout Editor (generic) ── */
 
 const SECTION_LABELS: Record<TournamentSectionId, string> = {
-  players: 'Players', rebuy: 'Rebuy', addon: 'Add-on', avgStack: 'Avg Stack',
+  players: 'Players', reEntry: 'Re-Entry', rebuy: 'Rebuy', addon: 'Add-on', avgStack: 'Avg Stack',
   timer: 'Timer', nextLevel: 'Next Level',
   cornerTime: 'Time', regClose: 'Reg Close', nextBreak: 'Next Break',
   prizeTable: 'Prize', ticker: 'Ticker', tournamentName: 'Name',
@@ -614,7 +696,7 @@ const CASH_SECTION_LABELS: Record<CashSectionId, string> = {
 
 function isSectionVisible(id: TournamentSectionId, dt: DisplayToggles): boolean {
   switch (id) {
-    case 'players': case 'rebuy': case 'addon': return dt.showEntryCount;
+    case 'players': case 'reEntry': case 'rebuy': case 'addon': return dt.showEntryCount;
     case 'avgStack': return dt.showChipInfo;
     case 'timer': return true;
     case 'nextLevel': return dt.showNextLevel;
@@ -814,19 +896,34 @@ function GenericLayoutEditor<T extends string>({
   );
 }
 
-/* Wrapper for tournament layout editor */
+/* Wrapper for tournament layout editor — supports Single/Split toggle (F6) */
 function LayoutEditor({ tournament: t }: { tournament: Tournament }) {
   const store = useStore();
-  const layout = t.sectionLayout || DEFAULT_SECTION_LAYOUT;
+  const [layoutMode, setLayoutMode] = useState<'single' | 'split'>('single');
+  const layout = layoutMode === 'split'
+    ? (t.splitSectionLayout || DEFAULT_SECTION_LAYOUT)
+    : (t.sectionLayout || DEFAULT_SECTION_LAYOUT);
   const dt = t.displayToggles || DEFAULT_DISPLAY_TOGGLES;
   const visibleIds = (Object.keys(DEFAULT_SECTION_LAYOUT) as TournamentSectionId[]).filter(id => isSectionVisible(id, dt));
   return (
-    <GenericLayoutEditor<TournamentSectionId>
-      layout={layout} defaultLayout={DEFAULT_SECTION_LAYOUT} labels={SECTION_LABELS}
-      timerName={t.name} themeId={t.themeId} visibleIds={visibleIds}
-      onUpdatePosition={(sid, pos) => store.updateSectionPosition(t.id, sid, pos)}
-      onReset={() => store.resetSectionLayout(t.id)}
-    />
+    <div className="space-y-2">
+      <div className="flex gap-1">
+        <button onClick={() => setLayoutMode('single')}
+          className={`flex-1 py-1.5 rounded-lg text-[10px] font-semibold transition-all ${layoutMode === 'single' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'text-white/25 border border-white/[0.06]'}`}>
+          Single Display
+        </button>
+        <button onClick={() => setLayoutMode('split')}
+          className={`flex-1 py-1.5 rounded-lg text-[10px] font-semibold transition-all ${layoutMode === 'split' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' : 'text-white/25 border border-white/[0.06]'}`}>
+          Split Display
+        </button>
+      </div>
+      <GenericLayoutEditor<TournamentSectionId>
+        layout={layout} defaultLayout={DEFAULT_SECTION_LAYOUT} labels={SECTION_LABELS}
+        timerName={t.name} themeId={t.themeId} visibleIds={visibleIds}
+        onUpdatePosition={(sid, pos) => layoutMode === 'split' ? store.updateSplitSectionPosition(t.id, sid, pos) : store.updateSectionPosition(t.id, sid, pos)}
+        onReset={() => layoutMode === 'split' ? store.resetSplitSectionLayout(t.id) : store.resetSectionLayout(t.id)}
+      />
+    </div>
   );
 }
 
@@ -1094,7 +1191,11 @@ function SplitTab() {
   const leftThemeId = leftTimer?.themeId || store.defaultThemeId || 'come-on-blue';
   const themeName = store.themes.find(th => th.id === leftThemeId)?.name || '';
 
-  const splitPath = `/display/split?left=${leftId}&right=${rightId}&theme=${leftThemeId}`;
+  // F7: Per-panel themes
+  const rightTimer = tournaments.find(t => t.id === rightId) || cashGames.find(c => c.id === rightId);
+  const rightThemeId = rightTimer?.themeId || store.defaultThemeId || 'come-on-blue';
+
+  const splitPath = `/display/split?left=${leftId}&right=${rightId}&leftTheme=${leftThemeId}&rightTheme=${rightThemeId}`;
 
   if (allTimers.length < 2) {
     return (
@@ -1122,6 +1223,10 @@ function SplitTab() {
                 </option>
               ))}
             </select>
+            <label className="text-[11px] text-white/25 block mb-1 mt-2">左テーマ</label>
+            <select className="input input-sm" value={leftThemeId} onChange={e => { if (leftTimer) { if (tournaments.find(x => x.id === leftId)) store.updateTournamentTheme(leftId, e.target.value); else store.updateCashTheme(leftId, e.target.value); } }}>
+              {store.themes.map(th => <option key={th.id} value={th.id}>{th.name}</option>)}
+            </select>
           </div>
           {/* Right panel selection */}
           <div>
@@ -1133,6 +1238,10 @@ function SplitTab() {
                 </option>
               ))}
             </select>
+            <label className="text-[11px] text-white/25 block mb-1 mt-2">右テーマ</label>
+            <select className="input input-sm" value={rightThemeId} onChange={e => { if (rightTimer) { if (tournaments.find(x => x.id === rightId)) store.updateTournamentTheme(rightId, e.target.value); else store.updateCashTheme(rightId, e.target.value); } }}>
+              {store.themes.map(th => <option key={th.id} value={th.id}>{th.name}</option>)}
+            </select>
           </div>
         </div>
       </div>
@@ -1141,7 +1250,7 @@ function SplitTab() {
       <DisplayPreview
         route="split"
         displayId=""
-        targetName={`${leftTimer?.name || '左'} | ${(tournaments.find(t => t.id === rightId) || cashGames.find(c => c.id === rightId))?.name || '右'}`}
+        targetName={`${leftTimer?.name || '左'} | ${rightTimer?.name || '右'}`}
         themeLabel={themeName}
         overridePath={splitPath}
       />

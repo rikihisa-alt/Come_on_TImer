@@ -11,6 +11,7 @@ import { DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND, DEFAULT_SECTION_LAYOUT } from '
 import { FullscreenButton } from '@/components/FullscreenButton';
 import { AbsoluteSection } from '@/components/AbsoluteSection';
 import { DisplayWrapper } from '@/components/DisplayWrapper';
+import { RoomSync } from '@/components/RoomSync';
 
 /* ── Timer Selector dropdown ── */
 function TimerSelector({ selectedId, onSelect, tournaments }: {
@@ -68,8 +69,9 @@ function GlassStat({ label, value, accent }: { label: string; value: string; acc
 
 /* ── Prize Table ── */
 function PrizeTable({ tournament, primaryColor }: { tournament: Tournament; primaryColor: string }) {
-  const pool = (tournament.entryCount + tournament.rebuyCount) * tournament.buyInAmount;
+  const hasAnyAmount = tournament.prizeStructure.some(p => p.amount > 0);
   if (tournament.prizeStructure.length === 0) return null;
+  const total = tournament.prizeStructure.reduce((sum, p) => sum + (p.amount || 0), 0);
   return (
     <div className="g-card-inner p-3 lg:p-4 h-full overflow-auto">
       <div className="text-[9px] lg:text-[11px] text-white/35 uppercase tracking-wider font-semibold mb-2 text-center">Prize</div>
@@ -77,20 +79,19 @@ function PrizeTable({ tournament, primaryColor }: { tournament: Tournament; prim
         {tournament.prizeStructure.map((p) => (
           <div key={p.place} className="flex items-center justify-between text-xs gap-2">
             <span className="text-white/40 shrink-0">{p.place}位</span>
-            <span className="text-white/25 shrink-0">{p.percent}%</span>
-            {pool > 0 && (
+            {hasAnyAmount && (
               <span className="font-bold timer-font text-right" style={{ color: p.place === 1 ? primaryColor : 'rgba(255,255,255,0.5)' }}>
-                &yen;{Math.round(pool * p.percent / 100).toLocaleString()}
+                &yen;{(p.amount || 0).toLocaleString()}
               </span>
             )}
           </div>
         ))}
       </div>
-      {pool > 0 && (
+      {hasAnyAmount && total > 0 && (
         <div className="mt-2 pt-2 border-t border-white/[0.06] text-center">
           <span className="text-[9px] text-white/25 uppercase tracking-wider">Total</span>
           <div className="text-sm font-bold timer-font" style={{ color: primaryColor }}>
-            &yen;{pool.toLocaleString()}
+            &yen;{total.toLocaleString()}
           </div>
         </div>
       )}
@@ -200,10 +201,10 @@ function Inner() {
   const ttb = computeTimeToBreak(tournament.levels, tournament.currentLevelIndex, displayMs);
   const tte = computeTimeToEnd(tournament.levels, tournament.currentLevelIndex, displayMs);
   const regClose = computeRegCloseTime(tournament.levels, tournament.currentLevelIndex, displayMs, tournament.regCloseLevel);
-  const totalChips = (tournament.entryCount + tournament.rebuyCount + tournament.addonCount) * tournament.startingChips;
-  const avg = tournament.entryCount > 0 ? Math.round(totalChips / tournament.entryCount) : 0;
+  const activePlayers = tournament.initialEntries + tournament.reEntryCount;
+  const totalChips = (activePlayers + tournament.rebuyCount + tournament.addonCount) * tournament.startingChips;
+  const avg = activePlayers > 0 ? Math.round(totalChips / activePlayers) : 0;
   const pc = theme?.primaryColor || '#60a5fa';
-  const pool = (tournament.entryCount + tournament.rebuyCount) * tournament.buyInAmount;
   const layout = tournament.sectionLayout || DEFAULT_SECTION_LAYOUT;
 
   const bgStyle = dt.backgroundImageUrl
@@ -234,6 +235,7 @@ function Inner() {
           <TimerSelector selectedId={activeId} onSelect={setSelectedId} tournaments={tournaments} />
         </div>
         <div className="flex items-center gap-2 shrink-0 ml-2">
+          <RoomSync />
           {dt.showLevelInfo && (
             <div className="text-xs md:text-sm text-white/30 font-medium">
               {isBrk ? 'BREAK' : `Lv${cur?.level || '-'}`}/{totalLvs}
@@ -261,7 +263,12 @@ function Inner() {
         {/* Left column sections */}
         {dt.showEntryCount && (
           <AbsoluteSection pos={layout.players}>
-            <GlassStat label="Players" value={`${tournament.entryCount}`} accent />
+            <GlassStat label="Players" value={`${activePlayers}`} accent />
+          </AbsoluteSection>
+        )}
+        {dt.showEntryCount && (
+          <AbsoluteSection pos={layout.reEntry}>
+            <GlassStat label="Re-Entry" value={String(tournament.reEntryCount)} />
           </AbsoluteSection>
         )}
         {dt.showEntryCount && (
@@ -401,7 +408,8 @@ function Inner() {
           )}
           {/* Mobile compact stats */}
           <div className="flex items-center gap-3 mt-3 flex-wrap justify-center text-[10px] text-white/30">
-            <span>Players <span className="text-white/50 font-bold">{tournament.entryCount}</span></span>
+            <span>Players <span className="text-white/50 font-bold">{activePlayers}</span></span>
+            <span>RE <span className="text-white/50 font-bold">{tournament.reEntryCount}</span></span>
             <span>R <span className="text-white/50 font-bold">{tournament.rebuyCount}</span></span>
             <span>A <span className="text-white/50 font-bold">{tournament.addonCount}</span></span>
             {avg > 0 && <span>Avg <span className="text-white/50 font-bold">{formatChips(avg)}</span></span>}
@@ -426,7 +434,7 @@ function Inner() {
               <div key={p.place} className="g-card-inner flex-1 p-2 text-center">
                 <div className="text-[8px] text-white/30 uppercase tracking-wider font-semibold">{p.place}位</div>
                 <div className="text-xs font-bold text-white/60 timer-font">
-                  {pool > 0 ? `\u00A5${Math.round(pool * p.percent / 100).toLocaleString()}` : `${p.percent}%`}
+                  {p.amount > 0 ? `\u00A5${p.amount.toLocaleString()}` : '--'}
                 </div>
               </div>
             ))}

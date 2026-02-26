@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Tournament, CashGame, DisplayAssignment, ThemeConfig, SoundSettings, DisplayToggles, BlindLevel, PrizeEntry, SectionLayout, TournamentSectionId, SectionPosition, CashSectionId, CashSectionLayout, SystemStyle } from '@/lib/types';
+import { Tournament, CashGame, DisplayAssignment, ThemeConfig, SoundSettings, DisplayToggles, BlindLevel, PrizeEntry, SectionLayout, TournamentSectionId, SectionPosition, CashSectionId, CashSectionLayout, SystemStyle, BlindTemplate } from '@/lib/types';
 import { uid } from '@/lib/utils';
 import { broadcast } from '@/lib/sync';
 import { DEFAULT_THEMES, STANDARD_PRESET, DEFAULT_TTS_MESSAGES, DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND, DEFAULT_SECTION_LAYOUT, DEFAULT_CASH_SECTION_LAYOUT, DEFAULT_SYSTEM_STYLE } from '@/lib/presets';
@@ -14,6 +14,7 @@ interface AppState {
   displayToggles: DisplayToggles;
   defaultThemeId: string;
   systemStyle: SystemStyle;
+  blindTemplates: BlindTemplate[];
   updateSystemStyle: (partial: Partial<SystemStyle>) => void;
   addTournament: (name?: string, levels?: BlindLevel[]) => string;
   removeTournament: (id: string) => void;
@@ -55,6 +56,11 @@ interface AppState {
   addTheme: (theme: ThemeConfig) => void;
   updateTheme: (id: string, partial: Partial<ThemeConfig>) => void;
   removeTheme: (id: string) => void;
+  addBlindTemplate: (name: string, levels: BlindLevel[]) => void;
+  removeBlindTemplate: (id: string) => void;
+  loadBlindTemplate: (tournamentId: string, templateId: string) => void;
+  updateSplitSectionPosition: (id: string, sectionId: TournamentSectionId, pos: SectionPosition) => void;
+  resetSplitSectionLayout: (id: string) => void;
   broadcastAll: () => void;
 }
 
@@ -63,8 +69,11 @@ function mkTournament(name?: string, levels?: BlindLevel[]): Tournament {
   return {
     id: uid(), name: name || 'Tournament 1', levels: lvls, currentLevelIndex: 0,
     status: 'idle', timerStartedAt: null, remainingMs: lvls[0]?.duration ? lvls[0].duration * 1000 : 900000,
-    startingChips: 10000, entryCount: 0, rebuyCount: 0, addonCount: 0, buyInAmount: 0,
-    prizeStructure: [{ place: 1, percent: 50 }, { place: 2, percent: 30 }, { place: 3, percent: 20 }],
+    startingChips: 10000,
+    initialEntries: 0, reEntryCount: 0, rebuyCount: 0, addonCount: 0,
+    buyInAmount: 0, reEntryAmount: 0, rebuyAmount: 0, addonAmount: 0,
+    rakeType: 'fixed', rakeValue: 0,
+    prizeStructure: [{ place: 1, amount: 0 }, { place: 2, amount: 0 }, { place: 3, amount: 0 }],
     createdAt: Date.now(),
     displayToggles: { ...DEFAULT_DISPLAY_TOGGLES },
     sound: { ...DEFAULT_SOUND },
@@ -100,6 +109,7 @@ export const useStore = create<AppState>()(
       displayToggles: { ...DEFAULT_DISPLAY_TOGGLES },
       defaultThemeId: 'come-on-blue',
       systemStyle: { ...DEFAULT_SYSTEM_STYLE },
+      blindTemplates: [],
 
       updateSystemStyle: (partial) => { set(s => ({ systemStyle: { ...s.systemStyle, ...partial } })); get().broadcastAll(); },
       addTournament: (name, levels) => {
@@ -310,14 +320,38 @@ export const useStore = create<AppState>()(
       addTheme: (theme) => { set(s => ({ themes: [...s.themes, theme] })); get().broadcastAll(); },
       updateTheme: (id, partial) => { set(s => ({ themes: s.themes.map(t => t.id === id ? { ...t, ...partial } : t) })); get().broadcastAll(); },
       removeTheme: (id) => { set(s => ({ themes: s.themes.filter(t => t.id !== id) })); get().broadcastAll(); },
+      addBlindTemplate: (name, levels) => {
+        set(s => ({ blindTemplates: [...s.blindTemplates, { id: uid(), name, levels: [...levels], createdAt: Date.now() }] }));
+      },
+      removeBlindTemplate: (id) => {
+        set(s => ({ blindTemplates: s.blindTemplates.filter(t => t.id !== id) }));
+      },
+      loadBlindTemplate: (tournamentId, templateId) => {
+        const tmpl = get().blindTemplates.find(t => t.id === templateId);
+        if (!tmpl) return;
+        set(s => ({ tournaments: s.tournaments.map(t => t.id === tournamentId ? { ...t, levels: [...tmpl.levels], currentLevelIndex: 0, remainingMs: tmpl.levels[0]?.duration ? tmpl.levels[0].duration * 1000 : 900000, status: 'idle' as const, timerStartedAt: null } : t) }));
+        get().broadcastAll();
+      },
+      updateSplitSectionPosition: (id, sectionId, pos) => {
+        set(s => ({ tournaments: s.tournaments.map(t => {
+          if (t.id !== id) return t;
+          const current = t.splitSectionLayout || { ...DEFAULT_SECTION_LAYOUT };
+          return { ...t, splitSectionLayout: { ...current, [sectionId]: pos } };
+        }) }));
+        get().broadcastAll();
+      },
+      resetSplitSectionLayout: (id) => {
+        set(s => ({ tournaments: s.tournaments.map(t => t.id === id ? { ...t, splitSectionLayout: undefined } : t) }));
+        get().broadcastAll();
+      },
       broadcastAll: () => {
         const s = get();
-        broadcast('FULL_SYNC', { tournaments: s.tournaments, cashGames: s.cashGames, displays: s.displays, themes: s.themes, sound: s.sound, displayToggles: s.displayToggles, defaultThemeId: s.defaultThemeId, systemStyle: s.systemStyle });
+        broadcast('FULL_SYNC', { tournaments: s.tournaments, cashGames: s.cashGames, displays: s.displays, themes: s.themes, sound: s.sound, displayToggles: s.displayToggles, defaultThemeId: s.defaultThemeId, systemStyle: s.systemStyle, blindTemplates: s.blindTemplates });
       },
     }),
     {
       name: 'come-on-timer-v3',
-      version: 11,
+      version: 12,
       migrate: (persisted: unknown, version: number) => {
         const state = persisted as Record<string, unknown>;
         if (version < 4) {
@@ -394,9 +428,44 @@ export const useStore = create<AppState>()(
           ss.displayFontScale = ss.displayFontScale || 1.0;
           state.systemStyle = ss;
         }
+        if (version < 12) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const tours = (state.tournaments as any[]) || [];
+          state.tournaments = tours.map((t: Record<string, unknown>) => {
+            const initialEntries = (t.entryCount as number) ?? (t.initialEntries as number) ?? 0;
+            const rebuyCount = (t.rebuyCount as number) || 0;
+            const buyInAmount = (t.buyInAmount as number) || 0;
+            const oldPool = (initialEntries + rebuyCount) * buyInAmount;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const prizeStructure = ((t.prizeStructure as any[]) || []).map((p: Record<string, unknown>) => ({
+              place: p.place as number,
+              amount: p.amount !== undefined ? (p.amount as number) : Math.round(oldPool * ((p.percent as number) || 0) / 100),
+            }));
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const sl = t.sectionLayout as any;
+            if (sl && !sl.reEntry) {
+              sl.reEntry = { x: 0.8, y: 21.5, w: 12.5, h: 12 };
+            }
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { entryCount, ...rest } = t;
+            return {
+              ...rest,
+              initialEntries,
+              reEntryCount: (t.reEntryCount as number) ?? 0,
+              reEntryAmount: (t.reEntryAmount as number) ?? buyInAmount,
+              rebuyAmount: (t.rebuyAmount as number) ?? buyInAmount,
+              addonAmount: (t.addonAmount as number) ?? buyInAmount,
+              rakeType: (t.rakeType as string) ?? 'fixed',
+              rakeValue: (t.rakeValue as number) ?? 0,
+              prizeStructure,
+              sectionLayout: sl,
+            };
+          });
+          state.blindTemplates = (state.blindTemplates as unknown[]) || [];
+        }
         return state as unknown as AppState;
       },
-      partialize: (s) => ({ tournaments: s.tournaments, cashGames: s.cashGames, displays: s.displays, themes: s.themes, sound: s.sound, displayToggles: s.displayToggles, defaultThemeId: s.defaultThemeId, systemStyle: s.systemStyle }),
+      partialize: (s) => ({ tournaments: s.tournaments, cashGames: s.cashGames, displays: s.displays, themes: s.themes, sound: s.sound, displayToggles: s.displayToggles, defaultThemeId: s.defaultThemeId, systemStyle: s.systemStyle, blindTemplates: s.blindTemplates }),
     }
   )
 );

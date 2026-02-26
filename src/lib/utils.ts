@@ -52,6 +52,17 @@ export function computeTimeToEnd(
   return totalMs;
 }
 
+export function computeRevenue(t: { initialEntries: number; reEntryCount: number; rebuyCount: number; addonCount: number; buyInAmount: number; reEntryAmount: number; rebuyAmount: number; addonAmount: number }): number {
+  return t.initialEntries * t.buyInAmount
+    + t.reEntryCount * t.reEntryAmount
+    + t.rebuyCount * t.rebuyAmount
+    + t.addonCount * t.addonAmount;
+}
+
+export function computeRake(revenue: number, rakeType: 'fixed' | 'percent', rakeValue: number): number {
+  return rakeType === 'fixed' ? rakeValue : Math.round(revenue * rakeValue / 100);
+}
+
 export function computeRegCloseTime(
   levels: { type: string; duration: number; level: number }[],
   currentIndex: number,

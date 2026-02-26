@@ -58,10 +58,11 @@ export const DEFAULT_SOUND: SoundSettings = {
 };
 
 export const DEFAULT_SECTION_LAYOUT: SectionLayout = {
-  players:    { x: 0.8, y: 8.5,  w: 12.5, h: 18 },
-  rebuy:      { x: 0.8, y: 28,   w: 12.5, h: 18 },
-  addon:      { x: 0.8, y: 47.5, w: 12.5, h: 18 },
-  avgStack:   { x: 0.8, y: 67,   w: 12.5, h: 18 },
+  players:    { x: 0.8, y: 8.5,  w: 12.5, h: 12 },
+  reEntry:    { x: 0.8, y: 21.5, w: 12.5, h: 12 },
+  rebuy:      { x: 0.8, y: 34.5, w: 12.5, h: 12 },
+  addon:      { x: 0.8, y: 47.5, w: 12.5, h: 12 },
+  avgStack:   { x: 0.8, y: 60.5, w: 12.5, h: 12 },
   timer:      { x: 14.5, y: 8.5,  w: 71, h: 60 },
   nextLevel:  { x: 14.5, y: 70,   w: 71, h: 10 },
   cornerTime: { x: 86.7, y: 8.5,  w: 12.5, h: 18 },
