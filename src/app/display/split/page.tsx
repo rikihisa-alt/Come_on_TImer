@@ -221,34 +221,52 @@ function CashPanel({ cashGame, theme, displayToggles: dt }: {
   );
 }
 
-/* ═══ Tab Bar Selector ═══ */
-function TabSelector({ selectedId, onSelect, tournaments, cashGames, label }: {
+/* ═══ Split Timer Selector (dropdown) ═══ */
+function SplitTimerSelector({ selectedId, onSelect, tournaments, cashGames, label }: {
   selectedId: string;
   onSelect: (id: string) => void;
   tournaments: Tournament[];
   cashGames: CashGame[];
   label: string;
 }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, [open]);
+
   const allTimers = [
-    ...tournaments.map(t => ({ id: t.id, name: t.name, kind: 'T' as const, status: t.status })),
-    ...cashGames.map(c => ({ id: c.id, name: c.name, kind: 'C' as const, status: c.status })),
+    ...tournaments.map(t => ({ id: t.id, name: t.name, kind: 'T' as const, status: t.status as string })),
+    ...cashGames.map(c => ({ id: c.id, name: c.name, kind: 'C' as const, status: c.status as string })),
   ];
 
+  if (allTimers.length <= 1) return null;
+
   return (
-    <div className="flex items-center gap-1 overflow-x-auto">
-      <span className="text-xs text-white/70 font-bold mr-1 shrink-0">{label}</span>
-      {allTimers.map(t => (
-        <button key={t.id} onClick={() => onSelect(t.id)}
-          className={`px-3 py-1.5 rounded-lg text-sm font-bold whitespace-nowrap transition-all duration-150 min-w-[100px] text-center ${
-            t.id === selectedId
-              ? 'bg-blue-500 text-white shadow-md shadow-blue-500/30'
-              : 'bg-slate-700 text-slate-200 hover:bg-slate-600'
-          }`}>
-          {t.name}
-          {t.status === 'running' && <span className="ml-1.5 inline-block w-2 h-2 rounded-full bg-green-400 animate-pulse align-middle" />}
-          {t.status === 'paused' && <span className="ml-1.5 inline-block w-2 h-2 rounded-full bg-amber-400 align-middle" />}
-        </button>
-      ))}
+    <div ref={ref} className="relative">
+      <button onClick={() => setOpen(!open)}
+        className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.1] hover:border-white/[0.2] transition-all duration-200 cursor-pointer">
+        <span className="text-[7px] font-bold px-1 py-0.5 rounded bg-blue-500/20 text-blue-400">{label}</span>
+        <svg className={`w-2.5 h-2.5 text-white/30 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+      </button>
+      {open && (
+        <div className="absolute top-full mt-1.5 left-0 z-50 min-w-[200px] g-card p-1.5 overflow-hidden">
+          {allTimers.map(t => (
+            <button key={t.id} onClick={() => { onSelect(t.id); setOpen(false); }}
+              className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left hover:bg-white/[0.08] transition-colors ${t.id === selectedId ? 'bg-white/[0.06]' : ''}`}>
+              <span className={`text-[7px] font-bold px-1 py-0.5 rounded ${t.kind === 'T' ? 'bg-blue-500/20 text-blue-400' : 'bg-green-500/20 text-green-400'}`}>{t.kind}</span>
+              <span className="text-xs text-white/70 truncate flex-1">{t.name}</span>
+              {t.status === 'running' && <span className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0 animate-pulse" />}
+              {t.status === 'paused' && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />}
+              {t.id === selectedId && <svg className="w-3.5 h-3.5 text-blue-400 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -330,24 +348,34 @@ function SplitInner() {
 
   const hasLeft = leftTournament || leftCash;
   const hasRight = rightTournament || rightCash;
+  const leftName = leftTournament?.name || leftCash?.name || '左';
+  const rightName = rightTournament?.name || rightCash?.name || '右';
 
   return (
     <div className="min-h-screen flex flex-col select-none overflow-hidden" style={bgStyle}>
       {bgImgUrl && <div className="absolute inset-0 bg-black/50 pointer-events-none z-[1]" />}
       {theme && theme.overlayOpacity > 0 && <div className="absolute inset-0 bg-black pointer-events-none z-[1]" style={{ opacity: theme.overlayOpacity / 100 }} />}
 
-      {/* Header with tab selectors */}
-      <div className="relative z-10 px-3 py-2 flex items-center gap-4 border-b border-white/[0.08]" style={{ background: 'rgba(15, 23, 42, 0.9)' }}>
-        <div className="flex items-center gap-1.5 shrink-0">
-          <span className="text-sm font-black text-blue-400 tracking-tight">COME ON</span>
-          <span className="text-white/30 font-medium text-[10px]">Timer</span>
+      {/* Header */}
+      <div className="g-topbar relative z-10 flex items-center px-4 md:px-6 py-2.5 md:py-3">
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-sm md:text-base font-black text-blue-400 tracking-tight">COME ON</span>
+          <span className="text-white/25 font-medium text-[10px] md:text-xs">Timer</span>
         </div>
-        <div className="flex-1 flex items-center gap-4 overflow-x-auto">
-          <TabSelector label="左:" selectedId={selLeft} onSelect={setSelLeft} tournaments={tournaments} cashGames={cashGames} />
-          <span className="text-white/30 text-lg shrink-0">|</span>
-          <TabSelector label="右:" selectedId={selRight} onSelect={setSelRight} tournaments={tournaments} cashGames={cashGames} />
+        <div className="flex-1 flex items-center justify-center gap-2 md:gap-4 min-w-0">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="text-sm md:text-lg lg:text-xl font-black text-white/60 truncate max-w-[20vw]">{leftName}</span>
+            <SplitTimerSelector label="左" selectedId={selLeft} onSelect={setSelLeft} tournaments={tournaments} cashGames={cashGames} />
+          </div>
+          <span className="text-white/15 font-light text-lg shrink-0">|</span>
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="text-sm md:text-lg lg:text-xl font-black text-white/60 truncate max-w-[20vw]">{rightName}</span>
+            <SplitTimerSelector label="右" selectedId={selRight} onSelect={setSelRight} tournaments={tournaments} cashGames={cashGames} />
+          </div>
         </div>
-        <FullscreenButton />
+        <div className="flex items-center gap-2 shrink-0 ml-2">
+          <FullscreenButton />
+        </div>
       </div>
 
       {/* Split panels */}

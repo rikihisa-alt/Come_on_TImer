@@ -149,11 +149,11 @@ function CashDisplayInner() {
           <span className="text-sm md:text-base font-black text-blue-400 tracking-tight">COME ON</span>
           <span className="text-white/25 font-medium text-[10px] md:text-xs">Timer</span>
         </div>
-        <div className="flex-1 flex items-center justify-center gap-3">
+        <div className="flex-1 flex items-center justify-center gap-2 md:gap-3 min-w-0">
+          <span className="text-lg md:text-2xl lg:text-3xl font-black text-white/70 tracking-wide truncate">{cashGame.name}</span>
           <TimerSelector selectedId={activeId} onSelect={setSelectedId} cashGames={cashGames} />
-          {cashGames.length <= 1 && <span className="text-sm md:text-lg font-bold text-white/60 tracking-wide truncate max-w-[300px]">{cashGame.name}</span>}
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 ml-2">
           <div className="text-xs md:text-sm text-white/30 font-medium uppercase tracking-wider">Cash Game</div>
           <FullscreenButton />
         </div>

@@ -295,13 +295,13 @@ function Inner() {
           <span className="text-sm md:text-base font-black text-blue-400 tracking-tight">COME ON</span>
           <span className="text-white/25 font-medium text-[10px] md:text-xs">Timer</span>
         </div>
-        <div className="flex-1 flex items-center justify-center gap-3">
-          <TimerSelector selectedId={activeId} onSelect={setSelectedId} tournaments={tournaments} />
+        <div className="flex-1 flex items-center justify-center gap-2 md:gap-3 min-w-0">
           {dt.showTournamentName && (
-            <span className="text-lg md:text-2xl lg:text-3xl font-black text-white/70 tracking-wide truncate max-w-[50vw]">{tournament.name}</span>
+            <span className="text-lg md:text-2xl lg:text-3xl font-black text-white/70 tracking-wide truncate">{tournament.name}</span>
           )}
+          <TimerSelector selectedId={activeId} onSelect={setSelectedId} tournaments={tournaments} />
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 ml-2">
           {dt.showLevelInfo && (
             <div className="text-xs md:text-sm text-white/30 font-medium">
               {isBrk ? 'BREAK' : `Lv${cur?.level || '-'}`}/{totalLvs}
