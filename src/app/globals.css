@@ -10,7 +10,7 @@
   --glass-blur: 12px;
 }
 * { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; background: var(--bg-dark); color: #e2e8f0; -webkit-font-smoothing: antialiased; font-feature-settings: "tnum"; }
+html, body { margin: 0; padding: 0; background: var(--bg-dark); color: #e2e8f0; -webkit-font-smoothing: antialiased; font-feature-settings: "tnum"; font-family: 'Times New Roman', Times, serif; }
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }

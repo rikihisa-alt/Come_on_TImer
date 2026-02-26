@@ -246,27 +246,28 @@ function PanelSelector({ selectedId, onSelect, tournaments, cashGames, side }: {
   return (
     <div ref={ref} className="relative">
       <button onClick={() => setOpen(!open)}
-        className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.1] hover:border-white/[0.2] transition-all duration-200 cursor-pointer">
-        <span className={`text-[8px] font-bold px-1 py-0.5 rounded-md ${current?.kind === 'C' ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'}`}>
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.12] hover:bg-white/[0.2] border border-white/[0.18] hover:border-white/[0.3] transition-all duration-200 cursor-pointer shadow-lg shadow-black/20">
+        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md ${current?.kind === 'C' ? 'bg-green-500/30 text-green-300' : 'bg-blue-500/30 text-blue-300'}`}>
           {current?.kind === 'C' ? 'C' : 'T'}
         </span>
-        <span className="text-[10px] lg:text-xs text-white/55 font-medium truncate max-w-[120px]">{current?.name || '選択'}</span>
-        <svg className={`w-2.5 h-2.5 text-white/25 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+        <span className="text-[11px] lg:text-sm text-white/80 font-semibold truncate max-w-[140px]">{current?.name || '選択'}</span>
+        <svg className={`w-3 h-3 text-white/40 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
       </button>
 
       {open && (
-        <div className={`absolute top-full mt-1.5 ${side === 'right' ? 'right-0' : 'left-0'} z-50 min-w-[200px] g-card p-1.5 overflow-hidden`}>
-          {allTimers.length === 0 && <div className="px-3 py-2 text-xs text-white/25">タイマーなし</div>}
+        <div className={`absolute top-full mt-1.5 ${side === 'right' ? 'right-0' : 'left-0'} z-50 min-w-[220px] p-1.5 overflow-hidden rounded-2xl border border-white/[0.15] shadow-2xl shadow-black/40`}
+          style={{ background: 'rgba(15, 23, 42, 0.95)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}>
+          {allTimers.length === 0 && <div className="px-3 py-2 text-xs text-white/40">タイマーなし</div>}
           {allTimers.map(t => (
             <button key={t.id} onClick={() => { onSelect(t.id); setOpen(false); }}
-              className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left hover:bg-white/[0.08] transition-colors ${t.id === selectedId ? 'bg-white/[0.06]' : ''}`}>
-              <span className={`text-[8px] font-bold px-1 py-0.5 rounded-md shrink-0 ${t.kind === 'C' ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'}`}>
+              className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-left hover:bg-white/[0.12] transition-colors ${t.id === selectedId ? 'bg-white/[0.1]' : ''}`}>
+              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md shrink-0 ${t.kind === 'C' ? 'bg-green-500/30 text-green-300' : 'bg-blue-500/30 text-blue-300'}`}>
                 {t.kind === 'C' ? 'Cash' : 'Trn'}
               </span>
-              <span className="text-xs text-white/65 truncate flex-1">{t.name}</span>
-              {t.status === 'running' && <span className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0 animate-pulse" />}
-              {t.status === 'paused' && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />}
-              {t.id === selectedId && <svg className="w-3 h-3 text-blue-400 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>}
+              <span className="text-sm text-white/80 font-medium truncate flex-1">{t.name}</span>
+              {t.status === 'running' && <span className="w-2 h-2 rounded-full bg-green-400 shrink-0 animate-pulse" />}
+              {t.status === 'paused' && <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />}
+              {t.id === selectedId && <svg className="w-3.5 h-3.5 text-blue-400 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>}
             </button>
           ))}
         </div>
@@ -351,11 +352,11 @@ function SplitInner() {
           <span className="text-white/25 font-medium text-[10px]">Timer</span>
         </div>
         <div className="flex-1 flex items-center justify-center gap-3">
-          <span className="text-[9px] text-white/25 font-medium">左</span>
+          <span className="text-[10px] text-white/50 font-semibold">左</span>
           <PanelSelector selectedId={selLeft} onSelect={setSelLeft} tournaments={tournaments} cashGames={cashGames} side="left" />
-          <span className="text-white/15">|</span>
+          <span className="text-white/25 text-lg font-thin">|</span>
           <PanelSelector selectedId={selRight} onSelect={setSelRight} tournaments={tournaments} cashGames={cashGames} side="right" />
-          <span className="text-[9px] text-white/25 font-medium">右</span>
+          <span className="text-[10px] text-white/50 font-semibold">右</span>
         </div>
       </div>
 
