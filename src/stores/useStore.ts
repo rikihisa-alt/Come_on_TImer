@@ -1,9 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Tournament, CashGame, DisplayAssignment, ThemeConfig, SoundSettings, DisplayToggles, BlindLevel, PrizeEntry, OverlayElement } from '@/lib/types';
+import { Tournament, CashGame, DisplayAssignment, ThemeConfig, SoundSettings, DisplayToggles, BlindLevel, PrizeEntry, SectionLayout, TournamentSectionId, SectionPosition } from '@/lib/types';
 import { uid } from '@/lib/utils';
 import { broadcast } from '@/lib/sync';
-import { DEFAULT_THEMES, STANDARD_PRESET, DEFAULT_TTS_MESSAGES, DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND } from '@/lib/presets';
+import { DEFAULT_THEMES, STANDARD_PRESET, DEFAULT_TTS_MESSAGES, DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND, DEFAULT_SECTION_LAYOUT } from '@/lib/presets';
 
 interface AppState {
   tournaments: Tournament[];
@@ -44,9 +44,9 @@ interface AppState {
   setDefaultThemeId: (id: string) => void;
   updateTournamentTheme: (id: string, themeId: string) => void;
   updateCashTheme: (id: string, themeId: string) => void;
-  addOverlay: (tournamentId: string, overlay: OverlayElement) => void;
-  updateOverlay: (tournamentId: string, overlayId: string, partial: Partial<OverlayElement>) => void;
-  removeOverlay: (tournamentId: string, overlayId: string) => void;
+  updateSectionLayout: (id: string, layout: SectionLayout) => void;
+  updateSectionPosition: (id: string, sectionId: TournamentSectionId, pos: SectionPosition) => void;
+  resetSectionLayout: (id: string) => void;
   addTheme: (theme: ThemeConfig) => void;
   updateTheme: (id: string, partial: Partial<ThemeConfig>) => void;
   removeTheme: (id: string) => void;
@@ -65,7 +65,6 @@ function mkTournament(name?: string, levels?: BlindLevel[]): Tournament {
     displayToggles: { ...DEFAULT_DISPLAY_TOGGLES },
     sound: { ...DEFAULT_SOUND },
     themeId: 'come-on-blue',
-    overlays: [],
   };
 }
 
@@ -257,16 +256,20 @@ export const useStore = create<AppState>()(
         set(s => ({ cashGames: s.cashGames.map(c => c.id === id ? { ...c, themeId } : c) }));
         get().broadcastAll();
       },
-      addOverlay: (tournamentId, overlay) => {
-        set(s => ({ tournaments: s.tournaments.map(t => t.id === tournamentId ? { ...t, overlays: [...(t.overlays || []), overlay] } : t) }));
+      updateSectionLayout: (id, layout) => {
+        set(s => ({ tournaments: s.tournaments.map(t => t.id === id ? { ...t, sectionLayout: layout } : t) }));
         get().broadcastAll();
       },
-      updateOverlay: (tournamentId, overlayId, partial) => {
-        set(s => ({ tournaments: s.tournaments.map(t => t.id === tournamentId ? { ...t, overlays: (t.overlays || []).map(o => o.id === overlayId ? { ...o, ...partial } : o) } : t) }));
+      updateSectionPosition: (id, sectionId, pos) => {
+        set(s => ({ tournaments: s.tournaments.map(t => {
+          if (t.id !== id) return t;
+          const current = t.sectionLayout || { ...DEFAULT_SECTION_LAYOUT };
+          return { ...t, sectionLayout: { ...current, [sectionId]: pos } };
+        }) }));
         get().broadcastAll();
       },
-      removeOverlay: (tournamentId, overlayId) => {
-        set(s => ({ tournaments: s.tournaments.map(t => t.id === tournamentId ? { ...t, overlays: (t.overlays || []).filter(o => o.id !== overlayId) } : t) }));
+      resetSectionLayout: (id) => {
+        set(s => ({ tournaments: s.tournaments.map(t => t.id === id ? { ...t, sectionLayout: undefined } : t) }));
         get().broadcastAll();
       },
       addTheme: (theme) => { set(s => ({ themes: [...s.themes, theme] })); get().broadcastAll(); },
@@ -279,7 +282,7 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'come-on-timer-v3',
-      version: 6,
+      version: 7,
       migrate: (persisted: unknown, version: number) => {
         const state = persisted as Record<string, unknown>;
         if (version < 4) {
@@ -313,11 +316,15 @@ export const useStore = create<AppState>()(
           }));
         }
         if (version < 6) {
+          // v6 migration (overlays - now removed, kept for compat)
+        }
+        if (version < 7) {
           const tours = (state.tournaments as Tournament[]) || [];
-          state.tournaments = tours.map(t => ({
-            ...t,
-            overlays: t.overlays || [],
-          }));
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          state.tournaments = tours.map((t: any) => {
+            const { overlays, ...rest } = t;
+            return { ...rest };
+          });
         }
         return state as unknown as AppState;
       },

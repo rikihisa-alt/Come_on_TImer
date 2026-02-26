@@ -1,4 +1,4 @@
-import { BlindLevel, ThemeConfig, TTSMessage, DisplayToggles, SoundSettings, OverlayElementStyle } from './types';
+import { BlindLevel, ThemeConfig, TTSMessage, DisplayToggles, SoundSettings, SectionLayout } from './types';
 import { uid } from './utils';
 
 function bl(level: number, sb: number, bb: number, ante: number, dur: number): BlindLevel {
@@ -57,13 +57,18 @@ export const DEFAULT_SOUND: SoundSettings = {
   ttsMessages: [...DEFAULT_TTS_MESSAGES],
 };
 
-export const DEFAULT_OVERLAY_STYLE: OverlayElementStyle = {
-  fontFamily: 'default',
-  fontSize: 'md',
-  color: '#ffffff',
-  bold: false,
-  italic: false,
-  textAlign: 'center',
+export const DEFAULT_SECTION_LAYOUT: SectionLayout = {
+  players:    { x: 0.8, y: 8.5,  w: 12.5, h: 18 },
+  rebuy:      { x: 0.8, y: 28,   w: 12.5, h: 18 },
+  addon:      { x: 0.8, y: 47.5, w: 12.5, h: 18 },
+  avgStack:   { x: 0.8, y: 67,   w: 12.5, h: 18 },
+  timer:      { x: 14.5, y: 8.5,  w: 71, h: 60 },
+  nextLevel:  { x: 14.5, y: 70,   w: 71, h: 10 },
+  cornerTime: { x: 86.7, y: 8.5,  w: 12.5, h: 18 },
+  regClose:   { x: 86.7, y: 28,   w: 12.5, h: 18 },
+  nextBreak:  { x: 86.7, y: 47.5, w: 12.5, h: 18 },
+  prizeTable: { x: 86.7, y: 67,   w: 12.5, h: 22 },
+  ticker:     { x: 0.8, y: 91,    w: 98.4, h: 7.5 },
 };
 
 export const DEFAULT_DISPLAY_TOGGLES: DisplayToggles = {

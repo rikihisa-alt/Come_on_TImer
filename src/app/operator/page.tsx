@@ -3,9 +3,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useStore } from '@/stores/useStore';
 import { formatTimer, formatTimerHMS, formatChips, uid } from '@/lib/utils';
-import { PRESET_OPTIONS, DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND, DEFAULT_OVERLAY_STYLE } from '@/lib/presets';
+import { PRESET_OPTIONS, DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND, DEFAULT_SECTION_LAYOUT } from '@/lib/presets';
 import { playSound, playTestSound, playWarningBeep, speakTTS, fillTTSTemplate, PRESET_LABELS } from '@/lib/audio';
-import { BlindLevel, Tournament, CashGame, SoundPreset, PrizeEntry, SoundSettings, DisplayToggles, ThemeConfig, OverlayElement, OverlayZone, OverlayFontFamily, OverlayFontSize, OverlayElementStyle } from '@/lib/types';
+import { BlindLevel, Tournament, CashGame, SoundPreset, PrizeEntry, SoundSettings, DisplayToggles, ThemeConfig, TournamentSectionId, SectionPosition, SectionLayout } from '@/lib/types';
 
 export default function OperatorPage() {
   const [tab, setTab] = useState<'tournaments' | 'cash' | 'settings'>('tournaments');
@@ -94,7 +94,6 @@ function TournamentEditor({ id }: { id: string }) {
             <div className="g-card p-4"><ThemeSelector timerId={id} timerType="tournament" /></div>
             <div className="g-card p-4"><TickerPanel timerId={id} timerType="tournament" /></div>
             <div className="g-card p-4"><TogglesPanel timerId={id} timerType="tournament" /></div>
-            <div className="g-card p-4"><OverlayEditor tournament={t} /></div>
             <div className="g-card p-4"><DisplaySettingsPanel timerId={id} timerType="tournament" /></div>
             <div className="g-card p-4"><SoundPanel timerId={id} timerType="tournament" /></div>
           </div>
@@ -562,135 +561,165 @@ function CashEditor({ id, onDelete }: { id: string; onDelete: (id: string) => vo
   );
 }
 
-/* ── Overlay Editor (tournament only) ── */
-function OverlayEditor({ tournament: t }: { tournament: Tournament }) {
-  const store = useStore();
-  const overlays = t.overlays || [];
+/* ── Layout Editor (tournament only) ── */
 
-  const addOverlay = (type: 'text' | 'divider') => {
-    const newOverlay: OverlayElement = {
-      id: uid(),
-      type,
-      content: type === 'text' ? 'Custom Text' : '',
-      zone: 'center-bottom',
-      style: { ...DEFAULT_OVERLAY_STYLE },
-      order: overlays.length,
-      visible: true,
-    };
-    store.addOverlay(t.id, newOverlay);
+const SECTION_LABELS: Record<TournamentSectionId, string> = {
+  players: 'Players', rebuy: 'Rebuy', addon: 'Add-on', avgStack: 'Avg Stack',
+  timer: 'Timer', nextLevel: 'Next Level',
+  cornerTime: 'Time', regClose: 'Reg Close', nextBreak: 'Next Break',
+  prizeTable: 'Prize', ticker: 'Ticker',
+};
+
+function isSectionVisible(id: TournamentSectionId, dt: DisplayToggles): boolean {
+  switch (id) {
+    case 'players': case 'rebuy': case 'addon': return dt.showEntryCount;
+    case 'avgStack': return dt.showChipInfo;
+    case 'timer': return true;
+    case 'nextLevel': return dt.showNextLevel;
+    case 'cornerTime': return dt.showTimeToEnd;
+    case 'regClose': return true;
+    case 'nextBreak': return dt.showTimeToBreak;
+    case 'prizeTable': return dt.showPrizeStructure;
+    case 'ticker': return !!dt.tickerText;
+  }
+}
+
+function LayoutEditor({ tournament: t }: { tournament: Tournament }) {
+  const store = useStore();
+  const layout = t.sectionLayout || DEFAULT_SECTION_LAYOUT;
+  const dt = t.displayToggles || DEFAULT_DISPLAY_TOGGLES;
+  const theme = store.themes.find(th => th.id === (t.themeId || store.defaultThemeId)) || store.themes[0];
+
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const [selected, setSelected] = useState<TournamentSectionId | null>(null);
+  const [dragging, setDragging] = useState<TournamentSectionId | null>(null);
+  const [localPositions, setLocalPositions] = useState<SectionLayout>(layout);
+  const dragStartRef = useRef<{ mx: number; my: number; ox: number; oy: number } | null>(null);
+
+  // Sync from store
+  useEffect(() => { setLocalPositions(t.sectionLayout || DEFAULT_SECTION_LAYOUT); }, [t.sectionLayout]);
+
+  const handlePointerDown = (e: React.PointerEvent, sectionId: TournamentSectionId) => {
+    e.preventDefault();
+    e.stopPropagation();
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    const pos = localPositions[sectionId];
+    dragStartRef.current = { mx: e.clientX, my: e.clientY, ox: pos.x, oy: pos.y };
+    setDragging(sectionId);
+    setSelected(sectionId);
   };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!dragging || !dragStartRef.current || !canvasRef.current) return;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const dx = ((e.clientX - dragStartRef.current.mx) / rect.width) * 100;
+    const dy = ((e.clientY - dragStartRef.current.my) / rect.height) * 100;
+    const pos = localPositions[dragging];
+    const nx = Math.max(0, Math.min(100 - pos.w, dragStartRef.current.ox + dx));
+    const ny = Math.max(0, Math.min(100 - pos.h, dragStartRef.current.oy + dy));
+    setLocalPositions(prev => ({ ...prev, [dragging]: { ...prev[dragging], x: Math.round(nx * 10) / 10, y: Math.round(ny * 10) / 10 } }));
+  };
+
+  const handlePointerUp = () => {
+    if (dragging) {
+      store.updateSectionPosition(t.id, dragging, localPositions[dragging]);
+    }
+    setDragging(null);
+    dragStartRef.current = null;
+  };
+
+  const updateField = (field: 'x' | 'y' | 'w' | 'h', val: number) => {
+    if (!selected) return;
+    const newPos = { ...localPositions[selected], [field]: val };
+    setLocalPositions(prev => ({ ...prev, [selected]: newPos }));
+    store.updateSectionPosition(t.id, selected, newPos);
+  };
+
+  const handleReset = () => {
+    store.resetSectionLayout(t.id);
+    setLocalPositions(DEFAULT_SECTION_LAYOUT);
+    setSelected(null);
+  };
+
+  const bgStyle = theme?.type === 'gradient'
+    ? { background: `linear-gradient(160deg, ${theme.gradientFrom || '#0f172a'}, ${theme.gradientTo || '#1e3a5f'})` }
+    : theme?.type === 'image' && theme.imageUrl
+    ? { backgroundImage: `url(${theme.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+    : { background: theme?.bgColor || '#0a0e1a' };
+
+  const visibleSections = (Object.keys(layout) as TournamentSectionId[]).filter(id => isSectionVisible(id, dt));
 
   return (
     <div className="space-y-3">
+      {/* Toolbar */}
       <div className="flex items-center justify-between">
-        <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Custom Overlays</div>
-        <div className="flex gap-1">
-          <button className="btn btn-ghost btn-sm" onClick={() => addOverlay('text')}>+ Text</button>
-          <button className="btn btn-ghost btn-sm" onClick={() => addOverlay('divider')}>+ Line</button>
-        </div>
-      </div>
-      {overlays.length === 0 && (
-        <p className="text-[11px] text-white/20">テキストや仕切り線を追加してディスプレイをカスタマイズできます</p>
-      )}
-      {overlays
-        .sort((a, b) => a.order - b.order)
-        .map((overlay) => (
-          <OverlayItemEditor key={overlay.id} overlay={overlay} tournamentId={t.id} />
-        ))
-      }
-    </div>
-  );
-}
-
-function OverlayItemEditor({ overlay, tournamentId }: { overlay: OverlayElement; tournamentId: string }) {
-  const store = useStore();
-  const up = (partial: Partial<OverlayElement>) => store.updateOverlay(tournamentId, overlay.id, partial);
-  const upStyle = (partial: Partial<OverlayElementStyle>) => up({ style: { ...overlay.style, ...partial } });
-
-  const zoneOptions: { value: OverlayZone; label: string }[] = [
-    { value: 'left', label: 'Left Sidebar' },
-    { value: 'right', label: 'Right Sidebar' },
-    { value: 'center-top', label: 'Center Top' },
-    { value: 'center-bottom', label: 'Center Bottom' },
-    { value: 'ticker-area', label: 'Above Ticker' },
-  ];
-  const fontFamilyOptions: { value: OverlayFontFamily; label: string }[] = [
-    { value: 'default', label: 'Sans-serif' },
-    { value: 'serif', label: 'Serif' },
-    { value: 'mono', label: 'Monospace' },
-    { value: 'rounded', label: 'Rounded' },
-  ];
-  const fontSizeOptions: { value: OverlayFontSize; label: string }[] = [
-    { value: 'xs', label: 'XS' }, { value: 'sm', label: 'S' }, { value: 'md', label: 'M' },
-    { value: 'lg', label: 'L' }, { value: 'xl', label: 'XL' }, { value: '2xl', label: '2XL' },
-  ];
-
-  return (
-    <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] space-y-2">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className={`toggle ${overlay.visible ? 'on' : ''}`} onClick={() => up({ visible: !overlay.visible })} />
-          <span className="text-xs text-white/40 font-semibold uppercase">{overlay.type === 'text' ? 'Text' : 'Line'}</span>
-        </div>
-        <button className="text-white/20 hover:text-red-400 text-xs transition-colors" onClick={() => store.removeOverlay(tournamentId, overlay.id)}>x</button>
+        <span className="text-xs text-white/30 font-semibold uppercase tracking-wider">Layout Editor</span>
+        <button className="btn btn-ghost btn-sm" onClick={handleReset}>Reset Layout</button>
       </div>
 
-      {overlay.type === 'text' && (
-        <input className="input input-sm" value={overlay.content} onChange={e => up({ content: e.target.value })} placeholder="Display text..." />
-      )}
-
-      <div className="grid grid-cols-2 gap-2">
-        <div>
-          <label className="text-[11px] text-white/25 block mb-1">Zone</label>
-          <select className="input input-sm" value={overlay.zone} onChange={e => up({ zone: e.target.value as OverlayZone })}>
-            {zoneOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
+      {/* 16:9 Canvas */}
+      <div
+        ref={canvasRef}
+        className="relative rounded-xl overflow-hidden border border-white/[0.1] select-none"
+        style={{ ...bgStyle, aspectRatio: '16/9' }}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerUp}
+        onClick={() => setSelected(null)}
+      >
+        {/* Top bar mock */}
+        <div className="absolute inset-x-0 top-0 h-[7%] bg-black/30 flex items-center px-[2%] z-10">
+          <span className="text-[0.7vw] text-white/60 font-bold truncate" style={{ fontSize: 'clamp(6px, 0.8vw, 12px)' }}>COME ON Timer — {t.name}</span>
         </div>
-        <div>
-          <label className="text-[11px] text-white/25 block mb-1">Size</label>
-          <select className="input input-sm" value={overlay.style.fontSize} onChange={e => upStyle({ fontSize: e.target.value as OverlayFontSize })}>
-            {fontSizeOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
-        </div>
-      </div>
 
-      {overlay.type === 'text' && (
-        <>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="text-[11px] text-white/25 block mb-1">Font</label>
-              <select className="input input-sm" value={overlay.style.fontFamily} onChange={e => upStyle({ fontFamily: e.target.value as OverlayFontFamily })}>
-                {fontFamilyOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
+        {/* Sections */}
+        {visibleSections.map(sectionId => {
+          const pos = localPositions[sectionId];
+          const isSelected = selected === sectionId;
+          const isDragging = dragging === sectionId;
+          return (
+            <div
+              key={sectionId}
+              className={`absolute rounded-lg border-2 transition-shadow cursor-grab flex flex-col items-center justify-center overflow-hidden
+                ${isDragging ? 'cursor-grabbing opacity-80 z-30' : 'z-20'}
+                ${isSelected ? 'border-blue-400 shadow-[0_0_12px_rgba(96,165,250,0.4)]' : 'border-white/20 hover:border-white/40'}`}
+              style={{
+                left: `${pos.x}%`, top: `${pos.y}%`,
+                width: `${pos.w}%`, height: `${pos.h}%`,
+                background: 'rgba(255,255,255,0.06)',
+                backdropFilter: 'blur(4px)',
+                touchAction: 'none',
+              }}
+              onPointerDown={e => handlePointerDown(e, sectionId)}
+              onClick={e => { e.stopPropagation(); setSelected(sectionId); }}
+            >
+              <span className="text-white/60 font-semibold text-center leading-tight pointer-events-none" style={{ fontSize: 'clamp(6px, 0.7vw, 11px)' }}>
+                {SECTION_LABELS[sectionId]}
+              </span>
+              {sectionId === 'timer' && (
+                <span className="text-white/40 font-bold pointer-events-none" style={{ fontSize: 'clamp(10px, 2.5vw, 32px)' }}>12:00</span>
+              )}
             </div>
-            <div>
-              <label className="text-[11px] text-white/25 block mb-1">Color</label>
-              <div className="flex items-center gap-1">
-                <input type="color" className="w-7 h-7 rounded cursor-pointer border-0 bg-transparent" value={overlay.style.color} onChange={e => upStyle({ color: e.target.value })} />
-                <input className="input input-sm flex-1" value={overlay.style.color} onChange={e => upStyle({ color: e.target.value })} />
+          );
+        })}
+      </div>
+
+      {/* Position panel */}
+      {selected && (
+        <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] space-y-2 fade-in">
+          <div className="text-xs text-white/40 font-semibold">{SECTION_LABELS[selected]} — Position</div>
+          <div className="grid grid-cols-4 gap-2">
+            {(['x', 'y', 'w', 'h'] as const).map(f => (
+              <div key={f}>
+                <label className="text-[11px] text-white/25 block mb-1 uppercase">{f} (%)</label>
+                <input
+                  type="number" step={0.1} min={0} max={100}
+                  className="input input-sm text-center"
+                  value={localPositions[selected][f]}
+                  onChange={e => updateField(f, +e.target.value)}
+                />
               </div>
-            </div>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <button className={`px-2 py-1 rounded-lg text-xs font-bold transition-all ${overlay.style.bold ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-white/[0.05] text-white/30 border border-white/[0.08]'}`} onClick={() => upStyle({ bold: !overlay.style.bold })}>B</button>
-            <button className={`px-2 py-1 rounded-lg text-xs italic transition-all ${overlay.style.italic ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-white/[0.05] text-white/30 border border-white/[0.08]'}`} onClick={() => upStyle({ italic: !overlay.style.italic })}>I</button>
-            <div className="ml-2 flex items-center gap-1">
-              {(['left', 'center', 'right'] as const).map(align => (
-                <button key={align} className={`px-2 py-1 rounded-lg text-[10px] transition-all ${overlay.style.textAlign === align ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-white/[0.05] text-white/30 border border-white/[0.08]'}`} onClick={() => upStyle({ textAlign: align })}>
-                  {align === 'left' ? 'L' : align === 'center' ? 'C' : 'R'}
-                </button>
-              ))}
-            </div>
-          </div>
-        </>
-      )}
-
-      {overlay.type === 'divider' && (
-        <div>
-          <label className="text-[11px] text-white/25 block mb-1">Color</label>
-          <div className="flex items-center gap-1">
-            <input type="color" className="w-7 h-7 rounded cursor-pointer border-0 bg-transparent" value={overlay.style.color} onChange={e => upStyle({ color: e.target.value })} />
-            <input className="input input-sm flex-1" value={overlay.style.color} onChange={e => upStyle({ color: e.target.value })} />
+            ))}
           </div>
         </div>
       )}
@@ -757,6 +786,7 @@ function InlinePreview({ timerId, timerType, sticky }: { timerId: string; timerT
   const themeId = timer?.themeId || store.defaultThemeId || 'come-on-blue';
   const themeName = store.themes.find(th => th.id === themeId)?.name || '';
   const [showPreview, setShowPreview] = useState(sticky ? true : false);
+  const [previewMode, setPreviewMode] = useState<'layout' | 'live'>(timerType === 'tournament' ? 'layout' : 'live');
 
   const route = timerType === 'tournament' ? 'tournament' : 'cash';
 
@@ -774,13 +804,39 @@ function InlinePreview({ timerId, timerType, sticky }: { timerId: string; timerT
         </button>
       )}
       {showPreview && (
-        <DisplayPreview
-          route={route}
-          displayId=""
-          targetName={timer?.name || ''}
-          themeLabel={themeName}
-          overridePath={`/display/${route}?timer=${timerId}&theme=${themeId}`}
-        />
+        <>
+          {/* Mode toggle (tournament only) */}
+          {timerType === 'tournament' && (
+            <div className="flex gap-1 mb-0 mt-2">
+              <button
+                onClick={() => setPreviewMode('layout')}
+                className={`flex-1 py-2 rounded-t-xl text-xs font-semibold transition-all duration-200 ${previewMode === 'layout' ? 'bg-blue-500/15 text-blue-400 border border-blue-500/25 border-b-0' : 'text-white/25 hover:text-white/40 bg-white/[0.02] border border-white/[0.06] border-b-0'}`}
+              >
+                Layout Editor
+              </button>
+              <button
+                onClick={() => setPreviewMode('live')}
+                className={`flex-1 py-2 rounded-t-xl text-xs font-semibold transition-all duration-200 ${previewMode === 'live' ? 'bg-blue-500/15 text-blue-400 border border-blue-500/25 border-b-0' : 'text-white/25 hover:text-white/40 bg-white/[0.02] border border-white/[0.06] border-b-0'}`}
+              >
+                Live Preview
+              </button>
+            </div>
+          )}
+
+          {previewMode === 'layout' && timerType === 'tournament' && timer ? (
+            <div className="g-card p-4 rounded-t-none border-t-0">
+              <LayoutEditor tournament={timer as Tournament} />
+            </div>
+          ) : (
+            <DisplayPreview
+              route={route}
+              displayId=""
+              targetName={timer?.name || ''}
+              themeLabel={themeName}
+              overridePath={`/display/${route}?timer=${timerId}&theme=${themeId}`}
+            />
+          )}
+        </>
       )}
     </div>
   );

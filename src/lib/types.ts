@@ -15,28 +15,20 @@ export type PrizeEntry = {
   percent: number;
 };
 
-export type OverlayZone = 'left' | 'right' | 'center-top' | 'center-bottom' | 'ticker-area';
-export type OverlayFontFamily = 'default' | 'serif' | 'mono' | 'rounded';
-export type OverlayFontSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
+export type TournamentSectionId =
+  | 'players' | 'rebuy' | 'addon' | 'avgStack'
+  | 'timer' | 'nextLevel'
+  | 'cornerTime' | 'regClose' | 'nextBreak'
+  | 'prizeTable' | 'ticker';
 
-export type OverlayElementStyle = {
-  fontFamily: OverlayFontFamily;
-  fontSize: OverlayFontSize;
-  color: string;
-  bold: boolean;
-  italic: boolean;
-  textAlign: 'left' | 'center' | 'right';
+export type SectionPosition = {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
 };
 
-export type OverlayElement = {
-  id: string;
-  type: 'text' | 'divider';
-  content: string;
-  zone: OverlayZone;
-  style: OverlayElementStyle;
-  order: number;
-  visible: boolean;
-};
+export type SectionLayout = Record<TournamentSectionId, SectionPosition>;
 
 export type Tournament = {
   id: string;
@@ -58,7 +50,7 @@ export type Tournament = {
   displayToggles?: DisplayToggles;
   sound?: SoundSettings;
   themeId?: string;
-  overlays?: OverlayElement[];
+  sectionLayout?: SectionLayout;
 };
 
 export type CashGame = {
