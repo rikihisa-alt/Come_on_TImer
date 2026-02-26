@@ -219,59 +219,34 @@ function CashPanel({ cashGame, theme, displayToggles: dt }: {
   );
 }
 
-/* ═══ Panel Selector ═══ */
-function PanelSelector({ selectedId, onSelect, tournaments, cashGames, side }: {
+/* ═══ Tab Bar Selector ═══ */
+function TabSelector({ selectedId, onSelect, tournaments, cashGames, label }: {
   selectedId: string;
   onSelect: (id: string) => void;
   tournaments: Tournament[];
   cashGames: CashGame[];
-  side: 'left' | 'right';
+  label: string;
 }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
-    document.addEventListener('mousedown', h);
-    return () => document.removeEventListener('mousedown', h);
-  }, [open]);
-
   const allTimers = [
     ...tournaments.map(t => ({ id: t.id, name: t.name, kind: 'T' as const, status: t.status })),
     ...cashGames.map(c => ({ id: c.id, name: c.name, kind: 'C' as const, status: c.status })),
   ];
-  const current = allTimers.find(t => t.id === selectedId);
 
   return (
-    <div ref={ref} className="relative">
-      <button onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.12] hover:bg-white/[0.2] border border-white/[0.18] hover:border-white/[0.3] transition-all duration-200 cursor-pointer shadow-lg shadow-black/20">
-        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md ${current?.kind === 'C' ? 'bg-green-500/30 text-green-300' : 'bg-blue-500/30 text-blue-300'}`}>
-          {current?.kind === 'C' ? 'C' : 'T'}
-        </span>
-        <span className="text-[11px] lg:text-sm text-white/80 font-semibold truncate max-w-[140px]">{current?.name || '選択'}</span>
-        <svg className={`w-3 h-3 text-white/40 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
-      </button>
-
-      {open && (
-        <div className={`absolute top-full mt-1.5 ${side === 'right' ? 'right-0' : 'left-0'} z-50 min-w-[260px] p-2 overflow-hidden rounded-2xl border border-white/[0.25] shadow-2xl shadow-black/60`}
-          style={{ background: 'rgba(10, 15, 30, 0.98)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}>
-          {allTimers.length === 0 && <div className="px-3 py-2 text-sm text-white/60">タイマーなし</div>}
-          {allTimers.map(t => (
-            <button key={t.id} onClick={() => { onSelect(t.id); setOpen(false); }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors ${t.id === selectedId ? 'bg-blue-500/20 hover:bg-blue-500/25' : 'hover:bg-white/[0.1]'}`}>
-              <span className={`text-[10px] font-bold px-2 py-1 rounded-md shrink-0 ${t.kind === 'C' ? 'bg-green-500/40 text-green-200' : 'bg-blue-500/40 text-blue-200'}`}>
-                {t.kind === 'C' ? 'Cash' : 'Trn'}
-              </span>
-              <span className="text-base text-white font-semibold truncate flex-1">{t.name}</span>
-              {t.status === 'running' && <span className="w-2.5 h-2.5 rounded-full bg-green-400 shrink-0 animate-pulse" />}
-              {t.status === 'paused' && <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0" />}
-              {t.id === selectedId && <svg className="w-4 h-4 text-blue-400 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>}
-            </button>
-          ))}
-        </div>
-      )}
+    <div className="flex items-center gap-1 overflow-x-auto">
+      <span className="text-xs text-white/70 font-bold mr-1 shrink-0">{label}</span>
+      {allTimers.map(t => (
+        <button key={t.id} onClick={() => onSelect(t.id)}
+          className={`px-3 py-1.5 rounded-lg text-sm font-bold whitespace-nowrap transition-all duration-150 ${
+            t.id === selectedId
+              ? 'bg-blue-500 text-white shadow-md shadow-blue-500/30'
+              : 'bg-slate-700 text-slate-200 hover:bg-slate-600'
+          }`}>
+          {t.name}
+          {t.status === 'running' && <span className="ml-1.5 inline-block w-2 h-2 rounded-full bg-green-400 animate-pulse align-middle" />}
+          {t.status === 'paused' && <span className="ml-1.5 inline-block w-2 h-2 rounded-full bg-amber-400 align-middle" />}
+        </button>
+      ))}
     </div>
   );
 }
@@ -345,18 +320,16 @@ function SplitInner() {
       {displayToggles.backgroundImageUrl && <div className="absolute inset-0 bg-black/50 pointer-events-none z-[1]" />}
       {theme && theme.overlayOpacity > 0 && <div className="absolute inset-0 bg-black pointer-events-none z-[1]" style={{ opacity: theme.overlayOpacity / 100 }} />}
 
-      {/* Header */}
-      <div className="g-topbar relative z-10 flex items-center px-3 py-2">
+      {/* Header with tab selectors */}
+      <div className="relative z-10 px-3 py-2 flex items-center gap-4 border-b border-white/[0.08]" style={{ background: 'rgba(15, 23, 42, 0.9)' }}>
         <div className="flex items-center gap-1.5 shrink-0">
           <span className="text-sm font-black text-blue-400 tracking-tight">COME ON</span>
-          <span className="text-white/25 font-medium text-[10px]">Timer</span>
+          <span className="text-white/30 font-medium text-[10px]">Timer</span>
         </div>
-        <div className="flex-1 flex items-center justify-center gap-3">
-          <span className="text-[10px] text-white/50 font-semibold">左</span>
-          <PanelSelector selectedId={selLeft} onSelect={setSelLeft} tournaments={tournaments} cashGames={cashGames} side="left" />
-          <span className="text-white/25 text-lg font-thin">|</span>
-          <PanelSelector selectedId={selRight} onSelect={setSelRight} tournaments={tournaments} cashGames={cashGames} side="right" />
-          <span className="text-[10px] text-white/50 font-semibold">右</span>
+        <div className="flex-1 flex items-center gap-4 overflow-x-auto">
+          <TabSelector label="左:" selectedId={selLeft} onSelect={setSelLeft} tournaments={tournaments} cashGames={cashGames} />
+          <span className="text-white/30 text-lg shrink-0">|</span>
+          <TabSelector label="右:" selectedId={selRight} onSelect={setSelRight} tournaments={tournaments} cashGames={cashGames} />
         </div>
       </div>
 
