@@ -6,7 +6,7 @@ import { useStore } from '@/stores/useStore';
 import { onSync } from '@/lib/sync';
 import { unlockAudio, playSound, playWarningBeep, speakTTS, fillTTSTemplate } from '@/lib/audio';
 import { formatTimer, formatChips, formatTimerHMS, computeTimeToBreak, computeTimeToEnd, computeRegCloseTime } from '@/lib/utils';
-import { Tournament, ThemeConfig, DisplayToggles, SoundSettings } from '@/lib/types';
+import { Tournament, ThemeConfig, DisplayToggles, SoundSettings, OverlayElement, OverlayZone, OverlayFontFamily, OverlayFontSize } from '@/lib/types';
 import { DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND } from '@/lib/presets';
 import { FullscreenButton } from '@/components/FullscreenButton';
 
@@ -61,6 +61,90 @@ function GlassStat({ label, value, accent }: { label: string; value: string; acc
       <div className="text-[9px] lg:text-[11px] text-white/35 uppercase tracking-wider font-semibold mb-1.5">{label}</div>
       <div className={`text-base lg:text-xl xl:text-2xl font-bold timer-font leading-tight ${accent ? 'text-blue-400' : 'text-white/75'}`}>{value}</div>
     </div>
+  );
+}
+
+/* ── Prize Table ── */
+function PrizeTable({ tournament, primaryColor }: { tournament: Tournament; primaryColor: string }) {
+  const pool = (tournament.entryCount + tournament.rebuyCount) * tournament.buyInAmount;
+  if (tournament.prizeStructure.length === 0) return null;
+  return (
+    <div className="g-card-inner p-3 lg:p-4 flex-1 min-h-0">
+      <div className="text-[9px] lg:text-[11px] text-white/35 uppercase tracking-wider font-semibold mb-2 text-center">Prize</div>
+      <div className="space-y-1">
+        {tournament.prizeStructure.map((p) => (
+          <div key={p.place} className="flex items-center justify-between text-xs gap-2">
+            <span className="text-white/40 shrink-0">{p.place}位</span>
+            <span className="text-white/25 shrink-0">{p.percent}%</span>
+            {pool > 0 && (
+              <span className="font-bold timer-font text-right" style={{ color: p.place === 1 ? primaryColor : 'rgba(255,255,255,0.5)' }}>
+                &yen;{Math.round(pool * p.percent / 100).toLocaleString()}
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+      {pool > 0 && (
+        <div className="mt-2 pt-2 border-t border-white/[0.06] text-center">
+          <span className="text-[9px] text-white/25 uppercase tracking-wider">Total</span>
+          <div className="text-sm font-bold timer-font" style={{ color: primaryColor }}>
+            &yen;{pool.toLocaleString()}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Overlay Renderer ── */
+const FONT_FAMILY_MAP: Record<OverlayFontFamily, string> = {
+  default: 'inherit',
+  serif: "'Times New Roman', 'Georgia', serif",
+  mono: "'Courier New', monospace",
+  rounded: "system-ui, -apple-system, sans-serif",
+};
+const FONT_SIZE_MAP: Record<OverlayFontSize, string> = {
+  xs: 'text-[10px] lg:text-xs',
+  sm: 'text-xs lg:text-sm',
+  md: 'text-sm lg:text-base',
+  lg: 'text-base lg:text-lg',
+  xl: 'text-lg lg:text-2xl',
+  '2xl': 'text-2xl lg:text-4xl',
+};
+
+function OverlayRenderer({ overlays, zone }: { overlays: OverlayElement[]; zone: OverlayZone }) {
+  const zoneOverlays = overlays
+    .filter(o => o.zone === zone && o.visible)
+    .sort((a, b) => a.order - b.order);
+  if (zoneOverlays.length === 0) return null;
+  return (
+    <>
+      {zoneOverlays.map(o => {
+        if (o.type === 'divider') {
+          return (
+            <div key={o.id} className="w-full px-2 py-1">
+              <div className="h-[1px] w-full" style={{ backgroundColor: o.style.color + '40' }} />
+            </div>
+          );
+        }
+        return (
+          <div
+            key={o.id}
+            className={`px-2 py-1 ${FONT_SIZE_MAP[o.style.fontSize]}`}
+            style={{
+              fontFamily: FONT_FAMILY_MAP[o.style.fontFamily],
+              color: o.style.color,
+              fontWeight: o.style.bold ? 'bold' : 'normal',
+              fontStyle: o.style.italic ? 'italic' : 'normal',
+              textAlign: o.style.textAlign,
+              width: '100%',
+            }}
+          >
+            {o.content}
+          </div>
+        );
+      })}
+    </>
   );
 }
 
@@ -184,6 +268,8 @@ function Inner() {
   const totalChips = (tournament.entryCount + tournament.rebuyCount + tournament.addonCount) * tournament.startingChips;
   const avg = tournament.entryCount > 0 ? Math.round(totalChips / tournament.entryCount) : 0;
   const pc = theme?.primaryColor || '#60a5fa';
+  const pool = (tournament.entryCount + tournament.rebuyCount) * tournament.buyInAmount;
+  const overlays = tournament.overlays || [];
 
   const bgStyle = dt.backgroundImageUrl
     ? { backgroundImage: `url(${dt.backgroundImageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
@@ -230,14 +316,18 @@ function Inner() {
 
         {/* ── Left Stats Column (desktop) ── */}
         <div className="hidden md:flex flex-col gap-2.5 lg:gap-3 w-[130px] lg:w-[155px] xl:w-[175px]">
-          <GlassStat label="Players" value={`${tournament.entryCount}`} accent />
-          <GlassStat label="Rebuy" value={String(tournament.rebuyCount)} />
-          <GlassStat label="Add-on" value={String(tournament.addonCount)} />
-          <GlassStat label="Avg Stack" value={avg > 0 ? formatChips(avg) : '--'} />
+          {dt.showEntryCount && <GlassStat label="Players" value={`${tournament.entryCount}`} accent />}
+          {dt.showEntryCount && <GlassStat label="Rebuy" value={String(tournament.rebuyCount)} />}
+          {dt.showEntryCount && <GlassStat label="Add-on" value={String(tournament.addonCount)} />}
+          {dt.showChipInfo && <GlassStat label="Avg Stack" value={avg > 0 ? formatChips(avg) : '--'} />}
+          <OverlayRenderer overlays={overlays} zone="left" />
         </div>
 
         {/* ── Center Column ── */}
         <div className="flex-1 flex flex-col gap-2.5 md:gap-3 min-h-0">
+
+          {/* Center-top overlays */}
+          <OverlayRenderer overlays={overlays} zone="center-top" />
 
           {/* Main Timer Card */}
           <div className="g-card flex-1 flex flex-col items-center justify-center p-3 md:p-5 relative overflow-hidden min-h-0">
@@ -301,6 +391,23 @@ function Inner() {
             </div>
           )}
 
+          {/* Center-bottom overlays */}
+          <OverlayRenderer overlays={overlays} zone="center-bottom" />
+
+          {/* Mobile prize row */}
+          {dt.showPrizeStructure && tournament.prizeStructure.length > 0 && (
+            <div className="flex md:hidden gap-2 flex-wrap">
+              {tournament.prizeStructure.slice(0, 3).map(p => (
+                <div key={p.place} className="g-card-inner flex-1 p-2 text-center">
+                  <div className="text-[8px] text-white/30 uppercase tracking-wider font-semibold">{p.place}位</div>
+                  <div className="text-xs font-bold text-white/60 timer-font">
+                    {pool > 0 ? `\u00A5${Math.round(pool * p.percent / 100).toLocaleString()}` : `${p.percent}%`}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Mobile info row */}
           <div className="flex md:hidden gap-2">
             <div className="g-card-inner flex-1 p-2.5 text-center">
@@ -318,11 +425,22 @@ function Inner() {
 
         {/* ── Right Stats Column (desktop) ── */}
         <div className="hidden md:flex flex-col gap-2.5 lg:gap-3 w-[130px] lg:w-[155px] xl:w-[175px]">
-          <GlassStat label="Corner Time" value={formatTimerHMS(tte)} />
+          {dt.showTimeToEnd && <GlassStat label="Corner Time" value={formatTimerHMS(tte)} />}
           <GlassStat label={tournament.regCloseLevel ? `Reg Close Lv${tournament.regCloseLevel}` : 'Reg Close'} value={regClose !== null ? formatTimer(regClose) : 'N/A'} />
-          <GlassStat label="Next Break" value={ttb !== null ? formatTimerHMS(ttb) : '--:--:--'} />
+          {dt.showTimeToBreak && <GlassStat label="Next Break" value={ttb !== null ? formatTimerHMS(ttb) : '--:--:--'} />}
+          {dt.showPrizeStructure && <PrizeTable tournament={tournament} primaryColor={pc} />}
+          <OverlayRenderer overlays={overlays} zone="right" />
         </div>
       </div>
+
+      {/* ═══ Ticker-area overlays ═══ */}
+      {overlays.some(o => o.zone === 'ticker-area' && o.visible) && (
+        <div className="relative z-10 px-2.5 md:px-3 lg:px-4">
+          <div className="g-card-inner p-2 flex flex-col items-center">
+            <OverlayRenderer overlays={overlays} zone="ticker-area" />
+          </div>
+        </div>
+      )}
 
       {/* ═══ Ticker ═══ */}
       {dt.tickerText && (

@@ -15,6 +15,29 @@ export type PrizeEntry = {
   percent: number;
 };
 
+export type OverlayZone = 'left' | 'right' | 'center-top' | 'center-bottom' | 'ticker-area';
+export type OverlayFontFamily = 'default' | 'serif' | 'mono' | 'rounded';
+export type OverlayFontSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
+
+export type OverlayElementStyle = {
+  fontFamily: OverlayFontFamily;
+  fontSize: OverlayFontSize;
+  color: string;
+  bold: boolean;
+  italic: boolean;
+  textAlign: 'left' | 'center' | 'right';
+};
+
+export type OverlayElement = {
+  id: string;
+  type: 'text' | 'divider';
+  content: string;
+  zone: OverlayZone;
+  style: OverlayElementStyle;
+  order: number;
+  visible: boolean;
+};
+
 export type Tournament = {
   id: string;
   name: string;
@@ -35,6 +58,7 @@ export type Tournament = {
   displayToggles?: DisplayToggles;
   sound?: SoundSettings;
   themeId?: string;
+  overlays?: OverlayElement[];
 };
 
 export type CashGame = {

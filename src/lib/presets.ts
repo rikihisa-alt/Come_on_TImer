@@ -1,4 +1,4 @@
-import { BlindLevel, ThemeConfig, TTSMessage, DisplayToggles, SoundSettings } from './types';
+import { BlindLevel, ThemeConfig, TTSMessage, DisplayToggles, SoundSettings, OverlayElementStyle } from './types';
 import { uid } from './utils';
 
 function bl(level: number, sb: number, bb: number, ante: number, dur: number): BlindLevel {
@@ -55,6 +55,15 @@ export const DEFAULT_SOUND: SoundSettings = {
   ttsEnabled: false,
   ttsLang: 'ja',
   ttsMessages: [...DEFAULT_TTS_MESSAGES],
+};
+
+export const DEFAULT_OVERLAY_STYLE: OverlayElementStyle = {
+  fontFamily: 'default',
+  fontSize: 'md',
+  color: '#ffffff',
+  bold: false,
+  italic: false,
+  textAlign: 'center',
 };
 
 export const DEFAULT_DISPLAY_TOGGLES: DisplayToggles = {

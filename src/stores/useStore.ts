@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Tournament, CashGame, DisplayAssignment, ThemeConfig, SoundSettings, DisplayToggles, BlindLevel, PrizeEntry } from '@/lib/types';
+import { Tournament, CashGame, DisplayAssignment, ThemeConfig, SoundSettings, DisplayToggles, BlindLevel, PrizeEntry, OverlayElement } from '@/lib/types';
 import { uid } from '@/lib/utils';
 import { broadcast } from '@/lib/sync';
 import { DEFAULT_THEMES, STANDARD_PRESET, DEFAULT_TTS_MESSAGES, DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND } from '@/lib/presets';
@@ -44,6 +44,9 @@ interface AppState {
   setDefaultThemeId: (id: string) => void;
   updateTournamentTheme: (id: string, themeId: string) => void;
   updateCashTheme: (id: string, themeId: string) => void;
+  addOverlay: (tournamentId: string, overlay: OverlayElement) => void;
+  updateOverlay: (tournamentId: string, overlayId: string, partial: Partial<OverlayElement>) => void;
+  removeOverlay: (tournamentId: string, overlayId: string) => void;
   addTheme: (theme: ThemeConfig) => void;
   updateTheme: (id: string, partial: Partial<ThemeConfig>) => void;
   removeTheme: (id: string) => void;
@@ -62,6 +65,7 @@ function mkTournament(name?: string, levels?: BlindLevel[]): Tournament {
     displayToggles: { ...DEFAULT_DISPLAY_TOGGLES },
     sound: { ...DEFAULT_SOUND },
     themeId: 'come-on-blue',
+    overlays: [],
   };
 }
 
@@ -253,6 +257,18 @@ export const useStore = create<AppState>()(
         set(s => ({ cashGames: s.cashGames.map(c => c.id === id ? { ...c, themeId } : c) }));
         get().broadcastAll();
       },
+      addOverlay: (tournamentId, overlay) => {
+        set(s => ({ tournaments: s.tournaments.map(t => t.id === tournamentId ? { ...t, overlays: [...(t.overlays || []), overlay] } : t) }));
+        get().broadcastAll();
+      },
+      updateOverlay: (tournamentId, overlayId, partial) => {
+        set(s => ({ tournaments: s.tournaments.map(t => t.id === tournamentId ? { ...t, overlays: (t.overlays || []).map(o => o.id === overlayId ? { ...o, ...partial } : o) } : t) }));
+        get().broadcastAll();
+      },
+      removeOverlay: (tournamentId, overlayId) => {
+        set(s => ({ tournaments: s.tournaments.map(t => t.id === tournamentId ? { ...t, overlays: (t.overlays || []).filter(o => o.id !== overlayId) } : t) }));
+        get().broadcastAll();
+      },
       addTheme: (theme) => { set(s => ({ themes: [...s.themes, theme] })); get().broadcastAll(); },
       updateTheme: (id, partial) => { set(s => ({ themes: s.themes.map(t => t.id === id ? { ...t, ...partial } : t) })); get().broadcastAll(); },
       removeTheme: (id) => { set(s => ({ themes: s.themes.filter(t => t.id !== id) })); get().broadcastAll(); },
@@ -263,7 +279,7 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'come-on-timer-v3',
-      version: 5,
+      version: 6,
       migrate: (persisted: unknown, version: number) => {
         const state = persisted as Record<string, unknown>;
         if (version < 4) {
@@ -294,6 +310,13 @@ export const useStore = create<AppState>()(
           state.cashGames = cashes.map(c => ({
             ...c,
             themeId: c.themeId || defTheme,
+          }));
+        }
+        if (version < 6) {
+          const tours = (state.tournaments as Tournament[]) || [];
+          state.tournaments = tours.map(t => ({
+            ...t,
+            overlays: t.overlays || [],
           }));
         }
         return state as unknown as AppState;

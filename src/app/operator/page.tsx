@@ -3,9 +3,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useStore } from '@/stores/useStore';
 import { formatTimer, formatTimerHMS, formatChips, uid } from '@/lib/utils';
-import { PRESET_OPTIONS, DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND } from '@/lib/presets';
+import { PRESET_OPTIONS, DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND, DEFAULT_OVERLAY_STYLE } from '@/lib/presets';
 import { playSound, playTestSound, playWarningBeep, speakTTS, fillTTSTemplate, PRESET_LABELS } from '@/lib/audio';
-import { BlindLevel, Tournament, CashGame, SoundPreset, PrizeEntry, SoundSettings, DisplayToggles, ThemeConfig } from '@/lib/types';
+import { BlindLevel, Tournament, CashGame, SoundPreset, PrizeEntry, SoundSettings, DisplayToggles, ThemeConfig, OverlayElement, OverlayZone, OverlayFontFamily, OverlayFontSize, OverlayElementStyle } from '@/lib/types';
 
 export default function OperatorPage() {
   const [tab, setTab] = useState<'tournaments' | 'cash' | 'settings'>('tournaments');
@@ -59,6 +59,11 @@ function TournamentEditor({ id }: { id: string }) {
   if (!t) return null;
   return (
     <div className="space-y-4 fade-in">
+      {/* Sticky Preview at top */}
+      <div className="sticky top-0 z-30 bg-[#0e1c36]/95 backdrop-blur-md -mx-4 px-4 pt-2 pb-1">
+        <InlinePreview timerId={id} timerType="tournament" sticky />
+      </div>
+
       <div className="g-card p-4 space-y-4">
         <div className="flex items-center gap-3">
           <input className="input flex-1" value={t.name} onChange={e => store.updateTournament(id, { name: e.target.value })} placeholder="Tournament name" />
@@ -85,9 +90,9 @@ function TournamentEditor({ id }: { id: string }) {
           <div className="g-card p-4"><ThemeSelector timerId={id} timerType="tournament" /></div>
           <div className="g-card p-4"><TickerPanel timerId={id} timerType="tournament" /></div>
           <div className="g-card p-4"><TogglesPanel timerId={id} timerType="tournament" /></div>
+          <div className="g-card p-4"><OverlayEditor tournament={t} /></div>
           <div className="g-card p-4"><DisplaySettingsPanel timerId={id} timerType="tournament" /></div>
           <div className="g-card p-4"><SoundPanel timerId={id} timerType="tournament" /></div>
-          <InlinePreview timerId={id} timerType="tournament" />
         </div>
       )}
     </div>
@@ -494,6 +499,11 @@ function CashEditor({ id, onDelete }: { id: string; onDelete: (id: string) => vo
 
   return (
     <div className="space-y-4 fade-in">
+      {/* Sticky Preview at top */}
+      <div className="sticky top-0 z-30 bg-[#0e1c36]/95 backdrop-blur-md -mx-4 px-4 pt-2 pb-1">
+        <InlinePreview timerId={id} timerType="cash" sticky />
+      </div>
+
       <div className="g-card p-4 space-y-4">
         <div className="flex items-center gap-3">
           <input className="input flex-1" value={c.name} onChange={e => store.updateCashGame(id, { name: e.target.value })} placeholder="Cash game name" />
@@ -536,7 +546,142 @@ function CashEditor({ id, onDelete }: { id: string; onDelete: (id: string) => vo
           <div className="g-card p-4"><TogglesPanel timerId={id} timerType="cash" /></div>
           <div className="g-card p-4"><DisplaySettingsPanel timerId={id} timerType="cash" /></div>
           <div className="g-card p-4"><SoundPanel timerId={id} timerType="cash" /></div>
-          <InlinePreview timerId={id} timerType="cash" />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Overlay Editor (tournament only) ── */
+function OverlayEditor({ tournament: t }: { tournament: Tournament }) {
+  const store = useStore();
+  const overlays = t.overlays || [];
+
+  const addOverlay = (type: 'text' | 'divider') => {
+    const newOverlay: OverlayElement = {
+      id: uid(),
+      type,
+      content: type === 'text' ? 'Custom Text' : '',
+      zone: 'center-bottom',
+      style: { ...DEFAULT_OVERLAY_STYLE },
+      order: overlays.length,
+      visible: true,
+    };
+    store.addOverlay(t.id, newOverlay);
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Custom Overlays</div>
+        <div className="flex gap-1">
+          <button className="btn btn-ghost btn-sm" onClick={() => addOverlay('text')}>+ Text</button>
+          <button className="btn btn-ghost btn-sm" onClick={() => addOverlay('divider')}>+ Line</button>
+        </div>
+      </div>
+      {overlays.length === 0 && (
+        <p className="text-[11px] text-white/20">テキストや仕切り線を追加してディスプレイをカスタマイズできます</p>
+      )}
+      {overlays
+        .sort((a, b) => a.order - b.order)
+        .map((overlay) => (
+          <OverlayItemEditor key={overlay.id} overlay={overlay} tournamentId={t.id} />
+        ))
+      }
+    </div>
+  );
+}
+
+function OverlayItemEditor({ overlay, tournamentId }: { overlay: OverlayElement; tournamentId: string }) {
+  const store = useStore();
+  const up = (partial: Partial<OverlayElement>) => store.updateOverlay(tournamentId, overlay.id, partial);
+  const upStyle = (partial: Partial<OverlayElementStyle>) => up({ style: { ...overlay.style, ...partial } });
+
+  const zoneOptions: { value: OverlayZone; label: string }[] = [
+    { value: 'left', label: 'Left Sidebar' },
+    { value: 'right', label: 'Right Sidebar' },
+    { value: 'center-top', label: 'Center Top' },
+    { value: 'center-bottom', label: 'Center Bottom' },
+    { value: 'ticker-area', label: 'Above Ticker' },
+  ];
+  const fontFamilyOptions: { value: OverlayFontFamily; label: string }[] = [
+    { value: 'default', label: 'Sans-serif' },
+    { value: 'serif', label: 'Serif' },
+    { value: 'mono', label: 'Monospace' },
+    { value: 'rounded', label: 'Rounded' },
+  ];
+  const fontSizeOptions: { value: OverlayFontSize; label: string }[] = [
+    { value: 'xs', label: 'XS' }, { value: 'sm', label: 'S' }, { value: 'md', label: 'M' },
+    { value: 'lg', label: 'L' }, { value: 'xl', label: 'XL' }, { value: '2xl', label: '2XL' },
+  ];
+
+  return (
+    <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] space-y-2">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className={`toggle ${overlay.visible ? 'on' : ''}`} onClick={() => up({ visible: !overlay.visible })} />
+          <span className="text-xs text-white/40 font-semibold uppercase">{overlay.type === 'text' ? 'Text' : 'Line'}</span>
+        </div>
+        <button className="text-white/20 hover:text-red-400 text-xs transition-colors" onClick={() => store.removeOverlay(tournamentId, overlay.id)}>x</button>
+      </div>
+
+      {overlay.type === 'text' && (
+        <input className="input input-sm" value={overlay.content} onChange={e => up({ content: e.target.value })} placeholder="Display text..." />
+      )}
+
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="text-[11px] text-white/25 block mb-1">Zone</label>
+          <select className="input input-sm" value={overlay.zone} onChange={e => up({ zone: e.target.value as OverlayZone })}>
+            {zoneOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="text-[11px] text-white/25 block mb-1">Size</label>
+          <select className="input input-sm" value={overlay.style.fontSize} onChange={e => upStyle({ fontSize: e.target.value as OverlayFontSize })}>
+            {fontSizeOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {overlay.type === 'text' && (
+        <>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-[11px] text-white/25 block mb-1">Font</label>
+              <select className="input input-sm" value={overlay.style.fontFamily} onChange={e => upStyle({ fontFamily: e.target.value as OverlayFontFamily })}>
+                {fontFamilyOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-[11px] text-white/25 block mb-1">Color</label>
+              <div className="flex items-center gap-1">
+                <input type="color" className="w-7 h-7 rounded cursor-pointer border-0 bg-transparent" value={overlay.style.color} onChange={e => upStyle({ color: e.target.value })} />
+                <input className="input input-sm flex-1" value={overlay.style.color} onChange={e => upStyle({ color: e.target.value })} />
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <button className={`px-2 py-1 rounded-lg text-xs font-bold transition-all ${overlay.style.bold ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-white/[0.05] text-white/30 border border-white/[0.08]'}`} onClick={() => upStyle({ bold: !overlay.style.bold })}>B</button>
+            <button className={`px-2 py-1 rounded-lg text-xs italic transition-all ${overlay.style.italic ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-white/[0.05] text-white/30 border border-white/[0.08]'}`} onClick={() => upStyle({ italic: !overlay.style.italic })}>I</button>
+            <div className="ml-2 flex items-center gap-1">
+              {(['left', 'center', 'right'] as const).map(align => (
+                <button key={align} className={`px-2 py-1 rounded-lg text-[10px] transition-all ${overlay.style.textAlign === align ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-white/[0.05] text-white/30 border border-white/[0.08]'}`} onClick={() => upStyle({ textAlign: align })}>
+                  {align === 'left' ? 'L' : align === 'center' ? 'C' : 'R'}
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
+      {overlay.type === 'divider' && (
+        <div>
+          <label className="text-[11px] text-white/25 block mb-1">Color</label>
+          <div className="flex items-center gap-1">
+            <input type="color" className="w-7 h-7 rounded cursor-pointer border-0 bg-transparent" value={overlay.style.color} onChange={e => upStyle({ color: e.target.value })} />
+            <input className="input input-sm flex-1" value={overlay.style.color} onChange={e => upStyle({ color: e.target.value })} />
+          </div>
         </div>
       )}
     </div>
@@ -594,28 +739,30 @@ function ThemeSelector({ timerId, timerType }: { timerId: string; timerType: 'to
 }
 
 /* ── Inline Preview (per-timer) ── */
-function InlinePreview({ timerId, timerType }: { timerId: string; timerType: 'tournament' | 'cash' }) {
+function InlinePreview({ timerId, timerType, sticky }: { timerId: string; timerType: 'tournament' | 'cash'; sticky?: boolean }) {
   const store = useStore();
   const timer = timerType === 'tournament'
     ? store.tournaments.find(t => t.id === timerId)
     : store.cashGames.find(c => c.id === timerId);
   const themeId = timer?.themeId || store.defaultThemeId || 'come-on-blue';
   const themeName = store.themes.find(th => th.id === themeId)?.name || '';
-  const [showPreview, setShowPreview] = useState(false);
+  const [showPreview, setShowPreview] = useState(sticky ? true : false);
 
   const route = timerType === 'tournament' ? 'tournament' : 'cash';
 
   return (
     <div>
-      <button
-        onClick={() => setShowPreview(!showPreview)}
-        className="w-full flex items-center justify-between px-4 py-3 g-card hover:bg-white/[0.04] transition-colors"
-      >
-        <span className="text-xs text-white/40 font-semibold uppercase tracking-wider">Live Preview</span>
-        <svg className={`w-4 h-4 text-white/30 transition-transform duration-200 ${showPreview ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-        </svg>
-      </button>
+      {!sticky && (
+        <button
+          onClick={() => setShowPreview(!showPreview)}
+          className="w-full flex items-center justify-between px-4 py-3 g-card hover:bg-white/[0.04] transition-colors"
+        >
+          <span className="text-xs text-white/40 font-semibold uppercase tracking-wider">Live Preview</span>
+          <svg className={`w-4 h-4 text-white/30 transition-transform duration-200 ${showPreview ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+          </svg>
+        </button>
+      )}
       {showPreview && (
         <DisplayPreview
           route={route}
