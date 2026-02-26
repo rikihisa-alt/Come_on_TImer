@@ -33,6 +33,7 @@ interface AppState {
   cPause: (id: string) => void;
   cResume: (id: string) => void;
   cReset: (id: string) => void;
+  cEndPreLevel: (id: string) => void;
   setDisplay: (d: DisplayAssignment) => void;
   removeDisplay: (displayId: string) => void;
   updateSound: (partial: Partial<SoundSettings>) => void;
@@ -61,7 +62,6 @@ function mkTournament(name?: string, levels?: BlindLevel[]): Tournament {
     startingChips: 10000, entryCount: 0, rebuyCount: 0, addonCount: 0, buyInAmount: 0,
     prizeStructure: [{ place: 1, percent: 50 }, { place: 2, percent: 30 }, { place: 3, percent: 20 }],
     createdAt: Date.now(),
-    scheduledStartTime: null,
     displayToggles: { ...DEFAULT_DISPLAY_TOGGLES },
     sound: { ...DEFAULT_SOUND },
     themeId: 'come-on-blue',
@@ -73,6 +73,7 @@ function mkCash(name?: string): CashGame {
     id: uid(), name: name || 'Cash Game 1', smallBlind: 100, bigBlind: 200, ante: 0,
     memo: '', status: 'idle', timerStartedAt: null, elapsedMs: 0,
     countdownMode: false, countdownTotalMs: 3600000, countdownRemainingMs: 3600000,
+    preLevelRemainingMs: 0,
     createdAt: Date.now(),
     displayToggles: { ...DEFAULT_DISPLAY_TOGGLES },
     sound: { ...DEFAULT_SOUND },
@@ -106,8 +107,11 @@ export const useStore = create<AppState>()(
       tStart: (id) => {
         set(s => ({ tournaments: s.tournaments.map(t => {
           if (t.id !== id || t.status === 'running') return t;
+          const hasPreLevel = t.status === 'idle' && (t.preLevelDuration || 0) > 0;
           return { ...t, status: 'running' as const, timerStartedAt: Date.now(),
-            remainingMs: t.status === 'idle' ? (t.levels[t.currentLevelIndex]?.duration || 900) * 1000 : t.remainingMs };
+            currentLevelIndex: hasPreLevel ? -1 : t.currentLevelIndex,
+            remainingMs: hasPreLevel ? (t.preLevelDuration || 0) * 1000
+              : t.status === 'idle' ? (t.levels[t.currentLevelIndex]?.duration || 900) * 1000 : t.remainingMs };
         }) }));
         get().broadcastAll();
       },
@@ -198,8 +202,10 @@ export const useStore = create<AppState>()(
       cStart: (id) => {
         set(s => ({ cashGames: s.cashGames.map(c => {
           if (c.id !== id || c.status === 'running') return c;
+          const hasPreLevel = c.status === 'idle' && (c.preLevelDuration || 0) > 0;
           return { ...c, status: 'running' as const, timerStartedAt: Date.now(),
-            ...(c.status === 'idle' && c.countdownMode ? { countdownRemainingMs: c.countdownTotalMs } : {}) };
+            preLevelRemainingMs: hasPreLevel ? (c.preLevelDuration || 0) * 1000 : 0,
+            ...(c.status === 'idle' && c.countdownMode && !hasPreLevel ? { countdownRemainingMs: c.countdownTotalMs } : {}) };
         }) }));
         get().broadcastAll();
       },
@@ -207,6 +213,9 @@ export const useStore = create<AppState>()(
         set(s => ({ cashGames: s.cashGames.map(c => {
           if (c.id !== id || c.status !== 'running') return c;
           const elapsed = c.timerStartedAt ? Date.now() - c.timerStartedAt : 0;
+          if (c.preLevelRemainingMs > 0) {
+            return { ...c, status: 'paused' as const, preLevelRemainingMs: Math.max(0, c.preLevelRemainingMs - elapsed), timerStartedAt: null };
+          }
           return { ...c, status: 'paused' as const, elapsedMs: c.elapsedMs + elapsed,
             ...(c.countdownMode ? { countdownRemainingMs: Math.max(0, c.countdownRemainingMs - elapsed) } : {}),
             timerStartedAt: null };
@@ -223,7 +232,15 @@ export const useStore = create<AppState>()(
       cReset: (id) => {
         set(s => ({ cashGames: s.cashGames.map(c => {
           if (c.id !== id) return c;
-          return { ...c, status: 'idle' as const, timerStartedAt: null, elapsedMs: 0, countdownRemainingMs: c.countdownTotalMs };
+          return { ...c, status: 'idle' as const, timerStartedAt: null, elapsedMs: 0, countdownRemainingMs: c.countdownTotalMs, preLevelRemainingMs: 0 };
+        }) }));
+        get().broadcastAll();
+      },
+      cEndPreLevel: (id) => {
+        set(s => ({ cashGames: s.cashGames.map(c => {
+          if (c.id !== id) return c;
+          return { ...c, preLevelRemainingMs: 0, timerStartedAt: Date.now(),
+            ...(c.countdownMode ? { countdownRemainingMs: c.countdownTotalMs } : {}) };
         }) }));
         get().broadcastAll();
       },
@@ -282,7 +299,7 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'come-on-timer-v3',
-      version: 7,
+      version: 8,
       migrate: (persisted: unknown, version: number) => {
         const state = persisted as Record<string, unknown>;
         if (version < 4) {
@@ -325,6 +342,19 @@ export const useStore = create<AppState>()(
             const { overlays, ...rest } = t;
             return { ...rest };
           });
+        }
+        if (version < 8) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const tours = (state.tournaments as any[]) || [];
+          state.tournaments = tours.map((t) => {
+            const { scheduledStartTime, ...rest } = t;
+            return { ...rest, preLevelDuration: 0 };
+          });
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const cashes = (state.cashGames as any[]) || [];
+          state.cashGames = cashes.map((c) => ({
+            ...c, preLevelDuration: 0, preLevelRemainingMs: 0,
+          }));
         }
         return state as unknown as AppState;
       },

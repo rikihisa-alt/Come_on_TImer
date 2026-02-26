@@ -125,22 +125,6 @@ function Inner() {
   const prevRef = useRef(-1);
   const warnRef = useRef(false);
 
-  /* Pre-tournament countdown */
-  const [preCountdown, setPreCountdown] = useState(0);
-  useEffect(() => {
-    if (!tournament || tournament.status !== 'idle' || !tournament.scheduledStartTime) {
-      setPreCountdown(0);
-      return;
-    }
-    const update = () => {
-      const diff = (tournament.scheduledStartTime || 0) - Date.now();
-      setPreCountdown(Math.max(0, diff));
-    };
-    update();
-    const iv = setInterval(update, 1000);
-    return () => clearInterval(iv);
-  }, [tournament?.status, tournament?.scheduledStartTime]);
-
   useEffect(() => {
     const h = () => unlockAudio();
     document.addEventListener('click', h, { once: true });
@@ -239,7 +223,7 @@ function Inner() {
     ? { backgroundImage: `url(${theme.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
     : { background: 'linear-gradient(160deg, #0e1c36 0%, #152d52 50%, #1c3d6e 100%)' };
 
-  const showPreCountdown = tournament.status === 'idle' && tournament.scheduledStartTime && preCountdown > 0;
+  const isPreLevel = tournament.status === 'running' && tournament.currentLevelIndex === -1;
 
   return (
     <div className={`min-h-screen flex flex-col select-none overflow-hidden relative ${isBrk ? 'break-bg' : ''}`} style={bgStyle}>
@@ -267,8 +251,12 @@ function Inner() {
               {isBrk ? 'BREAK' : `Lv${cur?.level || '-'}`}/{totalLvs}
             </div>
           )}
-          <FullscreenButton />
         </div>
+      </div>
+
+      {/* Fullscreen button (below top bar, right) */}
+      <div className="absolute top-14 right-3 z-20">
+        <FullscreenButton />
       </div>
 
       {/* ═══ Desktop: Absolute Section Layout ═══ */}
@@ -473,21 +461,21 @@ function Inner() {
       </div>
 
       {/* ═══ Overlays ═══ */}
-      {/* Pre-tournament countdown */}
-      {showPreCountdown && (
+      {/* Pre-level countdown */}
+      {isPreLevel && (
         <div className="absolute inset-0 z-40 flex items-center justify-center g-overlay-idle">
           <div className="g-card p-8 md:p-14 text-center fade-in-up">
             <div className="text-xl md:text-3xl lg:text-4xl font-black text-white/50 tracking-wide mb-4 md:mb-6">{tournament.name}</div>
             <div className="text-sm md:text-lg text-white/25 uppercase tracking-[0.3em] font-semibold mb-3 md:mb-5">Starting In</div>
             <div className="text-5xl md:text-8xl lg:text-[10vw] font-black timer-font text-blue-400 leading-none">
-              {formatTimerHMS(preCountdown)}
+              {formatTimerHMS(displayMs)}
             </div>
           </div>
         </div>
       )}
 
-      {/* Regular idle (no scheduled time or past time) */}
-      {tournament.status === 'idle' && !showPreCountdown && (
+      {/* Regular idle */}
+      {tournament.status === 'idle' && (
         <div className="absolute inset-0 z-40 flex items-center justify-center g-overlay-idle">
           <div className="g-card p-8 md:p-12 text-center fade-in-up">
             <div className="text-3xl md:text-5xl font-black text-blue-400">COME ON Timer</div>

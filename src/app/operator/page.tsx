@@ -7,23 +7,40 @@ import { PRESET_OPTIONS, DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND, DEFAULT_SECTION
 import { playSound, playTestSound, playWarningBeep, speakTTS, fillTTSTemplate, PRESET_LABELS } from '@/lib/audio';
 import { BlindLevel, Tournament, CashGame, SoundPreset, PrizeEntry, SoundSettings, DisplayToggles, ThemeConfig, TournamentSectionId, SectionPosition, SectionLayout } from '@/lib/types';
 
+const TAB_ORDER = ['tournaments', 'cash', 'split', 'settings'] as const;
+
 export default function OperatorPage() {
-  const [tab, setTab] = useState<'tournaments' | 'cash' | 'settings'>('tournaments');
+  const [tab, setTab] = useState<'tournaments' | 'cash' | 'split' | 'settings'>('tournaments');
+  const [slideClass, setSlideClass] = useState('');
+  const [animKey, setAnimKey] = useState(0);
+
+  const switchTab = (newTab: typeof tab) => {
+    if (newTab === tab) return;
+    const oldIdx = TAB_ORDER.indexOf(tab);
+    const newIdx = TAB_ORDER.indexOf(newTab);
+    setSlideClass(newIdx > oldIdx ? 'slide-in-right' : 'slide-in-left');
+    setAnimKey(k => k + 1);
+    setTab(newTab);
+  };
+
   return (
     <div className="min-h-screen" style={{ background: 'linear-gradient(160deg, #0e1c36 0%, #152d52 50%, #1c3d6e 100%)' }}>
       {/* Glass Tab Nav */}
       <nav className="flex px-3 py-2 gap-1.5 border-b border-white/[0.06]">
-        {(['tournaments', 'cash', 'settings'] as const).map(t => (
-          <button key={t} onClick={() => setTab(t)}
+        {TAB_ORDER.map(t => (
+          <button key={t} onClick={() => switchTab(t)}
             className={`flex-1 py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all duration-200 ${tab === t ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'text-white/30 hover:text-white/50 hover:bg-white/[0.04] border border-transparent'}`}>
-            {t === 'tournaments' ? 'Tournaments' : t === 'cash' ? 'Cash Games' : 'Settings'}
+            {t === 'tournaments' ? 'Tournaments' : t === 'cash' ? 'Cash Games' : t === 'split' ? 'Split' : 'Settings'}
           </button>
         ))}
       </nav>
-      <div className="p-4 max-w-7xl mx-auto">
-        {tab === 'tournaments' && <TournamentsTab />}
-        {tab === 'cash' && <CashTab />}
-        {tab === 'settings' && <SettingsTab />}
+      <div className="p-4 max-w-7xl mx-auto overflow-hidden">
+        <div key={animKey} className={slideClass}>
+          {tab === 'tournaments' && <TournamentsTab />}
+          {tab === 'cash' && <CashTab />}
+          {tab === 'split' && <SplitTab />}
+          {tab === 'settings' && <SettingsTab />}
+        </div>
       </div>
     </div>
   );
@@ -183,12 +200,6 @@ function TournamentStats({ tournament: t }: { tournament: Tournament }) {
   const up = (p: Partial<Tournament>) => useStore.getState().updateTournament(t.id, p);
   const totalPlayLevels = t.levels.filter(l => l.type === 'play').length;
 
-  const toLocalDatetime = (ts: number) => {
-    const d = new Date(ts);
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  };
-
   return (
     <div className="space-y-3">
       <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Tournament Info</div>
@@ -210,19 +221,18 @@ function TournamentStats({ tournament: t }: { tournament: Tournament }) {
           </select>
         </div>
         <div className="col-span-2">
-          <label className="text-[11px] text-white/25 block mb-1">Scheduled Start (開始予定時刻)</label>
+          <label className="text-[11px] text-white/25 block mb-1">Pre-Level (開始前カウントダウン)</label>
           <div className="flex items-center gap-2">
             <input
-              type="datetime-local"
-              className="input input-sm flex-1"
-              value={t.scheduledStartTime ? toLocalDatetime(t.scheduledStartTime) : ''}
-              onChange={e => up({ scheduledStartTime: e.target.value ? new Date(e.target.value).getTime() : null })}
+              type="number"
+              className="input input-sm w-20 text-center"
+              value={Math.floor((t.preLevelDuration || 0) / 60)}
+              onChange={e => up({ preLevelDuration: Math.max(0, +e.target.value) * 60 })}
+              min={0}
             />
-            {t.scheduledStartTime && (
-              <button className="btn btn-ghost btn-sm" onClick={() => up({ scheduledStartTime: null })}>Clear</button>
-            )}
+            <span className="text-xs text-white/25">min</span>
           </div>
-          <p className="text-[10px] text-white/15 mt-1">設定すると開催前のディスプレイにカウントダウンが表示されます</p>
+          <p className="text-[10px] text-white/15 mt-1">Start押下後、この時間のカウントダウン後にLevel 1が開始します</p>
         </div>
       </div>
     </div>
@@ -486,18 +496,27 @@ function CashEditor({ id, onDelete }: { id: string; onDelete: (id: string) => vo
   const [elapsed, setElapsed] = useState(0);
   const [countdown, setCountdown] = useState(0);
 
+  const [preLevelMs, setPreLevelMs] = useState(0);
+
   useEffect(() => {
     if (!c) return;
     setCountdown(c.countdownRemainingMs);
+    setPreLevelMs(c.preLevelRemainingMs);
     const iv = setInterval(() => {
       if (c.status === 'running' && c.timerStartedAt) {
         const e = Date.now() - c.timerStartedAt;
-        setElapsed(c.elapsedMs + e);
-        if (c.countdownMode) setCountdown(Math.max(0, c.countdownRemainingMs - e));
-      } else { setElapsed(c.elapsedMs); setCountdown(c.countdownRemainingMs); }
+        if (c.preLevelRemainingMs > 0) {
+          const rem = Math.max(0, c.preLevelRemainingMs - e);
+          setPreLevelMs(rem);
+          if (rem <= 0) store.cEndPreLevel(c.id);
+        } else {
+          setElapsed(c.elapsedMs + e);
+          if (c.countdownMode) setCountdown(Math.max(0, c.countdownRemainingMs - e));
+        }
+      } else { setElapsed(c.elapsedMs); setCountdown(c.countdownRemainingMs); setPreLevelMs(c.preLevelRemainingMs); }
     }, 500);
     return () => clearInterval(iv);
-  }, [c]);
+  }, [c, store]);
 
   if (!c) return null;
 
@@ -523,12 +542,29 @@ function CashEditor({ id, onDelete }: { id: string; onDelete: (id: string) => vo
             <div><label className="text-[11px] text-white/25 block mb-1">Ante</label><input type="number" className="input input-sm" value={c.ante} onChange={e => store.updateCashGame(id, { ante: +e.target.value })} /></div>
           </div>
           <div><label className="text-[11px] text-white/25 block mb-1">Memo</label><input className="input" value={c.memo} onChange={e => store.updateCashGame(id, { memo: e.target.value })} placeholder="Table info" /></div>
+          <div>
+            <label className="text-[11px] text-white/25 block mb-1">Pre-Level (開始前カウントダウン)</label>
+            <div className="flex items-center gap-2">
+              <input type="number" className="input input-sm w-20 text-center" value={Math.floor((c.preLevelDuration || 0) / 60)} onChange={e => store.updateCashGame(id, { preLevelDuration: Math.max(0, +e.target.value) * 60 })} min={0} />
+              <span className="text-xs text-white/25">min</span>
+            </div>
+            <p className="text-[10px] text-white/15 mt-1">Start押下後、この時間のカウントダウン後にゲームが開始します</p>
+          </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2"><div className={`toggle ${!c.countdownMode ? 'on' : ''}`} onClick={() => store.updateCashGame(id, { countdownMode: false })} /><span className="text-xs text-white/40">Count Up</span></div>
             <div className="flex items-center gap-2"><div className={`toggle ${c.countdownMode ? 'on' : ''}`} onClick={() => store.updateCashGame(id, { countdownMode: true })} /><span className="text-xs text-white/40">Countdown</span></div>
             {c.countdownMode && <div className="flex items-center gap-1 ml-2"><input type="number" className="input input-sm w-16" value={Math.floor(c.countdownTotalMs / 60000)} onChange={e => { const ms = +e.target.value * 60000; store.updateCashGame(id, { countdownTotalMs: ms, countdownRemainingMs: ms }); }} min={1} /><span className="text-xs text-white/20">min</span></div>}
           </div>
-          <div className="text-center py-2"><div className="text-4xl font-bold timer-font text-white">{c.countdownMode ? formatTimerHMS(countdown) : formatTimerHMS(elapsed)}</div></div>
+          <div className="text-center py-2">
+            {preLevelMs > 0 && c.status === 'running' ? (
+              <div>
+                <div className="text-[10px] text-blue-400/60 uppercase tracking-widest font-semibold mb-1">Starting In</div>
+                <div className="text-4xl font-bold timer-font text-blue-400">{formatTimerHMS(preLevelMs)}</div>
+              </div>
+            ) : (
+              <div className="text-4xl font-bold timer-font text-white">{c.countdownMode ? formatTimerHMS(countdown) : formatTimerHMS(elapsed)}</div>
+            )}
+          </div>
           <div className="flex items-center justify-center gap-2">
             {c.status === 'idle' && <button onClick={() => store.cStart(id)} className="btn btn-primary">Start</button>}
             {c.status === 'running' && <button onClick={() => store.cPause(id)} className="btn btn-warning">Pause</button>}
@@ -957,6 +993,77 @@ function DisplayPreview({ route, displayId, targetName, themeLabel, overridePath
           <span className="text-[9px] text-white/40 font-semibold">LIVE</span>
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ── Split Tab ── */
+function SplitTab() {
+  const store = useStore();
+  const { tournaments, cashGames } = store;
+  const allTimers = [
+    ...tournaments.map(t => ({ id: t.id, name: t.name, kind: 'T' as const, status: t.status as string })),
+    ...cashGames.map(c => ({ id: c.id, name: c.name, kind: 'C' as const, status: c.status as string })),
+  ];
+  const [leftId, setLeftId] = useState(allTimers[0]?.id || '');
+  const [rightId, setRightId] = useState(allTimers[1]?.id || allTimers[0]?.id || '');
+
+  // Get theme for preview
+  const leftTimer = tournaments.find(t => t.id === leftId) || cashGames.find(c => c.id === leftId);
+  const leftThemeId = leftTimer?.themeId || store.defaultThemeId || 'come-on-blue';
+  const themeName = store.themes.find(th => th.id === leftThemeId)?.name || '';
+
+  const splitPath = `/display/split?left=${leftId}&right=${rightId}&theme=${leftThemeId}`;
+
+  if (allTimers.length < 2) {
+    return (
+      <div className="space-y-4 fade-in">
+        <div className="g-card p-8 text-center text-white/20">
+          <p className="text-sm">Split View には最低2つのタイマー（トーナメントまたはキャッシュ）が必要です。</p>
+          <p className="text-xs mt-2 text-white/15">先にTournamentsまたはCash Gamesタブでタイマーを作成してください。</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4 fade-in">
+      <div className="g-card p-4 space-y-4">
+        <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Split Display — 左右パネル選択</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Left panel selection */}
+          <div>
+            <label className="text-[11px] text-white/25 block mb-1">左パネル</label>
+            <select className="input" value={leftId} onChange={e => setLeftId(e.target.value)}>
+              {allTimers.map(t => (
+                <option key={t.id} value={t.id}>
+                  [{t.kind === 'T' ? 'Tournament' : 'Cash'}] {t.name} {t.status === 'running' ? '(LIVE)' : t.status === 'paused' ? '(PAUSED)' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+          {/* Right panel selection */}
+          <div>
+            <label className="text-[11px] text-white/25 block mb-1">右パネル</label>
+            <select className="input" value={rightId} onChange={e => setRightId(e.target.value)}>
+              {allTimers.map(t => (
+                <option key={t.id} value={t.id}>
+                  [{t.kind === 'T' ? 'Tournament' : 'Cash'}] {t.name} {t.status === 'running' ? '(LIVE)' : t.status === 'paused' ? '(PAUSED)' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Split Preview */}
+      <DisplayPreview
+        route="split"
+        displayId=""
+        targetName={`${leftTimer?.name || '左'} | ${(tournaments.find(t => t.id === rightId) || cashGames.find(c => c.id === rightId))?.name || '右'}`}
+        themeLabel={themeName}
+        overridePath={splitPath}
+      />
     </div>
   );
 }

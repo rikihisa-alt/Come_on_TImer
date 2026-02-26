@@ -73,6 +73,7 @@ function CashDisplayInner() {
 
   const [elapsed, setElapsed] = useState(0);
   const [countdown, setCountdown] = useState(0);
+  const [preLevelMs, setPreLevelMs] = useState(0);
 
   useEffect(() => {
     const h = () => unlockAudio();
@@ -96,16 +97,22 @@ function CashDisplayInner() {
 
   useEffect(() => {
     if (!cashGame) return;
+    setPreLevelMs(cashGame.preLevelRemainingMs);
     const iv = setInterval(() => {
       if (cashGame.status === 'running' && cashGame.timerStartedAt) {
         const e = Date.now() - cashGame.timerStartedAt;
-        setElapsed(cashGame.elapsedMs + e);
-        if (cashGame.countdownMode) {
-          setCountdown(Math.max(0, cashGame.countdownRemainingMs - e));
+        if (cashGame.preLevelRemainingMs > 0) {
+          const rem = Math.max(0, cashGame.preLevelRemainingMs - e);
+          setPreLevelMs(rem);
+          if (rem <= 0) useStore.getState().cEndPreLevel(cashGame.id);
+        } else {
+          setElapsed(cashGame.elapsedMs + e);
+          if (cashGame.countdownMode) setCountdown(Math.max(0, cashGame.countdownRemainingMs - e));
         }
       } else {
         setElapsed(cashGame.elapsedMs);
         setCountdown(cashGame.countdownRemainingMs);
+        setPreLevelMs(cashGame.preLevelRemainingMs);
       }
     }, 500);
     return () => clearInterval(iv);
@@ -155,8 +162,12 @@ function CashDisplayInner() {
         </div>
         <div className="flex items-center gap-2 shrink-0 ml-2">
           <div className="text-xs md:text-sm text-white/30 font-medium uppercase tracking-wider">Cash Game</div>
-          <FullscreenButton />
         </div>
+      </div>
+
+      {/* Fullscreen button (below top bar, right) */}
+      <div className="absolute top-14 right-3 z-20">
+        <FullscreenButton />
       </div>
 
       {/* ═══ Main Content Area ═══ */}
@@ -231,6 +242,19 @@ function CashDisplayInner() {
       )}
 
       {/* ═══ Overlays ═══ */}
+      {/* Pre-level countdown */}
+      {cashGame.status === 'running' && preLevelMs > 0 && (
+        <div className="absolute inset-0 z-40 flex items-center justify-center g-overlay-idle">
+          <div className="g-card p-8 md:p-14 text-center fade-in-up">
+            <div className="text-xl md:text-3xl lg:text-4xl font-black text-white/50 tracking-wide mb-4 md:mb-6">{cashGame.name}</div>
+            <div className="text-sm md:text-lg text-white/25 uppercase tracking-[0.3em] font-semibold mb-3 md:mb-5">Starting In</div>
+            <div className="text-5xl md:text-8xl lg:text-[10vw] font-black timer-font text-blue-400 leading-none">
+              {formatTimerHMS(preLevelMs)}
+            </div>
+          </div>
+        </div>
+      )}
+
       {cashGame.status === 'idle' && (
         <div className="absolute inset-0 z-40 flex items-center justify-center g-overlay-idle">
           <div className="g-card p-8 md:p-12 text-center fade-in-up">

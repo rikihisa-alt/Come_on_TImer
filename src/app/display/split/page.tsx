@@ -373,9 +373,12 @@ function SplitInner() {
             <SplitTimerSelector label="右" selectedId={selRight} onSelect={setSelRight} tournaments={tournaments} cashGames={cashGames} />
           </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0 ml-2">
-          <FullscreenButton />
-        </div>
+        <div className="flex items-center gap-2 shrink-0 ml-2" />
+      </div>
+
+      {/* Fullscreen button (below top bar, right) */}
+      <div className="absolute top-14 right-3 z-20">
+        <FullscreenButton />
       </div>
 
       {/* Split panels */}

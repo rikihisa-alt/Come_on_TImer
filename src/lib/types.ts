@@ -46,7 +46,7 @@ export type Tournament = {
   prizeStructure: PrizeEntry[];
   createdAt: number;
   regCloseLevel?: number;
-  scheduledStartTime?: number | null;
+  preLevelDuration?: number;
   displayToggles?: DisplayToggles;
   sound?: SoundSettings;
   themeId?: string;
@@ -66,6 +66,8 @@ export type CashGame = {
   countdownMode: boolean;
   countdownTotalMs: number;
   countdownRemainingMs: number;
+  preLevelDuration?: number;
+  preLevelRemainingMs: number;
   createdAt: number;
   displayToggles?: DisplayToggles;
   sound?: SoundSettings;
