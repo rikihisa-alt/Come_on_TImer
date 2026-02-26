@@ -7,6 +7,7 @@ import { onSync } from '@/lib/sync';
 import { unlockAudio, playSound, playWarningBeep, speakTTS, fillTTSTemplate } from '@/lib/audio';
 import { formatTimer, formatChips, formatTimerHMS, computeTimeToBreak, computeTimeToEnd, computeRegCloseTime } from '@/lib/utils';
 import { Tournament, CashGame, ThemeConfig, DisplayToggles, SoundSettings } from '@/lib/types';
+import { FullscreenButton } from '@/components/FullscreenButton';
 
 /* ═══ Compact stat cell (split version) ═══ */
 function SC({ label, value }: { label: string; value: string }) {
@@ -331,6 +332,7 @@ function SplitInner() {
           <span className="text-white/30 text-lg shrink-0">|</span>
           <TabSelector label="右:" selectedId={selRight} onSelect={setSelRight} tournaments={tournaments} cashGames={cashGames} />
         </div>
+        <FullscreenButton />
       </div>
 
       {/* Split panels */}

@@ -7,6 +7,7 @@ import { onSync } from '@/lib/sync';
 import { unlockAudio, playSound, playWarningBeep, speakTTS, fillTTSTemplate } from '@/lib/audio';
 import { formatTimer, formatChips, formatTimerHMS, computeTimeToBreak, computeTimeToEnd, computeRegCloseTime } from '@/lib/utils';
 import { Tournament, ThemeConfig } from '@/lib/types';
+import { FullscreenButton } from '@/components/FullscreenButton';
 
 /* ── Timer Selector dropdown ── */
 function TimerSelector({ selectedId, onSelect, tournaments }: {
@@ -208,11 +209,14 @@ function Inner() {
             <span className="text-lg md:text-2xl lg:text-3xl font-black text-white/70 tracking-wide truncate max-w-[50vw]">{tournament.name}</span>
           )}
         </div>
-        {dt.showLevelInfo && (
-          <div className="text-xs md:text-sm text-white/30 font-medium shrink-0">
-            {isBrk ? 'BREAK' : `Lv${cur?.level || '-'}`}/{totalLvs}
-          </div>
-        )}
+        <div className="flex items-center gap-2 shrink-0">
+          {dt.showLevelInfo && (
+            <div className="text-xs md:text-sm text-white/30 font-medium">
+              {isBrk ? 'BREAK' : `Lv${cur?.level || '-'}`}/{totalLvs}
+            </div>
+          )}
+          <FullscreenButton />
+        </div>
       </div>
 
       {/* ═══ Main Dashboard Grid ═══ */}

@@ -7,6 +7,7 @@ import { onSync } from '@/lib/sync';
 import { unlockAudio } from '@/lib/audio';
 import { formatTimerHMS } from '@/lib/utils';
 import { CashGame, ThemeConfig } from '@/lib/types';
+import { FullscreenButton } from '@/components/FullscreenButton';
 
 /* ── Timer Selector dropdown ── */
 function TimerSelector({ selectedId, onSelect, cashGames }: {
@@ -149,7 +150,10 @@ function CashDisplayInner() {
           <TimerSelector selectedId={activeId} onSelect={setSelectedId} cashGames={cashGames} />
           {cashGames.length <= 1 && <span className="text-sm md:text-lg font-bold text-white/60 tracking-wide truncate max-w-[300px]">{cashGame.name}</span>}
         </div>
-        <div className="text-xs md:text-sm text-white/30 font-medium shrink-0 uppercase tracking-wider">Cash Game</div>
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="text-xs md:text-sm text-white/30 font-medium uppercase tracking-wider">Cash Game</div>
+          <FullscreenButton />
+        </div>
       </div>
 
       {/* ═══ Main Content Area ═══ */}
