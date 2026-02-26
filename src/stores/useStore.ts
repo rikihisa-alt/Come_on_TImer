@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware';
 import { Tournament, CashGame, DisplayAssignment, ThemeConfig, SoundSettings, DisplayToggles, BlindLevel, PrizeEntry } from '@/lib/types';
 import { uid } from '@/lib/utils';
 import { broadcast } from '@/lib/sync';
-import { DEFAULT_THEMES, STANDARD_PRESET, DEFAULT_TTS_MESSAGES, DEFAULT_DISPLAY_TOGGLES } from '@/lib/presets';
+import { DEFAULT_THEMES, STANDARD_PRESET, DEFAULT_TTS_MESSAGES, DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND } from '@/lib/presets';
 
 interface AppState {
   tournaments: Tournament[];
@@ -36,7 +36,12 @@ interface AppState {
   removeDisplay: (displayId: string) => void;
   updateSound: (partial: Partial<SoundSettings>) => void;
   updateDisplayToggles: (partial: Partial<DisplayToggles>) => void;
+  updateTournamentToggles: (id: string, partial: Partial<DisplayToggles>) => void;
+  updateTournamentSound: (id: string, partial: Partial<SoundSettings>) => void;
+  updateCashToggles: (id: string, partial: Partial<DisplayToggles>) => void;
+  updateCashSound: (id: string, partial: Partial<SoundSettings>) => void;
   addTheme: (theme: ThemeConfig) => void;
+  updateTheme: (id: string, partial: Partial<ThemeConfig>) => void;
   removeTheme: (id: string) => void;
   broadcastAll: () => void;
 }
@@ -50,6 +55,8 @@ function mkTournament(name?: string, levels?: BlindLevel[]): Tournament {
     prizeStructure: [{ place: 1, percent: 50 }, { place: 2, percent: 30 }, { place: 3, percent: 20 }],
     createdAt: Date.now(),
     scheduledStartTime: null,
+    displayToggles: { ...DEFAULT_DISPLAY_TOGGLES },
+    sound: { ...DEFAULT_SOUND },
   };
 }
 
@@ -59,6 +66,8 @@ function mkCash(name?: string): CashGame {
     memo: '', status: 'idle', timerStartedAt: null, elapsedMs: 0,
     countdownMode: false, countdownTotalMs: 3600000, countdownRemainingMs: 3600000,
     createdAt: Date.now(),
+    displayToggles: { ...DEFAULT_DISPLAY_TOGGLES },
+    sound: { ...DEFAULT_SOUND },
   };
 }
 
@@ -212,13 +221,54 @@ export const useStore = create<AppState>()(
       removeDisplay: (displayId) => { set(s => ({ displays: s.displays.filter(x => x.displayId !== displayId) })); get().broadcastAll(); },
       updateSound: (partial) => { set(s => ({ sound: { ...s.sound, ...partial } })); get().broadcastAll(); },
       updateDisplayToggles: (partial) => { set(s => ({ displayToggles: { ...s.displayToggles, ...partial } })); get().broadcastAll(); },
+      updateTournamentToggles: (id, partial) => {
+        set(s => ({ tournaments: s.tournaments.map(t => t.id === id ? { ...t, displayToggles: { ...(t.displayToggles || DEFAULT_DISPLAY_TOGGLES), ...partial } } : t) }));
+        get().broadcastAll();
+      },
+      updateTournamentSound: (id, partial) => {
+        set(s => ({ tournaments: s.tournaments.map(t => t.id === id ? { ...t, sound: { ...(t.sound || DEFAULT_SOUND), ...partial } } : t) }));
+        get().broadcastAll();
+      },
+      updateCashToggles: (id, partial) => {
+        set(s => ({ cashGames: s.cashGames.map(c => c.id === id ? { ...c, displayToggles: { ...(c.displayToggles || DEFAULT_DISPLAY_TOGGLES), ...partial } } : c) }));
+        get().broadcastAll();
+      },
+      updateCashSound: (id, partial) => {
+        set(s => ({ cashGames: s.cashGames.map(c => c.id === id ? { ...c, sound: { ...(c.sound || DEFAULT_SOUND), ...partial } } : c) }));
+        get().broadcastAll();
+      },
       addTheme: (theme) => { set(s => ({ themes: [...s.themes, theme] })); get().broadcastAll(); },
+      updateTheme: (id, partial) => { set(s => ({ themes: s.themes.map(t => t.id === id ? { ...t, ...partial } : t) })); get().broadcastAll(); },
       removeTheme: (id) => { set(s => ({ themes: s.themes.filter(t => t.id !== id) })); get().broadcastAll(); },
       broadcastAll: () => {
         const s = get();
         broadcast('FULL_SYNC', { tournaments: s.tournaments, cashGames: s.cashGames, displays: s.displays, themes: s.themes, sound: s.sound, displayToggles: s.displayToggles });
       },
     }),
-    { name: 'come-on-timer-v3', partialize: (s) => ({ tournaments: s.tournaments, cashGames: s.cashGames, displays: s.displays, themes: s.themes, sound: s.sound, displayToggles: s.displayToggles }) }
+    {
+      name: 'come-on-timer-v3',
+      version: 4,
+      migrate: (persisted: unknown, version: number) => {
+        const state = persisted as Record<string, unknown>;
+        if (version < 4) {
+          const globalToggles = (state.displayToggles as DisplayToggles) || { ...DEFAULT_DISPLAY_TOGGLES };
+          const globalSound = (state.sound as SoundSettings) || { ...DEFAULT_SOUND };
+          const tours = (state.tournaments as Tournament[]) || [];
+          const cashes = (state.cashGames as CashGame[]) || [];
+          state.tournaments = tours.map(t => ({
+            ...t,
+            displayToggles: t.displayToggles || { ...globalToggles },
+            sound: t.sound || { ...globalSound },
+          }));
+          state.cashGames = cashes.map(c => ({
+            ...c,
+            displayToggles: c.displayToggles || { ...globalToggles },
+            sound: c.sound || { ...globalSound },
+          }));
+        }
+        return state as unknown as AppState;
+      },
+      partialize: (s) => ({ tournaments: s.tournaments, cashGames: s.cashGames, displays: s.displays, themes: s.themes, sound: s.sound, displayToggles: s.displayToggles }),
+    }
   )
 );

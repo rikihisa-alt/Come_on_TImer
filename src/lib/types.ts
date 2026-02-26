@@ -32,6 +32,8 @@ export type Tournament = {
   createdAt: number;
   regCloseLevel?: number;
   scheduledStartTime?: number | null;
+  displayToggles?: DisplayToggles;
+  sound?: SoundSettings;
 };
 
 export type CashGame = {
@@ -48,6 +50,8 @@ export type CashGame = {
   countdownTotalMs: number;
   countdownRemainingMs: number;
   createdAt: number;
+  displayToggles?: DisplayToggles;
+  sound?: SoundSettings;
 };
 
 export type DisplayAssignment = {

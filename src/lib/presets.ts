@@ -1,4 +1,4 @@
-import { BlindLevel, ThemeConfig, TTSMessage, DisplayToggles } from './types';
+import { BlindLevel, ThemeConfig, TTSMessage, DisplayToggles, SoundSettings } from './types';
 import { uid } from './utils';
 
 function bl(level: number, sb: number, bb: number, ante: number, dur: number): BlindLevel {
@@ -45,6 +45,17 @@ export const DEFAULT_TTS_MESSAGES: TTSMessage[] = [
   { id: uid(), label: 'Level Up (EN)', template: 'Level {level}, {sb} {bb}', enabled: false },
   { id: uid(), label: 'Break (EN)', template: 'Break time', enabled: false },
 ];
+
+export const DEFAULT_SOUND: SoundSettings = {
+  masterVolume: 0.7,
+  soundPreset: 'chime',
+  blindChangeEnabled: true,
+  breakStartEnabled: true,
+  oneMinWarningEnabled: true,
+  ttsEnabled: false,
+  ttsLang: 'ja',
+  ttsMessages: [...DEFAULT_TTS_MESSAGES],
+};
 
 export const DEFAULT_DISPLAY_TOGGLES: DisplayToggles = {
   showTournamentName: true, showLevelInfo: true, showBlinds: true, showTimer: true,

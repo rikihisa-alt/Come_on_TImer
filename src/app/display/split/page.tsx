@@ -7,6 +7,7 @@ import { onSync } from '@/lib/sync';
 import { unlockAudio, playSound, playWarningBeep, speakTTS, fillTTSTemplate } from '@/lib/audio';
 import { formatTimer, formatChips, formatTimerHMS, computeTimeToBreak, computeTimeToEnd, computeRegCloseTime } from '@/lib/utils';
 import { Tournament, CashGame, ThemeConfig, DisplayToggles, SoundSettings } from '@/lib/types';
+import { DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND } from '@/lib/presets';
 import { FullscreenButton } from '@/components/FullscreenButton';
 
 /* ═══ Compact stat cell (split version) ═══ */
@@ -256,7 +257,7 @@ function TabSelector({ selectedId, onSelect, tournaments, cashGames, label }: {
 function SplitInner() {
   const params = useSearchParams();
   const displayId = params.get('display') || '';
-  const { tournaments, cashGames, displays, themes, sound, displayToggles } = useStore();
+  const { tournaments, cashGames, displays, themes, sound: globalSound, displayToggles: globalToggles } = useStore();
 
   const detectType = useCallback((id: string): 'tournament' | 'cash' => {
     if (cashGames.find(c => c.id === id)) return 'cash';
@@ -307,18 +308,30 @@ function SplitInner() {
   const rightTournament = rightType === 'tournament' ? tournaments.find(t => t.id === selRight) : undefined;
   const rightCash = rightType === 'cash' ? cashGames.find(c => c.id === selRight) : undefined;
 
-  const bgStyle = displayToggles.backgroundImageUrl
-    ? { backgroundImage: `url(${displayToggles.backgroundImageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+  /* per-timer settings for each panel */
+  const leftDt = (leftTournament?.displayToggles || leftCash?.displayToggles) || globalToggles;
+  const leftSnd = (leftTournament?.sound || leftCash?.sound) || globalSound;
+  const rightDt = (rightTournament?.displayToggles || rightCash?.displayToggles) || globalToggles;
+  const rightSnd = (rightTournament?.sound || rightCash?.sound) || globalSound;
+
+  /* Background: use left panel's bg image, or theme */
+  const bgImgUrl = leftDt.backgroundImageUrl || rightDt.backgroundImageUrl;
+  const bgStyle = bgImgUrl
+    ? { backgroundImage: `url(${bgImgUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
     : theme?.type === 'gradient'
     ? { background: `linear-gradient(160deg, ${theme.gradientFrom || '#0e1c36'}, ${theme.gradientTo || '#1c3d6e'})` }
     : { background: 'linear-gradient(160deg, #0e1c36 0%, #152d52 50%, #1c3d6e 100%)' };
+
+  /* Ticker: left panel first, then right */
+  const tickerText = leftDt.tickerText || rightDt.tickerText;
+  const tickerSpeed = (leftDt.tickerText ? leftDt.tickerSpeed : rightDt.tickerSpeed) || 25;
 
   const hasLeft = leftTournament || leftCash;
   const hasRight = rightTournament || rightCash;
 
   return (
     <div className="min-h-screen flex flex-col select-none overflow-hidden" style={bgStyle}>
-      {displayToggles.backgroundImageUrl && <div className="absolute inset-0 bg-black/50 pointer-events-none z-[1]" />}
+      {bgImgUrl && <div className="absolute inset-0 bg-black/50 pointer-events-none z-[1]" />}
       {theme && theme.overlayOpacity > 0 && <div className="absolute inset-0 bg-black pointer-events-none z-[1]" style={{ opacity: theme.overlayOpacity / 100 }} />}
 
       {/* Header with tab selectors */}
@@ -340,8 +353,8 @@ function SplitInner() {
         {/* LEFT PANEL */}
         <div className="flex-1 flex flex-col border-r border-white/[0.08]">
           {hasLeft ? (
-            leftTournament ? <TournamentPanel tournament={leftTournament} theme={theme} displayToggles={displayToggles} sound={sound} />
-            : leftCash ? <CashPanel cashGame={leftCash} theme={theme} displayToggles={displayToggles} />
+            leftTournament ? <TournamentPanel tournament={leftTournament} theme={theme} displayToggles={leftDt} sound={leftSnd} />
+            : leftCash ? <CashPanel cashGame={leftCash} theme={theme} displayToggles={leftDt} />
             : null
           ) : (
             <div className="flex-1 flex items-center justify-center"><div className="g-card p-6 text-white/20 text-sm">左パネル: タイマーを選択 ↑</div></div>
@@ -351,8 +364,8 @@ function SplitInner() {
         {/* RIGHT PANEL */}
         <div className="flex-1 flex flex-col">
           {hasRight ? (
-            rightTournament ? <TournamentPanel tournament={rightTournament} theme={theme} displayToggles={displayToggles} sound={sound} />
-            : rightCash ? <CashPanel cashGame={rightCash} theme={theme} displayToggles={displayToggles} />
+            rightTournament ? <TournamentPanel tournament={rightTournament} theme={theme} displayToggles={rightDt} sound={rightSnd} />
+            : rightCash ? <CashPanel cashGame={rightCash} theme={theme} displayToggles={rightDt} />
             : null
           ) : (
             <div className="flex-1 flex items-center justify-center"><div className="g-card p-6 text-white/20 text-sm">右パネル: タイマーを選択 ↑</div></div>
@@ -361,11 +374,11 @@ function SplitInner() {
       </div>
 
       {/* Ticker */}
-      {displayToggles.tickerText && (
+      {tickerText && (
         <div className="relative z-10 px-2.5 pb-2">
           <div className="g-ticker py-2 overflow-hidden">
             <div className="ticker-container">
-              <span className="ticker-scroll text-sm md:text-base font-semibold text-white/35 px-4" style={{ animationDuration: `${displayToggles.tickerSpeed || 25}s` }}>{displayToggles.tickerText}</span>
+              <span className="ticker-scroll text-sm md:text-base font-semibold text-white/35 px-4" style={{ animationDuration: `${tickerSpeed}s` }}>{tickerText}</span>
             </div>
           </div>
         </div>

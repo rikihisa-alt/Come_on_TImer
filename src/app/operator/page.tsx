@@ -3,9 +3,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useStore } from '@/stores/useStore';
 import { formatTimer, formatTimerHMS, formatChips, uid } from '@/lib/utils';
-import { PRESET_OPTIONS } from '@/lib/presets';
+import { PRESET_OPTIONS, DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND } from '@/lib/presets';
 import { playSound, playTestSound, playWarningBeep, speakTTS, fillTTSTemplate, PRESET_LABELS } from '@/lib/audio';
-import { BlindLevel, Tournament, CashGame, SoundPreset, PrizeEntry } from '@/lib/types';
+import { BlindLevel, Tournament, CashGame, SoundPreset, PrizeEntry, SoundSettings, DisplayToggles, ThemeConfig } from '@/lib/types';
 
 export default function OperatorPage() {
   const [tab, setTab] = useState<'tournaments' | 'cash' | 'displays' | 'settings'>('tournaments');
@@ -56,6 +56,7 @@ function TournamentsTab() {
 function TournamentEditor({ id }: { id: string }) {
   const store = useStore();
   const t = store.tournaments.find(x => x.id === id);
+  const [showSettings, setShowSettings] = useState(false);
   if (!t) return null;
   return (
     <div className="space-y-4 fade-in">
@@ -67,15 +68,34 @@ function TournamentEditor({ id }: { id: string }) {
         <TournamentTimer tournament={t} />
       </div>
       <div className="g-card p-4"><TournamentStats tournament={t} /></div>
-      <div className="g-card p-4"><TickerPanel /></div>
       <div className="g-card p-4"><PrizeEditor tournament={t} /></div>
       <div className="g-card p-4"><BlindEditor tournament={t} /></div>
+
+      {/* Collapsible Display & Sound Settings */}
+      <button
+        onClick={() => setShowSettings(!showSettings)}
+        className="w-full flex items-center justify-between px-4 py-3 g-card hover:bg-white/[0.04] transition-colors"
+      >
+        <span className="text-xs text-white/40 font-semibold uppercase tracking-wider">Display & Sound Settings</span>
+        <svg className={`w-4 h-4 text-white/30 transition-transform duration-200 ${showSettings ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+        </svg>
+      </button>
+      {showSettings && (
+        <div className="space-y-4 fade-in">
+          <div className="g-card p-4"><TickerPanel timerId={id} timerType="tournament" /></div>
+          <div className="g-card p-4"><TogglesPanel timerId={id} timerType="tournament" /></div>
+          <div className="g-card p-4"><DisplaySettingsPanel timerId={id} timerType="tournament" /></div>
+          <div className="g-card p-4"><SoundPanel timerId={id} timerType="tournament" /></div>
+        </div>
+      )}
     </div>
   );
 }
 
 function TournamentTimer({ tournament: t }: { tournament: Tournament }) {
   const store = useStore();
+  const snd = t.sound || DEFAULT_SOUND;
   const [displayMs, setDisplayMs] = useState(t.remainingMs);
   const prevLevelRef = useRef(t.currentLevelIndex);
   const warnedRef = useRef(false);
@@ -94,23 +114,23 @@ function TournamentTimer({ tournament: t }: { tournament: Tournament }) {
       if (t.status === 'running') {
         const lv = t.levels[t.currentLevelIndex];
         if (lv?.type === 'break') {
-          if (store.sound.breakStartEnabled) playSound(store.sound.soundPreset, store.sound.masterVolume);
-          fireTTS(store, 'break', lv);
+          if (snd.breakStartEnabled) playSound(snd.soundPreset, snd.masterVolume);
+          fireTTS(snd, 'break', lv);
         } else if (lv) {
-          if (store.sound.blindChangeEnabled) playSound(store.sound.soundPreset, store.sound.masterVolume);
-          fireTTS(store, 'level', lv);
+          if (snd.blindChangeEnabled) playSound(snd.soundPreset, snd.masterVolume);
+          fireTTS(snd, 'level', lv);
         }
       }
     }
-  }, [t.currentLevelIndex, t.status, t.levels, store]);
+  }, [t.currentLevelIndex, t.status, t.levels, snd]);
   useEffect(() => {
     if (t.status !== 'running') return;
     if (displayMs <= 60000 && displayMs > 55000 && !warnedRef.current) {
       warnedRef.current = true;
-      if (store.sound.oneMinWarningEnabled) playWarningBeep(store.sound.masterVolume);
-      fireTTS(store, 'warning', null);
+      if (snd.oneMinWarningEnabled) playWarningBeep(snd.masterVolume);
+      fireTTS(snd, 'warning', null);
     }
-  }, [displayMs, t.status, store]);
+  }, [displayMs, t.status, snd]);
   const curLevel = t.levels[t.currentLevelIndex];
   const isBreak = curLevel?.type === 'break';
   const duration = curLevel ? curLevel.duration * 1000 : 1;
@@ -199,8 +219,18 @@ function TournamentStats({ tournament: t }: { tournament: Tournament }) {
   );
 }
 
-function TickerPanel() {
-  const { displayToggles: dt, updateDisplayToggles: up } = useStore();
+/* ── Per-Timer Panels (shared by Tournament & Cash editors) ── */
+
+function TickerPanel({ timerId, timerType }: { timerId: string; timerType: 'tournament' | 'cash' }) {
+  const store = useStore();
+  const timer = timerType === 'tournament'
+    ? store.tournaments.find(t => t.id === timerId)
+    : store.cashGames.find(c => c.id === timerId);
+  const dt = timer?.displayToggles || DEFAULT_DISPLAY_TOGGLES;
+  const up = (partial: Partial<DisplayToggles>) => {
+    if (timerType === 'tournament') store.updateTournamentToggles(timerId, partial);
+    else store.updateCashToggles(timerId, partial);
+  };
   const speedOptions = [
     { value: 15, label: 'Fast (15s)' },
     { value: 20, label: 'Medium-Fast (20s)' },
@@ -220,6 +250,118 @@ function TickerPanel() {
         <select className="input input-sm" value={dt.tickerSpeed || 25} onChange={e => up({ tickerSpeed: +e.target.value })}>
           {speedOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
+      </div>
+    </div>
+  );
+}
+
+function TogglesPanel({ timerId, timerType }: { timerId: string; timerType: 'tournament' | 'cash' }) {
+  const store = useStore();
+  const timer = timerType === 'tournament'
+    ? store.tournaments.find(t => t.id === timerId)
+    : store.cashGames.find(c => c.id === timerId);
+  const dt = timer?.displayToggles || DEFAULT_DISPLAY_TOGGLES;
+  const up = (partial: Partial<DisplayToggles>) => {
+    if (timerType === 'tournament') store.updateTournamentToggles(timerId, partial);
+    else store.updateCashToggles(timerId, partial);
+  };
+
+  const tournamentItems: { key: keyof DisplayToggles; label: string }[] = [
+    { key: 'showTournamentName', label: 'Tournament Name' }, { key: 'showLevelInfo', label: 'Level Info' },
+    { key: 'showBlinds', label: 'Blinds' }, { key: 'showTimer', label: 'Timer' },
+    { key: 'showProgressBar', label: 'Progress Bar' }, { key: 'showNextLevel', label: 'Next Level' },
+    { key: 'showTimeToBreak', label: 'Time to Break' }, { key: 'showTimeToEnd', label: 'Time to End' },
+    { key: 'showPrizeStructure', label: 'Prize Structure' }, { key: 'showEntryCount', label: 'Entry Count' },
+    { key: 'showChipInfo', label: 'Chip Info' }, { key: 'showFooter', label: 'Footer' },
+  ];
+  const cashItems: { key: keyof DisplayToggles; label: string }[] = [
+    { key: 'showCashRate', label: 'Rate' }, { key: 'showCashMemo', label: 'Memo' },
+    { key: 'showCashTimer', label: 'Timer' },
+  ];
+  const items = timerType === 'tournament' ? tournamentItems : cashItems;
+
+  return (
+    <div className="space-y-3">
+      <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Display Elements</div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {items.map(({ key, label }) => (
+          <div key={key} className="flex items-center justify-between py-1">
+            <span className="text-sm text-white/50">{label}</span>
+            <div className={`toggle ${dt[key] ? 'on' : ''}`} onClick={() => up({ [key]: !dt[key] })} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DisplaySettingsPanel({ timerId, timerType }: { timerId: string; timerType: 'tournament' | 'cash' }) {
+  const store = useStore();
+  const timer = timerType === 'tournament'
+    ? store.tournaments.find(t => t.id === timerId)
+    : store.cashGames.find(c => c.id === timerId);
+  const dt = timer?.displayToggles || DEFAULT_DISPLAY_TOGGLES;
+  const up = (partial: Partial<DisplayToggles>) => {
+    if (timerType === 'tournament') store.updateTournamentToggles(timerId, partial);
+    else store.updateCashToggles(timerId, partial);
+  };
+  return (
+    <div className="space-y-3">
+      <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Background Image</div>
+      <div>
+        <label className="text-[11px] text-white/25 block mb-1">Background Image URL (背景画像)</label>
+        <input
+          className="input"
+          value={dt.backgroundImageUrl}
+          onChange={e => up({ backgroundImageUrl: e.target.value })}
+          placeholder="https://example.com/image.jpg"
+        />
+        <p className="text-[10px] text-white/15 mt-1">ディスプレイ画面の背景画像URL</p>
+      </div>
+    </div>
+  );
+}
+
+function SoundPanel({ timerId, timerType }: { timerId: string; timerType: 'tournament' | 'cash' }) {
+  const store = useStore();
+  const timer = timerType === 'tournament'
+    ? store.tournaments.find(t => t.id === timerId)
+    : store.cashGames.find(c => c.id === timerId);
+  const sound = timer?.sound || DEFAULT_SOUND;
+  const updateSound = (partial: Partial<SoundSettings>) => {
+    if (timerType === 'tournament') store.updateTournamentSound(timerId, partial);
+    else store.updateCashSound(timerId, partial);
+  };
+  return (
+    <div className="space-y-4">
+      <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Sound Settings</div>
+      <div className="flex items-center gap-3"><span className="text-sm text-white/50 w-20">Volume</span><input type="range" min={0} max={1} step={0.05} value={sound.masterVolume} onChange={e => updateSound({ masterVolume: +e.target.value })} className="flex-1" /><span className="text-sm text-white/30 w-10 text-right">{Math.round(sound.masterVolume * 100)}%</span></div>
+      <div className="flex items-center gap-3"><span className="text-sm text-white/50 w-20">Sound</span>
+        <select className="input input-sm flex-1" value={sound.soundPreset} onChange={e => updateSound({ soundPreset: e.target.value as SoundPreset })}>
+          {(Object.keys(PRESET_LABELS) as SoundPreset[]).map(k => <option key={k} value={k}>{PRESET_LABELS[k]}</option>)}
+        </select>
+        <button className="btn btn-ghost btn-sm" onClick={() => playTestSound(sound.soundPreset, sound.masterVolume)}>Test</button>
+      </div>
+      {(['blindChangeEnabled', 'breakStartEnabled', 'oneMinWarningEnabled'] as const).map(k => (
+        <div key={k} className="flex items-center justify-between"><span className="text-sm text-white/50">{k === 'blindChangeEnabled' ? 'Blind Change' : k === 'breakStartEnabled' ? 'Break Start' : '1-Min Warning'}</span><div className={`toggle ${sound[k] ? 'on' : ''}`} onClick={() => updateSound({ [k]: !sound[k] })} /></div>
+      ))}
+      <div className="border-t border-white/5 pt-4 space-y-3">
+        <div className="flex items-center justify-between"><span className="text-sm text-white/50">TTS (読み上げ)</span><div className={`toggle ${sound.ttsEnabled ? 'on' : ''}`} onClick={() => updateSound({ ttsEnabled: !sound.ttsEnabled })} /></div>
+        {sound.ttsEnabled && <>
+          <div className="flex items-center gap-3"><span className="text-xs text-white/30 w-20">Lang</span><select className="input input-sm flex-1" value={sound.ttsLang} onChange={e => updateSound({ ttsLang: e.target.value as 'ja' | 'en' })}><option value="ja">日本語</option><option value="en">English</option></select></div>
+          <div className="space-y-2">
+            <div className="text-xs text-white/20">Messages (&#123;level&#125;, &#123;sb&#125;, &#123;bb&#125;, &#123;ante&#125;)</div>
+            {sound.ttsMessages.map((msg, i) => (
+              <div key={msg.id} className="flex items-center gap-2">
+                <div className={`toggle ${msg.enabled ? 'on' : ''}`} onClick={() => { const m = [...sound.ttsMessages]; m[i] = { ...m[i], enabled: !m[i].enabled }; updateSound({ ttsMessages: m }); }} />
+                <input className="input input-sm w-24" value={msg.label} onChange={e => { const m = [...sound.ttsMessages]; m[i] = { ...m[i], label: e.target.value }; updateSound({ ttsMessages: m }); }} />
+                <input className="input input-sm flex-1" value={msg.template} onChange={e => { const m = [...sound.ttsMessages]; m[i] = { ...m[i], template: e.target.value }; updateSound({ ttsMessages: m }); }} />
+                <button className="btn btn-ghost btn-sm" onClick={() => speakTTS(fillTTSTemplate(msg.template, { level: 5, sb: 200, bb: 400, ante: 50 }), sound.ttsLang)}>Test</button>
+              </div>
+            ))}
+            <button className="btn btn-ghost btn-sm" onClick={() => updateSound({ ttsMessages: [...sound.ttsMessages, { id: uid(), label: 'Custom', template: '', enabled: true }] })}>+ Add</button>
+          </div>
+        </>}
       </div>
     </div>
   );
@@ -329,6 +471,7 @@ function CashTab() {
 function CashEditor({ id, onDelete }: { id: string; onDelete: (id: string) => void }) {
   const store = useStore();
   const c = store.cashGames.find(x => x.id === id);
+  const [showSettings, setShowSettings] = useState(false);
 
   const [elapsed, setElapsed] = useState(0);
   const [countdown, setCountdown] = useState(0);
@@ -349,29 +492,50 @@ function CashEditor({ id, onDelete }: { id: string; onDelete: (id: string) => vo
   if (!c) return null;
 
   return (
-    <div className="g-card p-4 space-y-4 fade-in">
-      <div className="flex items-center gap-3">
-        <input className="input flex-1" value={c.name} onChange={e => store.updateCashGame(id, { name: e.target.value })} placeholder="Cash game name" />
-        <button onClick={() => onDelete(id)} className="btn btn-danger btn-sm">Delete</button>
+    <div className="space-y-4 fade-in">
+      <div className="g-card p-4 space-y-4">
+        <div className="flex items-center gap-3">
+          <input className="input flex-1" value={c.name} onChange={e => store.updateCashGame(id, { name: e.target.value })} placeholder="Cash game name" />
+          <button onClick={() => onDelete(id)} className="btn btn-danger btn-sm">Delete</button>
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          <div><label className="text-[11px] text-white/25 block mb-1">SB</label><input type="number" className="input input-sm" value={c.smallBlind} onChange={e => store.updateCashGame(id, { smallBlind: +e.target.value })} /></div>
+          <div><label className="text-[11px] text-white/25 block mb-1">BB</label><input type="number" className="input input-sm" value={c.bigBlind} onChange={e => store.updateCashGame(id, { bigBlind: +e.target.value })} /></div>
+          <div><label className="text-[11px] text-white/25 block mb-1">Ante</label><input type="number" className="input input-sm" value={c.ante} onChange={e => store.updateCashGame(id, { ante: +e.target.value })} /></div>
+        </div>
+        <div><label className="text-[11px] text-white/25 block mb-1">Memo</label><input className="input" value={c.memo} onChange={e => store.updateCashGame(id, { memo: e.target.value })} placeholder="Table info" /></div>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2"><div className={`toggle ${!c.countdownMode ? 'on' : ''}`} onClick={() => store.updateCashGame(id, { countdownMode: false })} /><span className="text-xs text-white/40">Count Up</span></div>
+          <div className="flex items-center gap-2"><div className={`toggle ${c.countdownMode ? 'on' : ''}`} onClick={() => store.updateCashGame(id, { countdownMode: true })} /><span className="text-xs text-white/40">Countdown</span></div>
+          {c.countdownMode && <div className="flex items-center gap-1 ml-2"><input type="number" className="input input-sm w-16" value={Math.floor(c.countdownTotalMs / 60000)} onChange={e => { const ms = +e.target.value * 60000; store.updateCashGame(id, { countdownTotalMs: ms, countdownRemainingMs: ms }); }} min={1} /><span className="text-xs text-white/20">min</span></div>}
+        </div>
+        <div className="text-center py-2"><div className="text-4xl font-bold timer-font text-white">{c.countdownMode ? formatTimerHMS(countdown) : formatTimerHMS(elapsed)}</div></div>
+        <div className="flex items-center justify-center gap-2">
+          {c.status === 'idle' && <button onClick={() => store.cStart(id)} className="btn btn-primary">Start</button>}
+          {c.status === 'running' && <button onClick={() => store.cPause(id)} className="btn btn-warning">Pause</button>}
+          {c.status === 'paused' && <button onClick={() => store.cResume(id)} className="btn btn-success">Resume</button>}
+          {c.status !== 'idle' && <button onClick={() => store.cReset(id)} className="btn btn-danger btn-sm">Reset</button>}
+        </div>
       </div>
-      <div className="grid grid-cols-3 gap-3">
-        <div><label className="text-[11px] text-white/25 block mb-1">SB</label><input type="number" className="input input-sm" value={c.smallBlind} onChange={e => store.updateCashGame(id, { smallBlind: +e.target.value })} /></div>
-        <div><label className="text-[11px] text-white/25 block mb-1">BB</label><input type="number" className="input input-sm" value={c.bigBlind} onChange={e => store.updateCashGame(id, { bigBlind: +e.target.value })} /></div>
-        <div><label className="text-[11px] text-white/25 block mb-1">Ante</label><input type="number" className="input input-sm" value={c.ante} onChange={e => store.updateCashGame(id, { ante: +e.target.value })} /></div>
-      </div>
-      <div><label className="text-[11px] text-white/25 block mb-1">Memo</label><input className="input" value={c.memo} onChange={e => store.updateCashGame(id, { memo: e.target.value })} placeholder="Table info" /></div>
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2"><div className={`toggle ${!c.countdownMode ? 'on' : ''}`} onClick={() => store.updateCashGame(id, { countdownMode: false })} /><span className="text-xs text-white/40">Count Up</span></div>
-        <div className="flex items-center gap-2"><div className={`toggle ${c.countdownMode ? 'on' : ''}`} onClick={() => store.updateCashGame(id, { countdownMode: true })} /><span className="text-xs text-white/40">Countdown</span></div>
-        {c.countdownMode && <div className="flex items-center gap-1 ml-2"><input type="number" className="input input-sm w-16" value={Math.floor(c.countdownTotalMs / 60000)} onChange={e => { const ms = +e.target.value * 60000; store.updateCashGame(id, { countdownTotalMs: ms, countdownRemainingMs: ms }); }} min={1} /><span className="text-xs text-white/20">min</span></div>}
-      </div>
-      <div className="text-center py-2"><div className="text-4xl font-bold timer-font text-white">{c.countdownMode ? formatTimerHMS(countdown) : formatTimerHMS(elapsed)}</div></div>
-      <div className="flex items-center justify-center gap-2">
-        {c.status === 'idle' && <button onClick={() => store.cStart(id)} className="btn btn-primary">Start</button>}
-        {c.status === 'running' && <button onClick={() => store.cPause(id)} className="btn btn-warning">Pause</button>}
-        {c.status === 'paused' && <button onClick={() => store.cResume(id)} className="btn btn-success">Resume</button>}
-        {c.status !== 'idle' && <button onClick={() => store.cReset(id)} className="btn btn-danger btn-sm">Reset</button>}
-      </div>
+
+      {/* Collapsible Display & Sound Settings */}
+      <button
+        onClick={() => setShowSettings(!showSettings)}
+        className="w-full flex items-center justify-between px-4 py-3 g-card hover:bg-white/[0.04] transition-colors"
+      >
+        <span className="text-xs text-white/40 font-semibold uppercase tracking-wider">Display & Sound Settings</span>
+        <svg className={`w-4 h-4 text-white/30 transition-transform duration-200 ${showSettings ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+        </svg>
+      </button>
+      {showSettings && (
+        <div className="space-y-4 fade-in">
+          <div className="g-card p-4"><TickerPanel timerId={id} timerType="cash" /></div>
+          <div className="g-card p-4"><TogglesPanel timerId={id} timerType="cash" /></div>
+          <div className="g-card p-4"><DisplaySettingsPanel timerId={id} timerType="cash" /></div>
+          <div className="g-card p-4"><SoundPanel timerId={id} timerType="cash" /></div>
+        </div>
+      )}
     </div>
   );
 }
@@ -421,26 +585,20 @@ function DisplayPreview({ route, displayId, targetName, themeLabel }: {
     <div className="mt-3 space-y-0">
       {/* Preview Toolbar */}
       <div className="flex items-center gap-2 px-3 py-2 bg-white/[0.03] rounded-t-xl border border-white/[0.08] border-b-0">
-        {/* Route badge */}
         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md shrink-0 ${
           route === 'tournament' ? 'bg-blue-500/20 text-blue-400' :
           route === 'cash' ? 'bg-green-500/20 text-green-400' :
           'bg-purple-500/20 text-purple-400'
         }`}>{routeLabel}</span>
-        {/* Target name */}
         <span className="text-[11px] text-white/40 truncate">{targetName}</span>
-        {/* Theme */}
         <span className="text-[10px] text-white/20 shrink-0">{themeLabel}</span>
-
         <div className="ml-auto flex items-center gap-1">
-          {/* Refresh */}
           <button onClick={() => setIframeKey(k => k + 1)}
             className="p-1.5 rounded-lg hover:bg-white/[0.08] text-white/25 hover:text-white/60 transition-colors" title="Refresh">
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182" />
             </svg>
           </button>
-          {/* Expand / Collapse */}
           <button onClick={() => setExpanded(!expanded)}
             className="p-1.5 rounded-lg hover:bg-white/[0.08] text-white/25 hover:text-white/60 transition-colors" title={expanded ? 'Collapse' : 'Expand'}>
             {expanded ? (
@@ -453,7 +611,6 @@ function DisplayPreview({ route, displayId, targetName, themeLabel }: {
               </svg>
             )}
           </button>
-          {/* Open in new tab */}
           <button onClick={handleOpen}
             className="p-1.5 rounded-lg hover:bg-white/[0.08] text-white/25 hover:text-white/60 transition-colors" title="Open in new tab">
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -493,7 +650,6 @@ function DisplayPreview({ route, displayId, targetName, themeLabel }: {
             pointerEvents: 'none',
           }}
         />
-        {/* Live indicator */}
         <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/50 backdrop-blur-sm">
           <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
           <span className="text-[9px] text-white/40 font-semibold">LIVE</span>
@@ -554,7 +710,6 @@ function DisplaysTab() {
             <select className="input input-sm w-32" value={d.themeId} onChange={e => setDisplay({ ...d, themeId: e.target.value })}>{themes.map(th => <option key={th.id} value={th.id}>{th.name}</option>)}</select>
             <button onClick={() => removeDisplay(d.displayId)} className="btn btn-danger btn-sm ml-auto">Remove</button>
           </div>
-          {/* Split panel selection */}
           {d.route === 'split' && (
             <div className="space-y-2 pl-4 border-l-2 border-blue-500/20 ml-2">
               <div className="flex items-center gap-2 flex-wrap">
@@ -585,7 +740,6 @@ function DisplaysTab() {
               </div>
             </div>
           )}
-          {/* Live Preview */}
           <DisplayPreview
             route={d.route}
             displayId={d.displayId}
@@ -606,128 +760,154 @@ function DisplaysTab() {
   );
 }
 
+/* ── Settings Tab (Global Theme Only) ── */
 function SettingsTab() {
-  return <div className="space-y-6 fade-in"><SoundPanel /><DisplaySettingsPanel /><TogglesPanel /></div>;
+  return (
+    <div className="space-y-6 fade-in">
+      <ThemePicker />
+    </div>
+  );
 }
 
-function SoundPanel() {
-  const { sound, updateSound } = useStore();
+function ThemePicker() {
+  const { themes, addTheme, updateTheme, removeTheme } = useStore();
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const handleAdd = () => {
+    const newTheme: ThemeConfig = {
+      id: uid(),
+      name: 'Custom Theme',
+      type: 'gradient',
+      gradientFrom: '#0f172a',
+      gradientTo: '#1e3a5f',
+      overlayOpacity: 0,
+      primaryColor: '#60a5fa',
+      accentColor: '#22d3ee',
+    };
+    addTheme(newTheme);
+    setEditingId(newTheme.id);
+  };
+
   return (
     <div className="g-card p-4 space-y-4">
-      <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Sound Settings</div>
-      <div className="flex items-center gap-3"><span className="text-sm text-white/50 w-20">Volume</span><input type="range" min={0} max={1} step={0.05} value={sound.masterVolume} onChange={e => updateSound({ masterVolume: +e.target.value })} className="flex-1" /><span className="text-sm text-white/30 w-10 text-right">{Math.round(sound.masterVolume * 100)}%</span></div>
-      <div className="flex items-center gap-3"><span className="text-sm text-white/50 w-20">Sound</span>
-        <select className="input input-sm flex-1" value={sound.soundPreset} onChange={e => updateSound({ soundPreset: e.target.value as SoundPreset })}>
-          {(Object.keys(PRESET_LABELS) as SoundPreset[]).map(k => <option key={k} value={k}>{PRESET_LABELS[k]}</option>)}
-        </select>
-        <button className="btn btn-ghost btn-sm" onClick={() => playTestSound(sound.soundPreset, sound.masterVolume)}>Test</button>
+      <div className="flex items-center justify-between">
+        <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Color Themes</div>
+        <button className="btn btn-ghost btn-sm" onClick={handleAdd}>+ Add Theme</button>
       </div>
-      {(['blindChangeEnabled', 'breakStartEnabled', 'oneMinWarningEnabled'] as const).map(k => (
-        <div key={k} className="flex items-center justify-between"><span className="text-sm text-white/50">{k === 'blindChangeEnabled' ? 'Blind Change' : k === 'breakStartEnabled' ? 'Break Start' : '1-Min Warning'}</span><div className={`toggle ${sound[k] ? 'on' : ''}`} onClick={() => updateSound({ [k]: !sound[k] })} /></div>
-      ))}
-      <div className="border-t border-white/5 pt-4 space-y-3">
-        <div className="flex items-center justify-between"><span className="text-sm text-white/50">TTS (読み上げ)</span><div className={`toggle ${sound.ttsEnabled ? 'on' : ''}`} onClick={() => updateSound({ ttsEnabled: !sound.ttsEnabled })} /></div>
-        {sound.ttsEnabled && <>
-          <div className="flex items-center gap-3"><span className="text-xs text-white/30 w-20">Lang</span><select className="input input-sm flex-1" value={sound.ttsLang} onChange={e => updateSound({ ttsLang: e.target.value as 'ja' | 'en' })}><option value="ja">日本語</option><option value="en">English</option></select></div>
-          <div className="space-y-2">
-            <div className="text-xs text-white/20">Messages (&#123;level&#125;, &#123;sb&#125;, &#123;bb&#125;, &#123;ante&#125;)</div>
-            {sound.ttsMessages.map((msg, i) => (
-              <div key={msg.id} className="flex items-center gap-2">
-                <div className={`toggle ${msg.enabled ? 'on' : ''}`} onClick={() => { const m = [...sound.ttsMessages]; m[i] = { ...m[i], enabled: !m[i].enabled }; updateSound({ ttsMessages: m }); }} />
-                <input className="input input-sm w-24" value={msg.label} onChange={e => { const m = [...sound.ttsMessages]; m[i] = { ...m[i], label: e.target.value }; updateSound({ ttsMessages: m }); }} />
-                <input className="input input-sm flex-1" value={msg.template} onChange={e => { const m = [...sound.ttsMessages]; m[i] = { ...m[i], template: e.target.value }; updateSound({ ttsMessages: m }); }} />
-                <button className="btn btn-ghost btn-sm" onClick={() => speakTTS(fillTTSTemplate(msg.template, { level: 5, sb: 200, bb: 400, ante: 50 }), sound.ttsLang)}>Test</button>
+      <p className="text-[11px] text-white/20">ディスプレイのカラーテーマを管理します。Displaysタブで各ディスプレイにテーマを割り当てられます。</p>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {themes.map(t => (
+          <div key={t.id} className={`rounded-xl border transition-all duration-200 overflow-hidden ${editingId === t.id ? 'border-blue-500/40' : 'border-white/[0.08] hover:border-white/[0.15]'}`}>
+            {/* Theme preview bar */}
+            <div
+              className="h-12 w-full cursor-pointer relative"
+              style={
+                t.type === 'gradient'
+                  ? { background: `linear-gradient(135deg, ${t.gradientFrom || '#0f172a'}, ${t.gradientTo || '#1e3a5f'})` }
+                  : t.type === 'image' && t.imageUrl
+                  ? { backgroundImage: `url(${t.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                  : { background: t.bgColor || '#0a0e1a' }
+              }
+              onClick={() => setEditingId(editingId === t.id ? null : t.id)}
+            >
+              <div className="absolute inset-0 flex items-center justify-between px-3">
+                <span className="text-sm font-bold drop-shadow-lg" style={{ color: t.primaryColor }}>{t.name}</span>
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-black/40 text-white/60">{t.type}</span>
               </div>
-            ))}
-            <button className="btn btn-ghost btn-sm" onClick={() => updateSound({ ttsMessages: [...sound.ttsMessages, { id: uid(), label: 'Custom', template: '', enabled: true }] })}>+ Add</button>
+            </div>
+
+            {/* Edit panel */}
+            {editingId === t.id && (
+              <div className="p-3 space-y-3 bg-white/[0.02]">
+                <div>
+                  <label className="text-[11px] text-white/25 block mb-1">Theme Name</label>
+                  <input className="input input-sm" value={t.name} onChange={e => updateTheme(t.id, { name: e.target.value })} />
+                </div>
+                <div>
+                  <label className="text-[11px] text-white/25 block mb-1">Type</label>
+                  <select className="input input-sm" value={t.type} onChange={e => updateTheme(t.id, { type: e.target.value as 'gradient' | 'solid' | 'image' })}>
+                    <option value="gradient">Gradient</option>
+                    <option value="solid">Solid</option>
+                    <option value="image">Image</option>
+                  </select>
+                </div>
+                {t.type === 'gradient' && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[11px] text-white/25 block mb-1">From</label>
+                      <div className="flex items-center gap-2">
+                        <input type="color" className="w-8 h-8 rounded cursor-pointer border-0 bg-transparent" value={t.gradientFrom || '#0f172a'} onChange={e => updateTheme(t.id, { gradientFrom: e.target.value })} />
+                        <input className="input input-sm flex-1" value={t.gradientFrom || ''} onChange={e => updateTheme(t.id, { gradientFrom: e.target.value })} />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-[11px] text-white/25 block mb-1">To</label>
+                      <div className="flex items-center gap-2">
+                        <input type="color" className="w-8 h-8 rounded cursor-pointer border-0 bg-transparent" value={t.gradientTo || '#1e3a5f'} onChange={e => updateTheme(t.id, { gradientTo: e.target.value })} />
+                        <input className="input input-sm flex-1" value={t.gradientTo || ''} onChange={e => updateTheme(t.id, { gradientTo: e.target.value })} />
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {t.type === 'solid' && (
+                  <div>
+                    <label className="text-[11px] text-white/25 block mb-1">Background Color</label>
+                    <div className="flex items-center gap-2">
+                      <input type="color" className="w-8 h-8 rounded cursor-pointer border-0 bg-transparent" value={t.bgColor || '#0a0e1a'} onChange={e => updateTheme(t.id, { bgColor: e.target.value })} />
+                      <input className="input input-sm flex-1" value={t.bgColor || ''} onChange={e => updateTheme(t.id, { bgColor: e.target.value })} />
+                    </div>
+                  </div>
+                )}
+                {t.type === 'image' && (
+                  <div>
+                    <label className="text-[11px] text-white/25 block mb-1">Image URL</label>
+                    <input className="input input-sm" value={t.imageUrl || ''} onChange={e => updateTheme(t.id, { imageUrl: e.target.value })} placeholder="https://example.com/bg.jpg" />
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[11px] text-white/25 block mb-1">Primary Color</label>
+                    <div className="flex items-center gap-2">
+                      <input type="color" className="w-8 h-8 rounded cursor-pointer border-0 bg-transparent" value={t.primaryColor} onChange={e => updateTheme(t.id, { primaryColor: e.target.value })} />
+                      <input className="input input-sm flex-1" value={t.primaryColor} onChange={e => updateTheme(t.id, { primaryColor: e.target.value })} />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-white/25 block mb-1">Accent Color</label>
+                    <div className="flex items-center gap-2">
+                      <input type="color" className="w-8 h-8 rounded cursor-pointer border-0 bg-transparent" value={t.accentColor} onChange={e => updateTheme(t.id, { accentColor: e.target.value })} />
+                      <input className="input input-sm flex-1" value={t.accentColor} onChange={e => updateTheme(t.id, { accentColor: e.target.value })} />
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[11px] text-white/25 block mb-1">Overlay Opacity</label>
+                  <div className="flex items-center gap-2">
+                    <input type="range" min={0} max={80} value={t.overlayOpacity} onChange={e => updateTheme(t.id, { overlayOpacity: +e.target.value })} className="flex-1" />
+                    <span className="text-xs text-white/30 w-10 text-right">{t.overlayOpacity}%</span>
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <button className="btn btn-danger btn-sm" onClick={() => { removeTheme(t.id); setEditingId(null); }}>Delete Theme</button>
+                </div>
+              </div>
+            )}
           </div>
-        </>}
-      </div>
-    </div>
-  );
-}
-
-function DisplaySettingsPanel() {
-  const { displayToggles: dt, updateDisplayToggles: up } = useStore();
-  const speedOptions = [
-    { value: 15, label: 'Fast (15s)' },
-    { value: 20, label: 'Medium-Fast (20s)' },
-    { value: 25, label: 'Normal (25s)' },
-    { value: 35, label: 'Slow (35s)' },
-    { value: 50, label: 'Very Slow (50s)' },
-  ];
-  return (
-    <div className="g-card p-4 space-y-4">
-      <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Display Settings</div>
-      <div>
-        <label className="text-[11px] text-white/25 block mb-1">Ticker Text (テロップ)</label>
-        <input
-          className="input"
-          value={dt.tickerText}
-          onChange={e => up({ tickerText: e.target.value })}
-          placeholder="画面下部に表示するテキストを入力..."
-        />
-        <p className="text-[10px] text-white/15 mt-1">ディスプレイ画面の下部にスクロール表示されます</p>
-      </div>
-      <div>
-        <label className="text-[11px] text-white/25 block mb-1">Ticker Speed (テロップ速度)</label>
-        <select
-          className="input input-sm"
-          value={dt.tickerSpeed || 25}
-          onChange={e => up({ tickerSpeed: +e.target.value })}
-        >
-          {speedOptions.map(o => (
-            <option key={o.value} value={o.value}>{o.label}</option>
-          ))}
-        </select>
-        <p className="text-[10px] text-white/15 mt-1">テロップのスクロール速度を選択</p>
-      </div>
-      <div>
-        <label className="text-[11px] text-white/25 block mb-1">Background Image URL (背景画像)</label>
-        <input
-          className="input"
-          value={dt.backgroundImageUrl}
-          onChange={e => up({ backgroundImageUrl: e.target.value })}
-          placeholder="https://example.com/image.jpg"
-        />
-        <p className="text-[10px] text-white/15 mt-1">トーナメント表示画面の背景画像URL</p>
-      </div>
-    </div>
-  );
-}
-
-function TogglesPanel() {
-  const { displayToggles: dt, updateDisplayToggles: up } = useStore();
-  const items: { key: keyof typeof dt; label: string }[] = [
-    { key: 'showTournamentName', label: 'Tournament Name' }, { key: 'showLevelInfo', label: 'Level Info' },
-    { key: 'showBlinds', label: 'Blinds' }, { key: 'showTimer', label: 'Timer' },
-    { key: 'showProgressBar', label: 'Progress Bar' }, { key: 'showNextLevel', label: 'Next Level' },
-    { key: 'showTimeToBreak', label: 'Time to Break' }, { key: 'showTimeToEnd', label: 'Time to End' },
-    { key: 'showPrizeStructure', label: 'Prize Structure' }, { key: 'showEntryCount', label: 'Entry Count' },
-    { key: 'showChipInfo', label: 'Chip Info' }, { key: 'showFooter', label: 'Footer' },
-    { key: 'showCashRate', label: 'Cash: Rate' }, { key: 'showCashMemo', label: 'Cash: Memo' },
-    { key: 'showCashTimer', label: 'Cash: Timer' },
-  ];
-  return (
-    <div className="g-card p-4 space-y-3">
-      <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Display Elements</div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        {items.map(({ key, label }) => (
-          <div key={key} className="flex items-center justify-between py-1"><span className="text-sm text-white/50">{label}</span><div className={`toggle ${dt[key] ? 'on' : ''}`} onClick={() => up({ [key]: !dt[key] })} /></div>
         ))}
       </div>
     </div>
   );
 }
 
-function fireTTS(store: ReturnType<typeof useStore.getState>, event: 'level' | 'break' | 'warning', lv: BlindLevel | null) {
-  if (!store.sound.ttsEnabled) return;
-  const msgs = store.sound.ttsMessages.filter(m => m.enabled);
+function fireTTS(sound: SoundSettings, event: 'level' | 'break' | 'warning', lv: BlindLevel | null) {
+  if (!sound.ttsEnabled) return;
+  const msgs = sound.ttsMessages.filter(m => m.enabled);
   const vars = { level: String(lv?.level || ''), sb: String(lv?.smallBlind || ''), bb: String(lv?.bigBlind || ''), ante: String(lv?.ante || '') };
   for (const msg of msgs) {
     const text = fillTTSTemplate(msg.template, vars);
-    if (event === 'level' && (msg.label.includes('レベル') || msg.label.toLowerCase().includes('level'))) { speakTTS(text, store.sound.ttsLang); return; }
-    if (event === 'break' && (msg.label.includes('ブレイク') || msg.label.includes('休憩') || msg.label.toLowerCase().includes('break'))) { speakTTS(text, store.sound.ttsLang); return; }
-    if (event === 'warning' && (msg.label.includes('残り') || msg.label.toLowerCase().includes('min'))) { speakTTS(text, store.sound.ttsLang); return; }
+    if (event === 'level' && (msg.label.includes('レベル') || msg.label.toLowerCase().includes('level'))) { speakTTS(text, sound.ttsLang); return; }
+    if (event === 'break' && (msg.label.includes('ブレイク') || msg.label.includes('休憩') || msg.label.toLowerCase().includes('break'))) { speakTTS(text, sound.ttsLang); return; }
+    if (event === 'warning' && (msg.label.includes('残り') || msg.label.toLowerCase().includes('min'))) { speakTTS(text, sound.ttsLang); return; }
   }
 }

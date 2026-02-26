@@ -6,7 +6,8 @@ import { useStore } from '@/stores/useStore';
 import { onSync } from '@/lib/sync';
 import { unlockAudio, playSound, playWarningBeep, speakTTS, fillTTSTemplate } from '@/lib/audio';
 import { formatTimer, formatChips, formatTimerHMS, computeTimeToBreak, computeTimeToEnd, computeRegCloseTime } from '@/lib/utils';
-import { Tournament, ThemeConfig } from '@/lib/types';
+import { Tournament, ThemeConfig, DisplayToggles, SoundSettings } from '@/lib/types';
+import { DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND } from '@/lib/presets';
 import { FullscreenButton } from '@/components/FullscreenButton';
 
 /* ── Timer Selector dropdown ── */
@@ -67,7 +68,7 @@ function Inner() {
   const params = useSearchParams();
   const displayId = params.get('display') || '';
   const targetIdParam = params.get('id') || '';
-  const { tournaments, displays, themes, sound, displayToggles } = useStore();
+  const { tournaments, displays, themes, sound: globalSound, displayToggles: globalToggles } = useStore();
   const assignment = displays.find(d => d.displayId === displayId);
   const defaultId = assignment?.targetId || targetIdParam || tournaments[0]?.id || '';
   const themeId = assignment?.themeId || 'come-on-blue';
@@ -134,28 +135,30 @@ function Inner() {
       prevRef.current = tournament.currentLevelIndex; warnRef.current = false;
       if (tournament.status === 'running') {
         const lv = tournament.levels[tournament.currentLevelIndex];
+        const s = tournament.sound || globalSound;
         if (lv?.type === 'break') {
-          if (sound.breakStartEnabled) playSound(sound.soundPreset, sound.masterVolume);
-          const m = sound.ttsMessages.find(x => x.enabled && (x.label.includes('\u30D6\u30EC\u30A4\u30AF') || x.label.includes('\u4F11\u61A9') || x.label.toLowerCase().includes('break')));
-          if (sound.ttsEnabled && m) speakTTS(fillTTSTemplate(m.template, { level: lv.level, sb: lv.smallBlind, bb: lv.bigBlind, ante: lv.ante }), sound.ttsLang);
+          if (s.breakStartEnabled) playSound(s.soundPreset, s.masterVolume);
+          const m = s.ttsMessages.find(x => x.enabled && (x.label.includes('\u30D6\u30EC\u30A4\u30AF') || x.label.includes('\u4F11\u61A9') || x.label.toLowerCase().includes('break')));
+          if (s.ttsEnabled && m) speakTTS(fillTTSTemplate(m.template, { level: lv.level, sb: lv.smallBlind, bb: lv.bigBlind, ante: lv.ante }), s.ttsLang);
         } else if (lv) {
-          if (sound.blindChangeEnabled) playSound(sound.soundPreset, sound.masterVolume);
-          const m = sound.ttsMessages.find(x => x.enabled && (x.label.includes('\u30EC\u30D9\u30EB') || x.label.toLowerCase().includes('level')));
-          if (sound.ttsEnabled && m) speakTTS(fillTTSTemplate(m.template, { level: lv.level, sb: lv.smallBlind, bb: lv.bigBlind, ante: lv.ante }), sound.ttsLang);
+          if (s.blindChangeEnabled) playSound(s.soundPreset, s.masterVolume);
+          const m = s.ttsMessages.find(x => x.enabled && (x.label.includes('\u30EC\u30D9\u30EB') || x.label.toLowerCase().includes('level')));
+          if (s.ttsEnabled && m) speakTTS(fillTTSTemplate(m.template, { level: lv.level, sb: lv.smallBlind, bb: lv.bigBlind, ante: lv.ante }), s.ttsLang);
         }
       }
     }
-  }, [tournament?.currentLevelIndex, tournament?.status, sound]);
+  }, [tournament?.currentLevelIndex, tournament?.status, tournament?.sound, globalSound]);
 
   useEffect(() => {
     if (!tournament || tournament.status !== 'running') return;
+    const s = tournament.sound || globalSound;
     if (displayMs <= 60000 && displayMs > 55000 && !warnRef.current) {
       warnRef.current = true;
-      if (sound.oneMinWarningEnabled) playWarningBeep(sound.masterVolume);
-      const m = sound.ttsMessages.find(x => x.enabled && (x.label.includes('\u6B8B\u308A') || x.label.toLowerCase().includes('min')));
-      if (sound.ttsEnabled && m) speakTTS(fillTTSTemplate(m.template, { level: 0, sb: 0, bb: 0, ante: 0 }), sound.ttsLang);
+      if (s.oneMinWarningEnabled) playWarningBeep(s.masterVolume);
+      const m = s.ttsMessages.find(x => x.enabled && (x.label.includes('\u6B8B\u308A') || x.label.toLowerCase().includes('min')));
+      if (s.ttsEnabled && m) speakTTS(fillTTSTemplate(m.template, { level: 0, sb: 0, bb: 0, ante: 0 }), s.ttsLang);
     }
-  }, [displayMs, tournament, sound]);
+  }, [displayMs, tournament, globalSound]);
 
   if (!tournament) return (
     <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(160deg, #0e1c36, #152d52, #1c3d6e)' }}>
@@ -163,7 +166,8 @@ function Inner() {
     </div>
   );
 
-  const dt = displayToggles;
+  const dt = tournament.displayToggles || globalToggles;
+  const snd = tournament.sound || globalSound;
   const tickerSpeed = dt.tickerSpeed || 25;
   const cur = tournament.levels[tournament.currentLevelIndex];
   const nextPlay = tournament.levels.slice(tournament.currentLevelIndex + 1).find(l => l.type === 'play');

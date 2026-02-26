@@ -6,7 +6,8 @@ import { useStore } from '@/stores/useStore';
 import { onSync } from '@/lib/sync';
 import { unlockAudio } from '@/lib/audio';
 import { formatTimerHMS } from '@/lib/utils';
-import { CashGame, ThemeConfig } from '@/lib/types';
+import { CashGame, ThemeConfig, DisplayToggles } from '@/lib/types';
+import { DEFAULT_DISPLAY_TOGGLES } from '@/lib/presets';
 import { FullscreenButton } from '@/components/FullscreenButton';
 
 /* ── Timer Selector dropdown ── */
@@ -58,7 +59,7 @@ function CashDisplayInner() {
   const displayId = params.get('display') || '';
   const targetIdParam = params.get('id') || '';
 
-  const { cashGames, displays, themes, displayToggles } = useStore();
+  const { cashGames, displays, themes, displayToggles: globalToggles } = useStore();
 
   const assignment = displays.find(d => d.displayId === displayId);
   const defaultTargetId = assignment?.targetId || targetIdParam || cashGames[0]?.id || '';
@@ -108,9 +109,6 @@ function CashDisplayInner() {
     return () => clearInterval(iv);
   }, [cashGame]);
 
-  const dt = displayToggles;
-  const tickerSpeed = dt.tickerSpeed || 25;
-
   if (!cashGame) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(160deg, #0e1c36, #152d52, #1c3d6e)' }}>
@@ -121,6 +119,9 @@ function CashDisplayInner() {
       </div>
     );
   }
+
+  const dt = cashGame.displayToggles || globalToggles;
+  const tickerSpeed = dt.tickerSpeed || 25;
 
   const bgStyle = theme?.type === 'gradient'
     ? { background: `linear-gradient(160deg, ${theme.gradientFrom || '#0e1c36'}, ${theme.gradientTo || '#1c3d6e'})` }
