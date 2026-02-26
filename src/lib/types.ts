@@ -12,10 +12,8 @@ export type CashGameStatus = 'idle' | 'running' | 'paused';
 
 export type PrizeEntry = {
   place: number;
-  amount: number;  // 直接金額（円）
+  label: string;  // 自由テキスト（例: "旅行券", "¥50,000", "1位トロフィー"）
 };
-
-export type RakeType = 'fixed' | 'percent';
 
 export type BlindTemplate = {
   id: string;
@@ -61,14 +59,15 @@ export type Tournament = {
   reEntryCount: number;     // リエントリー数（プレイヤー増加）
   rebuyCount: number;       // リバイ数（チップのみ）
   addonCount: number;
-  // F4: 個別単価 + Rake
-  buyInAmount: number;      // 初回バイイン
-  reEntryAmount: number;    // リエントリー単価
-  rebuyAmount: number;      // リバイ単価
-  addonAmount: number;      // アドオン単価
-  rakeType: RakeType;
-  rakeValue: number;        // 固定額 or %
-  // F3: プライズ（金額直接入力）
+  // 単価
+  buyInAmount: number;
+  reEntryAmount: number;
+  rebuyAmount: number;
+  addonAmount: number;
+  // アーリーバード / 特典
+  earlyBirdCount: number;   // アーリーバード該当者数
+  earlyBirdBonus: number;   // ボーナスチップ数
+  // プライズ（自由テキスト）
   prizeStructure: PrizeEntry[];
   createdAt: number;
   regCloseLevel?: number;

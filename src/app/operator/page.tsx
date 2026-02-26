@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useStore } from '@/stores/useStore';
-import { formatTimer, formatTimerHMS, formatChips, uid, computeRevenue, computeRake } from '@/lib/utils';
+import { formatTimer, formatTimerHMS, formatChips, uid } from '@/lib/utils';
 import { PRESET_OPTIONS, DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND, DEFAULT_SECTION_LAYOUT, DEFAULT_CASH_SECTION_LAYOUT, FONT_OPTIONS, DEFAULT_SYSTEM_STYLE, ASPECT_RATIO_OPTIONS } from '@/lib/presets';
 import { playSound, playTestSound, playWarningBeep, speakTTS, fillTTSTemplate, PRESET_LABELS } from '@/lib/audio';
-import { BlindLevel, Tournament, CashGame, SoundPreset, PrizeEntry, SoundSettings, DisplayToggles, ThemeConfig, TournamentSectionId, SectionPosition, SectionLayout, CashSectionId, CashSectionLayout, AspectRatioMode, RakeType } from '@/lib/types';
+import { BlindLevel, Tournament, CashGame, SoundPreset, PrizeEntry, SoundSettings, DisplayToggles, ThemeConfig, TournamentSectionId, SectionPosition, SectionLayout, CashSectionId, CashSectionLayout, AspectRatioMode } from '@/lib/types';
 import { RoomSync } from '@/components/RoomSync';
 
 const TAB_ORDER = ['tournaments', 'cash', 'split', 'settings'] as const;
@@ -208,20 +208,18 @@ function TournamentTimer({ tournament: t }: { tournament: Tournament }) {
 function TournamentStats({ tournament: t }: { tournament: Tournament }) {
   const up = (p: Partial<Tournament>) => useStore.getState().updateTournament(t.id, p);
   const totalPlayLevels = t.levels.filter(l => l.type === 'play').length;
-  const revenue = computeRevenue(t);
-  const rake = computeRake(revenue, t.rakeType, t.rakeValue);
-  const prizePool = Math.max(0, revenue - rake);
+  const activePlayers = t.initialEntries + t.reEntryCount;
+  const totalChips = (activePlayers + t.rebuyCount + t.addonCount) * t.startingChips + t.earlyBirdCount * t.earlyBirdBonus;
+  const avg = activePlayers > 0 ? Math.round(totalChips / activePlayers) : 0;
 
-  const CountRow = ({ label, count, countKey, amount, amountKey }: { label: string; count: number; countKey: keyof Tournament; amount: number; amountKey: keyof Tournament }) => (
-    <div className="flex items-center gap-2 flex-wrap">
-      <span className="text-[11px] text-white/30 w-20 shrink-0">{label}</span>
+  const CountRow = ({ label, count, countKey }: { label: string; count: number; countKey: keyof Tournament }) => (
+    <div className="flex items-center gap-2">
+      <span className="text-[11px] text-white/30 w-24 shrink-0">{label}</span>
       <div className="flex gap-0.5 items-center">
         <button className="btn btn-ghost btn-sm px-1.5" onClick={() => up({ [countKey]: Math.max(0, count - 1) } as Partial<Tournament>)}>-</button>
         <input type="number" className="input input-sm w-14 text-center" value={count} onChange={e => up({ [countKey]: Math.max(0, +e.target.value) } as Partial<Tournament>)} />
         <button className="btn btn-ghost btn-sm px-1.5" onClick={() => up({ [countKey]: count + 1 } as Partial<Tournament>)}>+</button>
       </div>
-      <span className="text-[10px] text-white/15 mx-1">&yen;</span>
-      <input type="number" className="input input-sm w-20" value={amount} onChange={e => up({ [amountKey]: Math.max(0, +e.target.value) } as Partial<Tournament>)} placeholder="単価" />
     </div>
   );
 
@@ -241,11 +239,41 @@ function TournamentStats({ tournament: t }: { tournament: Tournament }) {
         </div>
       </div>
 
+      {/* Entry / Re-Entry / Rebuy / Add-on カウント */}
       <div className="border-t border-white/[0.06] pt-3 space-y-2">
-        <CountRow label="Entries" count={t.initialEntries} countKey="initialEntries" amount={t.buyInAmount} amountKey="buyInAmount" />
-        <CountRow label="Re-Entries" count={t.reEntryCount} countKey="reEntryCount" amount={t.reEntryAmount} amountKey="reEntryAmount" />
-        <CountRow label="Rebuys" count={t.rebuyCount} countKey="rebuyCount" amount={t.rebuyAmount} amountKey="rebuyAmount" />
-        <CountRow label="Add-ons" count={t.addonCount} countKey="addonCount" amount={t.addonAmount} amountKey="addonAmount" />
+        <CountRow label="Entries (Single)" count={t.initialEntries} countKey="initialEntries" />
+        <CountRow label="Re-Entries" count={t.reEntryCount} countKey="reEntryCount" />
+        <CountRow label="Rebuys" count={t.rebuyCount} countKey="rebuyCount" />
+        <CountRow label="Add-ons" count={t.addonCount} countKey="addonCount" />
+      </div>
+
+      {/* アーリーバード / 特典 */}
+      <div className="border-t border-white/[0.06] pt-3">
+        <div className="text-[11px] text-white/25 font-semibold mb-2">Early Bird / 特典</div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[11px] text-white/30 w-24 shrink-0">対象者数</span>
+          <div className="flex gap-0.5 items-center">
+            <button className="btn btn-ghost btn-sm px-1.5" onClick={() => up({ earlyBirdCount: Math.max(0, t.earlyBirdCount - 1) })}>-</button>
+            <input type="number" className="input input-sm w-14 text-center" value={t.earlyBirdCount} onChange={e => up({ earlyBirdCount: Math.max(0, +e.target.value) })} />
+            <button className="btn btn-ghost btn-sm px-1.5" onClick={() => up({ earlyBirdCount: t.earlyBirdCount + 1 })}>+</button>
+          </div>
+          <span className="text-[10px] text-white/15 mx-1">+</span>
+          <input type="number" className="input input-sm w-24" value={t.earlyBirdBonus} onChange={e => up({ earlyBirdBonus: Math.max(0, +e.target.value) })} placeholder="ボーナスチップ" />
+          <span className="text-[10px] text-white/20">chips</span>
+        </div>
+        {t.earlyBirdCount > 0 && t.earlyBirdBonus > 0 && (
+          <div className="text-[10px] text-white/20 mt-1 pl-24">合計 +{(t.earlyBirdCount * t.earlyBirdBonus).toLocaleString()} chips</div>
+        )}
+      </div>
+
+      {/* チップサマリー */}
+      <div className="border-t border-white/[0.06] pt-3">
+        <div className="text-[11px] text-white/25 font-semibold mb-2">Chip Summary</div>
+        <div className="grid grid-cols-2 gap-1 text-[11px]">
+          <span className="text-white/30">Players (総数)</span><span className="text-white/50 font-bold text-right">{activePlayers}</span>
+          <span className="text-white/30">Total Chips</span><span className="text-white/50 font-bold text-right">{totalChips.toLocaleString()}</span>
+          <span className="text-white/30">Avg Stack</span><span className="text-white/50 font-bold text-right">{avg > 0 ? formatChips(avg) : '--'}</span>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
@@ -255,28 +283,6 @@ function TournamentStats({ tournament: t }: { tournament: Tournament }) {
             <input type="number" className="input input-sm w-20 text-center" value={Math.floor((t.preLevelDuration || 0) / 60)} onChange={e => up({ preLevelDuration: Math.max(0, +e.target.value) * 60 })} min={0} />
             <span className="text-xs text-white/25">min</span>
           </div>
-        </div>
-      </div>
-
-      {/* Revenue Summary */}
-      <div className="border-t border-white/[0.06] pt-3">
-        <div className="text-[11px] text-white/25 font-semibold mb-2">Revenue Summary</div>
-        <div className="space-y-1 text-[11px]">
-          {t.initialEntries > 0 && <div className="flex justify-between text-white/30"><span>Entry {t.initialEntries} x &yen;{t.buyInAmount.toLocaleString()}</span><span>&yen;{(t.initialEntries * t.buyInAmount).toLocaleString()}</span></div>}
-          {t.reEntryCount > 0 && <div className="flex justify-between text-white/30"><span>Re-Entry {t.reEntryCount} x &yen;{t.reEntryAmount.toLocaleString()}</span><span>&yen;{(t.reEntryCount * t.reEntryAmount).toLocaleString()}</span></div>}
-          {t.rebuyCount > 0 && <div className="flex justify-between text-white/30"><span>Rebuy {t.rebuyCount} x &yen;{t.rebuyAmount.toLocaleString()}</span><span>&yen;{(t.rebuyCount * t.rebuyAmount).toLocaleString()}</span></div>}
-          {t.addonCount > 0 && <div className="flex justify-between text-white/30"><span>Add-on {t.addonCount} x &yen;{t.addonAmount.toLocaleString()}</span><span>&yen;{(t.addonCount * t.addonAmount).toLocaleString()}</span></div>}
-          <div className="flex justify-between text-white/40 font-semibold pt-1 border-t border-white/[0.04]"><span>Total Revenue</span><span>&yen;{revenue.toLocaleString()}</span></div>
-          <div className="flex items-center gap-2 pt-1">
-            <span className="text-white/25">Rake</span>
-            <select className="input input-sm w-20 text-[10px]" value={t.rakeType} onChange={e => up({ rakeType: e.target.value as RakeType })}>
-              <option value="fixed">Fixed</option>
-              <option value="percent">%</option>
-            </select>
-            <input type="number" className="input input-sm w-20" value={t.rakeValue} onChange={e => up({ rakeValue: Math.max(0, +e.target.value) })} />
-            <span className="text-white/20 ml-auto">-&yen;{rake.toLocaleString()}</span>
-          </div>
-          <div className="flex justify-between text-blue-400 font-bold pt-1 border-t border-white/[0.04]"><span>Prize Pool</span><span>&yen;{prizePool.toLocaleString()}</span></div>
         </div>
       </div>
     </div>
@@ -329,6 +335,7 @@ function TogglesPanel({ timerId, timerType }: { timerId: string; timerType: 'tou
     if (timerType === 'tournament') store.updateTournamentToggles(timerId, partial);
     else store.updateCashToggles(timerId, partial);
   };
+  const fontScale = store.systemStyle?.displayFontScale || 1.0;
 
   const tournamentItems: { key: keyof DisplayToggles; label: string }[] = [
     { key: 'showTournamentName', label: 'Tournament Name' }, { key: 'showLevelInfo', label: 'Level Info' },
@@ -354,6 +361,21 @@ function TogglesPanel({ timerId, timerType }: { timerId: string; timerType: 'tou
             <div className={`toggle ${dt[key] ? 'on' : ''}`} onClick={() => up({ [key]: !dt[key] })} />
           </div>
         ))}
+      </div>
+
+      {/* 文字サイズ調整 */}
+      <div className="border-t border-white/[0.06] pt-3">
+        <div className="text-xs text-white/30 font-semibold uppercase tracking-wider mb-2">Display Font Size</div>
+        <div className="flex items-center gap-3">
+          <span className="text-[10px] text-white/20">小</span>
+          <input type="range" className="flex-1 accent-blue-500" min={0.5} max={2.0} step={0.05} value={fontScale}
+            onChange={e => store.updateSystemStyle({ displayFontScale: +e.target.value })} />
+          <span className="text-[10px] text-white/20">大</span>
+          <span className="text-xs text-white/40 font-mono w-10 text-center">{fontScale.toFixed(2)}</span>
+          {fontScale !== 1.0 && (
+            <button className="btn btn-ghost btn-sm text-[10px]" onClick={() => store.updateSystemStyle({ displayFontScale: 1.0 })}>Reset</button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -433,27 +455,19 @@ function SoundPanel({ timerId, timerType }: { timerId: string; timerType: 'tourn
 
 function PrizeEditor({ tournament: t }: { tournament: Tournament }) {
   const update = (p: PrizeEntry[]) => useStore.getState().updateTournament(t.id, { prizeStructure: p });
-  const total = t.prizeStructure.reduce((sum, p) => sum + (p.amount || 0), 0);
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Prize Structure</div>
-        <button className="btn btn-ghost btn-sm" onClick={() => update([...t.prizeStructure, { place: t.prizeStructure.length + 1, amount: 0 }])}>+ Add</button>
+        <button className="btn btn-ghost btn-sm" onClick={() => update([...t.prizeStructure, { place: t.prizeStructure.length + 1, label: '' }])}>+ Add</button>
       </div>
       {t.prizeStructure.map((p, i) => (
         <div key={i} className="flex items-center gap-2">
-          <span className="text-xs text-white/30 w-6">{p.place}位</span>
-          <span className="text-xs text-white/20">&yen;</span>
-          <input type="number" className="input input-sm w-28" value={p.amount} onChange={e => { const arr = [...t.prizeStructure]; arr[i] = { ...arr[i], amount: Math.max(0, +e.target.value) }; update(arr); }} min={0} />
-          <button className="btn btn-danger btn-sm ml-auto" onClick={() => update(t.prizeStructure.filter((_, j) => j !== i))}>x</button>
+          <span className="text-xs text-white/30 w-6 shrink-0">{p.place}位</span>
+          <input type="text" className="input input-sm flex-1" value={p.label} onChange={e => { const arr = [...t.prizeStructure]; arr[i] = { ...arr[i], label: e.target.value }; update(arr); }} placeholder="例: ¥50,000 / 旅行券 / トロフィー" />
+          <button className="btn btn-danger btn-sm shrink-0" onClick={() => update(t.prizeStructure.filter((_, j) => j !== i))}>x</button>
         </div>
       ))}
-      {total > 0 && (
-        <div className="flex justify-between text-xs border-t border-white/[0.06] pt-2">
-          <span className="text-white/30">合計</span>
-          <span className="text-white/50 font-bold">&yen;{total.toLocaleString()}</span>
-        </div>
-      )}
     </div>
   );
 }

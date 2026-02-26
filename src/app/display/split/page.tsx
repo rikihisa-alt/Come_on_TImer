@@ -66,7 +66,7 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
   const tte = computeTimeToEnd(tournament.levels, tournament.currentLevelIndex, displayMs);
   const regClose = computeRegCloseTime(tournament.levels, tournament.currentLevelIndex, displayMs, tournament.regCloseLevel);
   const activePlayers = tournament.initialEntries + tournament.reEntryCount;
-  const totalChips = (activePlayers + tournament.rebuyCount + tournament.addonCount) * tournament.startingChips;
+  const totalChips = (activePlayers + tournament.rebuyCount + tournament.addonCount) * tournament.startingChips + tournament.earlyBirdCount * tournament.earlyBirdBonus;
   const avg = activePlayers > 0 ? Math.round(totalChips / activePlayers) : 0;
   const pc = theme?.primaryColor || '#60a5fa';
   const tickerSpeed = dt.tickerSpeed || 25;
@@ -89,14 +89,6 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
           <div className="g-card-inner h-full flex flex-col items-center justify-center p-1">
             <div className="text-[7px] lg:text-[9px] text-white/30 uppercase tracking-wider font-semibold">Players</div>
             <div className="text-xs lg:text-base font-bold text-white/65 timer-font">{activePlayers}</div>
-          </div>
-        </AbsoluteSection>
-      )}
-      {dt.showEntryCount && (
-        <AbsoluteSection pos={layout.reEntry}>
-          <div className="g-card-inner h-full flex flex-col items-center justify-center p-1">
-            <div className="text-[7px] lg:text-[9px] text-white/30 uppercase tracking-wider font-semibold">Re-Entry</div>
-            <div className="text-xs lg:text-base font-bold text-white/65 timer-font">{tournament.reEntryCount}</div>
           </div>
         </AbsoluteSection>
       )}
@@ -195,16 +187,16 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
       )}
 
       {/* Prize Table */}
-      {dt.showPrizeStructure && tournament.prizeStructure.length > 0 && (
+      {dt.showPrizeStructure && tournament.prizeStructure.some(p => p.label) && (
         <AbsoluteSection pos={layout.prizeTable}>
           <div className="g-card-inner p-2 h-full overflow-auto">
             <div className="text-[7px] text-white/30 uppercase tracking-wider font-semibold mb-1 text-center">Prize</div>
             <div className="space-y-0.5">
-              {tournament.prizeStructure.map(p => (
+              {tournament.prizeStructure.filter(p => p.label).map(p => (
                 <div key={p.place} className="flex items-center justify-between text-[10px] gap-1">
                   <span className="text-white/40">{p.place}位</span>
-                  <span className="font-bold timer-font" style={{ color: p.place === 1 ? pc : 'rgba(255,255,255,0.5)' }}>
-                    {p.amount > 0 ? `\u00A5${p.amount.toLocaleString()}` : '--'}
+                  <span className="font-bold timer-font truncate" style={{ color: p.place === 1 ? pc : 'rgba(255,255,255,0.5)' }}>
+                    {p.label}
                   </span>
                 </div>
               ))}

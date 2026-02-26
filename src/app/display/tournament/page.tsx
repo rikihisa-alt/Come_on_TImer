@@ -69,32 +69,21 @@ function GlassStat({ label, value, accent }: { label: string; value: string; acc
 
 /* ── Prize Table ── */
 function PrizeTable({ tournament, primaryColor }: { tournament: Tournament; primaryColor: string }) {
-  const hasAnyAmount = tournament.prizeStructure.some(p => p.amount > 0);
-  if (tournament.prizeStructure.length === 0) return null;
-  const total = tournament.prizeStructure.reduce((sum, p) => sum + (p.amount || 0), 0);
+  const hasAny = tournament.prizeStructure.some(p => p.label);
+  if (tournament.prizeStructure.length === 0 || !hasAny) return null;
   return (
     <div className="g-card-inner p-3 lg:p-4 h-full overflow-auto">
       <div className="text-[9px] lg:text-[11px] text-white/35 uppercase tracking-wider font-semibold mb-2 text-center">Prize</div>
       <div className="space-y-1">
-        {tournament.prizeStructure.map((p) => (
+        {tournament.prizeStructure.filter(p => p.label).map((p) => (
           <div key={p.place} className="flex items-center justify-between text-xs gap-2">
             <span className="text-white/40 shrink-0">{p.place}位</span>
-            {hasAnyAmount && (
-              <span className="font-bold timer-font text-right" style={{ color: p.place === 1 ? primaryColor : 'rgba(255,255,255,0.5)' }}>
-                &yen;{(p.amount || 0).toLocaleString()}
-              </span>
-            )}
+            <span className="font-bold timer-font text-right truncate" style={{ color: p.place === 1 ? primaryColor : 'rgba(255,255,255,0.5)' }}>
+              {p.label}
+            </span>
           </div>
         ))}
       </div>
-      {hasAnyAmount && total > 0 && (
-        <div className="mt-2 pt-2 border-t border-white/[0.06] text-center">
-          <span className="text-[9px] text-white/25 uppercase tracking-wider">Total</span>
-          <div className="text-sm font-bold timer-font" style={{ color: primaryColor }}>
-            &yen;{total.toLocaleString()}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -202,7 +191,7 @@ function Inner() {
   const tte = computeTimeToEnd(tournament.levels, tournament.currentLevelIndex, displayMs);
   const regClose = computeRegCloseTime(tournament.levels, tournament.currentLevelIndex, displayMs, tournament.regCloseLevel);
   const activePlayers = tournament.initialEntries + tournament.reEntryCount;
-  const totalChips = (activePlayers + tournament.rebuyCount + tournament.addonCount) * tournament.startingChips;
+  const totalChips = (activePlayers + tournament.rebuyCount + tournament.addonCount) * tournament.startingChips + tournament.earlyBirdCount * tournament.earlyBirdBonus;
   const avg = activePlayers > 0 ? Math.round(totalChips / activePlayers) : 0;
   const pc = theme?.primaryColor || '#60a5fa';
   const layout = tournament.sectionLayout || DEFAULT_SECTION_LAYOUT;
@@ -264,11 +253,6 @@ function Inner() {
         {dt.showEntryCount && (
           <AbsoluteSection pos={layout.players}>
             <GlassStat label="Players" value={`${activePlayers}`} accent />
-          </AbsoluteSection>
-        )}
-        {dt.showEntryCount && (
-          <AbsoluteSection pos={layout.reEntry}>
-            <GlassStat label="Re-Entry" value={String(tournament.reEntryCount)} />
           </AbsoluteSection>
         )}
         {dt.showEntryCount && (
@@ -409,7 +393,6 @@ function Inner() {
           {/* Mobile compact stats */}
           <div className="flex items-center gap-3 mt-3 flex-wrap justify-center text-[10px] text-white/30">
             <span>Players <span className="text-white/50 font-bold">{activePlayers}</span></span>
-            <span>RE <span className="text-white/50 font-bold">{tournament.reEntryCount}</span></span>
             <span>R <span className="text-white/50 font-bold">{tournament.rebuyCount}</span></span>
             <span>A <span className="text-white/50 font-bold">{tournament.addonCount}</span></span>
             {avg > 0 && <span>Avg <span className="text-white/50 font-bold">{formatChips(avg)}</span></span>}
@@ -428,14 +411,12 @@ function Inner() {
         )}
 
         {/* Mobile prize row */}
-        {dt.showPrizeStructure && tournament.prizeStructure.length > 0 && (
+        {dt.showPrizeStructure && tournament.prizeStructure.some(p => p.label) && (
           <div className="flex gap-2 flex-wrap">
-            {tournament.prizeStructure.slice(0, 3).map(p => (
+            {tournament.prizeStructure.filter(p => p.label).slice(0, 3).map(p => (
               <div key={p.place} className="g-card-inner flex-1 p-2 text-center">
                 <div className="text-[8px] text-white/30 uppercase tracking-wider font-semibold">{p.place}位</div>
-                <div className="text-xs font-bold text-white/60 timer-font">
-                  {p.amount > 0 ? `\u00A5${p.amount.toLocaleString()}` : '--'}
-                </div>
+                <div className="text-xs font-bold text-white/60 timer-font truncate">{p.label}</div>
               </div>
             ))}
           </div>

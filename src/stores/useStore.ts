@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Tournament, CashGame, DisplayAssignment, ThemeConfig, SoundSettings, DisplayToggles, BlindLevel, PrizeEntry, SectionLayout, TournamentSectionId, SectionPosition, CashSectionId, CashSectionLayout, SystemStyle, BlindTemplate } from '@/lib/types';
+import { Tournament, CashGame, DisplayAssignment, ThemeConfig, SoundSettings, DisplayToggles, BlindLevel, SectionLayout, TournamentSectionId, SectionPosition, CashSectionId, CashSectionLayout, SystemStyle, BlindTemplate } from '@/lib/types';
 import { uid } from '@/lib/utils';
 import { broadcast } from '@/lib/sync';
 import { DEFAULT_THEMES, STANDARD_PRESET, DEFAULT_TTS_MESSAGES, DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND, DEFAULT_SECTION_LAYOUT, DEFAULT_CASH_SECTION_LAYOUT, DEFAULT_SYSTEM_STYLE } from '@/lib/presets';
@@ -72,8 +72,8 @@ function mkTournament(name?: string, levels?: BlindLevel[]): Tournament {
     startingChips: 10000,
     initialEntries: 0, reEntryCount: 0, rebuyCount: 0, addonCount: 0,
     buyInAmount: 0, reEntryAmount: 0, rebuyAmount: 0, addonAmount: 0,
-    rakeType: 'fixed', rakeValue: 0,
-    prizeStructure: [{ place: 1, amount: 0 }, { place: 2, amount: 0 }, { place: 3, amount: 0 }],
+    earlyBirdCount: 0, earlyBirdBonus: 0,
+    prizeStructure: [{ place: 1, label: '' }, { place: 2, label: '' }, { place: 3, label: '' }],
     createdAt: Date.now(),
     displayToggles: { ...DEFAULT_DISPLAY_TOGGLES },
     sound: { ...DEFAULT_SOUND },
@@ -351,7 +351,7 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'come-on-timer-v3',
-      version: 12,
+      version: 13,
       migrate: (persisted: unknown, version: number) => {
         const state = persisted as Record<string, unknown>;
         if (version < 4) {
@@ -462,6 +462,25 @@ export const useStore = create<AppState>()(
             };
           });
           state.blindTemplates = (state.blindTemplates as unknown[]) || [];
+        }
+        if (version < 13) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const tours = (state.tournaments as any[]) || [];
+          state.tournaments = tours.map((t: Record<string, unknown>) => {
+            // PrizeEntry: amount→label (テキスト化)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const prizeStructure = ((t.prizeStructure as any[]) || []).map((p: Record<string, unknown>) => ({
+              place: p.place as number,
+              label: p.label !== undefined ? String(p.label) : (p.amount ? `¥${Number(p.amount).toLocaleString()}` : ''),
+            }));
+            // rakeType/rakeValue → 削除（型から除外済み、フィールドは残っても無害）
+            return {
+              ...t,
+              earlyBirdCount: (t.earlyBirdCount as number) ?? 0,
+              earlyBirdBonus: (t.earlyBirdBonus as number) ?? 0,
+              prizeStructure,
+            };
+          });
         }
         return state as unknown as AppState;
       },
