@@ -23,6 +23,9 @@ export function SystemStyleProvider() {
     const g = parseInt(accent.slice(3, 5), 16);
     const b = parseInt(accent.slice(5, 7), 16);
     document.documentElement.style.setProperty('--ui-accent-rgb', `${r}, ${g}, ${b}`);
+
+    // Apply display font scale
+    document.documentElement.style.setProperty('--display-font-scale', String(systemStyle.displayFontScale || 1));
   }, [systemStyle]);
 
   return null;

@@ -147,9 +147,13 @@ export type DisplayToggles = {
   backgroundImageUrl: string;
 };
 
+export type AspectRatioMode = '16:9' | '4:3' | 'panorama' | 'zoom';
+
 export type SystemStyle = {
   fontFamily: string;
   uiAccentColor: string;
+  displayAspectRatio: AspectRatioMode;
+  displayFontScale: number;
 };
 
 export type SyncMessageType = 'FULL_SYNC' | 'TIMER_TICK' | 'LEVEL_CHANGE';

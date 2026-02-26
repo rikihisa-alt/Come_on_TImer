@@ -10,6 +10,7 @@ import { Tournament, CashGame, ThemeConfig, DisplayToggles, SoundSettings } from
 import { DEFAULT_SECTION_LAYOUT, DEFAULT_CASH_SECTION_LAYOUT } from '@/lib/presets';
 import { FullscreenButton } from '@/components/FullscreenButton';
 import { AbsoluteSection } from '@/components/AbsoluteSection';
+import { DisplayWrapper } from '@/components/DisplayWrapper';
 
 /* ═══ Tournament Panel (AbsoluteSection layout) ═══ */
 function TournamentPanel({ tournament, theme, displayToggles: dt, sound }: {
@@ -470,6 +471,7 @@ function SplitInner() {
         if (p.sound) useStore.setState({ sound: p.sound as never });
         if (p.displayToggles) useStore.setState({ displayToggles: p.displayToggles as never });
         if (p.defaultThemeId) useStore.setState({ defaultThemeId: p.defaultThemeId as never });
+        if (p.systemStyle) useStore.setState({ systemStyle: p.systemStyle as never });
       }
     });
   }, []);
@@ -506,7 +508,7 @@ function SplitInner() {
   const rightName = rightTournament?.name || rightCash?.name || '右';
 
   return (
-    <div className="min-h-screen flex flex-col select-none overflow-hidden" style={bgStyle}>
+    <DisplayWrapper bgStyle={bgStyle} className="flex flex-col select-none">
       {bgImgUrl && <div className="absolute inset-0 bg-black/50 pointer-events-none z-[1]" />}
       {theme && theme.overlayOpacity > 0 && <div className="absolute inset-0 bg-black pointer-events-none z-[1]" style={{ opacity: theme.overlayOpacity / 100 }} />}
 
@@ -559,7 +561,7 @@ function SplitInner() {
           )}
         </div>
       </div>
-    </div>
+    </DisplayWrapper>
   );
 }
 

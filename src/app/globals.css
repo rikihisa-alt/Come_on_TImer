@@ -232,6 +232,23 @@ select.input {
   overflow: hidden; white-space: nowrap; width: 100%;
 }
 
+/* Range slider thumb */
+input[type="range"] { -webkit-appearance: none; appearance: none; background: transparent; }
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: white; border: 2px solid rgba(0,0,0,0.2);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  cursor: pointer;
+  margin-top: -4px;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: white; border: 2px solid rgba(0,0,0,0.2);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  cursor: pointer;
+}
+
 /* Mobile padding for bottom nav */
 .pb-mobile { padding-bottom: 70px; }
 @media (min-width: 768px) { .pb-mobile { padding-bottom: 0; } }

@@ -10,6 +10,7 @@ import { Tournament, ThemeConfig, DisplayToggles, SoundSettings, SectionLayout, 
 import { DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND, DEFAULT_SECTION_LAYOUT } from '@/lib/presets';
 import { FullscreenButton } from '@/components/FullscreenButton';
 import { AbsoluteSection } from '@/components/AbsoluteSection';
+import { DisplayWrapper } from '@/components/DisplayWrapper';
 
 /* ── Timer Selector dropdown ── */
 function TimerSelector({ selectedId, onSelect, tournaments }: {
@@ -131,6 +132,7 @@ function Inner() {
         if (p.sound) useStore.setState({ sound: p.sound as never });
         if (p.displayToggles) useStore.setState({ displayToggles: p.displayToggles as never });
         if (p.defaultThemeId) useStore.setState({ defaultThemeId: p.defaultThemeId as never });
+        if (p.systemStyle) useStore.setState({ systemStyle: p.systemStyle as never });
       }
     });
   }, []);
@@ -215,7 +217,7 @@ function Inner() {
   const isPreLevel = tournament.status === 'running' && tournament.currentLevelIndex === -1;
 
   return (
-    <div className={`min-h-screen flex flex-col select-none overflow-hidden relative ${isBrk ? 'break-bg' : ''}`} style={bgStyle}>
+    <DisplayWrapper bgStyle={bgStyle} className={`flex flex-col select-none relative ${isBrk ? 'break-bg' : ''}`}>
       {/* BG Overlays */}
       {(dt.backgroundImageUrl || (theme?.type === 'image' && theme.imageUrl)) && (
         <div className="absolute inset-0 bg-black/50 pointer-events-none z-[1]" />
@@ -494,7 +496,7 @@ function Inner() {
           </div>
         </div>
       )}
-    </div>
+    </DisplayWrapper>
   );
 }
 

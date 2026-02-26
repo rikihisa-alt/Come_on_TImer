@@ -317,7 +317,7 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'come-on-timer-v3',
-      version: 10,
+      version: 11,
       migrate: (persisted: unknown, version: number) => {
         const state = persisted as Record<string, unknown>;
         if (version < 4) {
@@ -386,6 +386,13 @@ export const useStore = create<AppState>()(
         }
         if (version < 10) {
           state.systemStyle = state.systemStyle || { ...DEFAULT_SYSTEM_STYLE };
+        }
+        if (version < 11) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const ss = (state.systemStyle as any) || {};
+          ss.displayAspectRatio = ss.displayAspectRatio || 'zoom';
+          ss.displayFontScale = ss.displayFontScale || 1.0;
+          state.systemStyle = ss;
         }
         return state as unknown as AppState;
       },

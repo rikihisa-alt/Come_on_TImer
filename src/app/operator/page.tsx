@@ -3,9 +3,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useStore } from '@/stores/useStore';
 import { formatTimer, formatTimerHMS, formatChips, uid } from '@/lib/utils';
-import { PRESET_OPTIONS, DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND, DEFAULT_SECTION_LAYOUT, DEFAULT_CASH_SECTION_LAYOUT, FONT_OPTIONS, DEFAULT_SYSTEM_STYLE } from '@/lib/presets';
+import { PRESET_OPTIONS, DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND, DEFAULT_SECTION_LAYOUT, DEFAULT_CASH_SECTION_LAYOUT, FONT_OPTIONS, DEFAULT_SYSTEM_STYLE, ASPECT_RATIO_OPTIONS } from '@/lib/presets';
 import { playSound, playTestSound, playWarningBeep, speakTTS, fillTTSTemplate, PRESET_LABELS } from '@/lib/audio';
-import { BlindLevel, Tournament, CashGame, SoundPreset, PrizeEntry, SoundSettings, DisplayToggles, ThemeConfig, TournamentSectionId, SectionPosition, SectionLayout, CashSectionId, CashSectionLayout } from '@/lib/types';
+import { BlindLevel, Tournament, CashGame, SoundPreset, PrizeEntry, SoundSettings, DisplayToggles, ThemeConfig, TournamentSectionId, SectionPosition, SectionLayout, CashSectionId, CashSectionLayout, AspectRatioMode } from '@/lib/types';
 
 const TAB_ORDER = ['tournaments', 'cash', 'split', 'settings'] as const;
 
@@ -1150,17 +1150,50 @@ function SplitTab() {
 }
 
 /* ── Settings Tab (Global Theme Only) ── */
+/* ── HSL ↔ Hex conversion helpers ── */
+function hexToHsl(hex: string): { h: number; s: number; l: number } {
+  const r = parseInt(hex.slice(1, 3), 16) / 255;
+  const g = parseInt(hex.slice(3, 5), 16) / 255;
+  const b = parseInt(hex.slice(5, 7), 16) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  if (max === min) return { h: 0, s: 0, l: Math.round(l * 100) };
+  const d = max - min;
+  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+  let h = 0;
+  if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+  else if (max === g) h = ((b - r) / d + 2) / 6;
+  else h = ((r - g) / d + 4) / 6;
+  return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
+}
+
+function hslToHex(h: number, s: number, l: number): string {
+  const sn = s / 100, ln = l / 100;
+  const a = sn * Math.min(ln, 1 - ln);
+  const f = (n: number) => {
+    const k = (n + h / 30) % 12;
+    const color = ln - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+    return Math.round(255 * color).toString(16).padStart(2, '0');
+  };
+  return `#${f(0)}${f(8)}${f(4)}`;
+}
+
 function SystemStyleEditor() {
   const systemStyle = useStore(s => s.systemStyle) || DEFAULT_SYSTEM_STYLE;
   const updateSystemStyle = useStore(s => s.updateSystemStyle);
   const currentFont = FONT_OPTIONS.find(f => f.id === systemStyle.fontFamily) || FONT_OPTIONS[0];
+  const hsl = hexToHsl(systemStyle.uiAccentColor || '#3b82f6');
+
+  const setHsl = (h: number, s: number, l: number) => {
+    updateSystemStyle({ uiAccentColor: hslToHex(h, s, l) });
+  };
 
   return (
-    <div className="g-card p-4 space-y-4">
+    <div className="g-card p-4 space-y-5">
       <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">
         System Style (システムスタイル)
       </div>
-      <p className="text-[11px] text-white/20">アプリ全体のフォントとアクセントカラーを変更できます。</p>
+      <p className="text-[11px] text-white/20">アプリ全体のフォント、アクセントカラー、ディスプレイ設定を変更できます。</p>
 
       {/* Font Selector */}
       <div>
@@ -1173,22 +1206,87 @@ function SystemStyleEditor() {
         </select>
       </div>
 
-      {/* UI Accent Color */}
+      {/* UI Accent Color — Slider */}
+      <div className="space-y-3">
+        <label className="text-[11px] text-white/25 block">UI Accent Color (アクセントカラー)</label>
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-10 h-10 rounded-xl border border-white/10 shrink-0" style={{ background: systemStyle.uiAccentColor }} />
+          <input className="input input-sm flex-1 font-mono text-xs" value={systemStyle.uiAccentColor}
+            onChange={e => { if (/^#[0-9a-fA-F]{6}$/.test(e.target.value)) updateSystemStyle({ uiAccentColor: e.target.value }); }} />
+        </div>
+        {/* Hue slider */}
+        <div>
+          <div className="flex justify-between mb-1">
+            <span className="text-[10px] text-white/20">色相 (Hue)</span>
+            <span className="text-[10px] text-white/20">{hsl.h}°</span>
+          </div>
+          <input type="range" min={0} max={360} value={hsl.h}
+            onChange={e => setHsl(+e.target.value, hsl.s, hsl.l)}
+            className="w-full h-6 rounded-full cursor-pointer appearance-none"
+            style={{ background: 'linear-gradient(to right, hsl(0,100%,50%), hsl(60,100%,50%), hsl(120,100%,50%), hsl(180,100%,50%), hsl(240,100%,50%), hsl(300,100%,50%), hsl(360,100%,50%))' }} />
+        </div>
+        {/* Saturation slider */}
+        <div>
+          <div className="flex justify-between mb-1">
+            <span className="text-[10px] text-white/20">彩度 (Saturation)</span>
+            <span className="text-[10px] text-white/20">{hsl.s}%</span>
+          </div>
+          <input type="range" min={10} max={100} value={hsl.s}
+            onChange={e => setHsl(hsl.h, +e.target.value, hsl.l)}
+            className="w-full h-6 rounded-full cursor-pointer appearance-none"
+            style={{ background: `linear-gradient(to right, hsl(${hsl.h},10%,${hsl.l}%), hsl(${hsl.h},100%,${hsl.l}%))` }} />
+        </div>
+        {/* Lightness slider */}
+        <div>
+          <div className="flex justify-between mb-1">
+            <span className="text-[10px] text-white/20">明るさ (Lightness)</span>
+            <span className="text-[10px] text-white/20">{hsl.l}%</span>
+          </div>
+          <input type="range" min={15} max={85} value={hsl.l}
+            onChange={e => setHsl(hsl.h, hsl.s, +e.target.value)}
+            className="w-full h-6 rounded-full cursor-pointer appearance-none"
+            style={{ background: `linear-gradient(to right, hsl(${hsl.h},${hsl.s}%,15%), hsl(${hsl.h},${hsl.s}%,50%), hsl(${hsl.h},${hsl.s}%,85%))` }} />
+        </div>
+      </div>
+
+      {/* Display Aspect Ratio */}
       <div>
-        <label className="text-[11px] text-white/25 block mb-1">UI Accent Color (アクセントカラー)</label>
-        <div className="flex items-center gap-2">
-          <input type="color" className="w-8 h-8 rounded cursor-pointer border-0 bg-transparent"
-            value={systemStyle.uiAccentColor}
-            onChange={e => updateSystemStyle({ uiAccentColor: e.target.value })} />
-          <input className="input input-sm flex-1" value={systemStyle.uiAccentColor}
-            onChange={e => updateSystemStyle({ uiAccentColor: e.target.value })} />
+        <label className="text-[11px] text-white/25 block mb-2">Display Aspect Ratio (ディスプレイ比率)</label>
+        <div className="grid grid-cols-2 gap-2">
+          {ASPECT_RATIO_OPTIONS.map(opt => (
+            <button key={opt.id}
+              className={`px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 border ${
+                systemStyle.displayAspectRatio === opt.id
+                  ? 'border-[var(--ui-accent)] bg-[rgba(var(--ui-accent-rgb),0.2)] text-white'
+                  : 'border-white/[0.08] bg-white/[0.04] text-white/40 hover:bg-white/[0.08]'
+              }`}
+              onClick={() => updateSystemStyle({ displayAspectRatio: opt.id as AspectRatioMode })}>
+              <div>{opt.label}</div>
+              <div className="text-[9px] text-white/20 mt-0.5">{opt.desc}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Display Font Size */}
+      <div>
+        <div className="flex justify-between mb-1">
+          <label className="text-[11px] text-white/25">Display Font Size (文字サイズ)</label>
+          <span className="text-[11px] text-white/30 font-mono">{Math.round((systemStyle.displayFontScale || 1) * 100)}%</span>
+        </div>
+        <input type="range" min={50} max={200} step={5}
+          value={Math.round((systemStyle.displayFontScale || 1) * 100)}
+          onChange={e => updateSystemStyle({ displayFontScale: +e.target.value / 100 })}
+          className="w-full h-3 rounded-full cursor-pointer appearance-none bg-white/10" />
+        <div className="flex justify-between text-[9px] text-white/15 mt-1">
+          <span>50%</span><span>100%</span><span>200%</span>
         </div>
       </div>
 
       {/* Preview */}
       <div className="g-card-inner p-4 space-y-2">
         <div className="text-[11px] text-white/25 mb-2">Preview</div>
-        <div style={{ fontFamily: currentFont.value }}>
+        <div style={{ fontFamily: currentFont.value, fontSize: `${(systemStyle.displayFontScale || 1) * 100}%` }}>
           <div className="text-lg font-bold" style={{ color: systemStyle.uiAccentColor }}>
             COME ON Timer
           </div>

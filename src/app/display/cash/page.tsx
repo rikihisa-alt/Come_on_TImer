@@ -10,6 +10,7 @@ import { CashGame, ThemeConfig, DisplayToggles, CashSectionLayout } from '@/lib/
 import { DEFAULT_DISPLAY_TOGGLES, DEFAULT_CASH_SECTION_LAYOUT } from '@/lib/presets';
 import { FullscreenButton } from '@/components/FullscreenButton';
 import { AbsoluteSection } from '@/components/AbsoluteSection';
+import { DisplayWrapper } from '@/components/DisplayWrapper';
 
 /* ── Timer Selector dropdown ── */
 function TimerSelector({ selectedId, onSelect, cashGames }: {
@@ -92,6 +93,7 @@ function CashDisplayInner() {
         if (p.themes) useStore.setState({ themes: p.themes as never });
         if (p.displayToggles) useStore.setState({ displayToggles: p.displayToggles as never });
         if (p.defaultThemeId) useStore.setState({ defaultThemeId: p.defaultThemeId as never });
+        if (p.systemStyle) useStore.setState({ systemStyle: p.systemStyle as never });
       }
     });
   }, []);
@@ -144,7 +146,7 @@ function CashDisplayInner() {
   const layout = cashGame.sectionLayout || DEFAULT_CASH_SECTION_LAYOUT;
 
   return (
-    <div className="min-h-screen flex flex-col select-none overflow-hidden relative" style={bgStyle}>
+    <DisplayWrapper bgStyle={bgStyle} className="flex flex-col select-none relative">
       {theme && theme.overlayOpacity > 0 && (
         <div className="absolute inset-0 bg-black pointer-events-none" style={{ opacity: theme.overlayOpacity / 100 }} />
       )}
@@ -326,7 +328,7 @@ function CashDisplayInner() {
           </div>
         </div>
       )}
-    </div>
+    </DisplayWrapper>
   );
 }
 

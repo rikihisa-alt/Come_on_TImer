@@ -1,4 +1,4 @@
-import { BlindLevel, ThemeConfig, TTSMessage, DisplayToggles, SoundSettings, SectionLayout, CashSectionLayout, SystemStyle } from './types';
+import { BlindLevel, ThemeConfig, TTSMessage, DisplayToggles, SoundSettings, SectionLayout, CashSectionLayout, SystemStyle, AspectRatioMode } from './types';
 import { uid } from './utils';
 
 function bl(level: number, sb: number, bb: number, ante: number, dur: number): BlindLevel {
@@ -90,9 +90,18 @@ export const FONT_OPTIONS = [
   { id: 'rounded', label: 'Rounded', value: "'Trebuchet MS', 'Lucida Grande', sans-serif" },
 ] as const;
 
+export const ASPECT_RATIO_OPTIONS: { id: AspectRatioMode; label: string; desc: string }[] = [
+  { id: 'zoom', label: 'ズーム (全画面)', desc: '画面いっぱいに表示' },
+  { id: '16:9', label: '16:9 (ワイド)', desc: 'TV標準' },
+  { id: '4:3', label: '4:3 (スタンダード)', desc: '旧型TV' },
+  { id: 'panorama', label: 'パノラマ (21:9)', desc: 'ウルトラワイド' },
+];
+
 export const DEFAULT_SYSTEM_STYLE: SystemStyle = {
   fontFamily: 'serif',
   uiAccentColor: '#3b82f6',
+  displayAspectRatio: 'zoom',
+  displayFontScale: 1.0,
 };
 
 export const DEFAULT_DISPLAY_TOGGLES: DisplayToggles = {
