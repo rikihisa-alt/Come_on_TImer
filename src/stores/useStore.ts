@@ -70,7 +70,7 @@ function mkTournament(name?: string, levels?: BlindLevel[]): Tournament {
     id: uid(), name: name || 'Tournament 1', levels: lvls, currentLevelIndex: 0,
     status: 'idle', timerStartedAt: null, remainingMs: lvls[0]?.duration ? lvls[0].duration * 1000 : 900000,
     startingChips: 10000,
-    initialEntries: 0, reEntryCount: 0, rebuyCount: 0, addonCount: 0,
+    initialEntries: 0, reEntryCount: 0, reEntryChips: 10000, rebuyCount: 0, rebuyChips: 10000, addonCount: 0, addonChips: 10000,
     buyInAmount: 0, reEntryAmount: 0, rebuyAmount: 0, addonAmount: 0,
     earlyBirdCount: 0, earlyBirdBonus: 0,
     prizeStructure: [{ place: 1, label: '' }, { place: 2, label: '' }, { place: 3, label: '' }],
@@ -351,7 +351,7 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'come-on-timer-v3',
-      version: 13,
+      version: 14,
       migrate: (persisted: unknown, version: number) => {
         const state = persisted as Record<string, unknown>;
         if (version < 4) {
@@ -473,12 +473,24 @@ export const useStore = create<AppState>()(
               place: p.place as number,
               label: p.label !== undefined ? String(p.label) : (p.amount ? `¥${Number(p.amount).toLocaleString()}` : ''),
             }));
-            // rakeType/rakeValue → 削除（型から除外済み、フィールドは残っても無害）
             return {
               ...t,
               earlyBirdCount: (t.earlyBirdCount as number) ?? 0,
               earlyBirdBonus: (t.earlyBirdBonus as number) ?? 0,
               prizeStructure,
+            };
+          });
+        }
+        if (version < 14) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const tours = (state.tournaments as any[]) || [];
+          state.tournaments = tours.map((t: Record<string, unknown>) => {
+            const sc = (t.startingChips as number) || 10000;
+            return {
+              ...t,
+              reEntryChips: (t.reEntryChips as number) ?? sc,
+              rebuyChips: (t.rebuyChips as number) ?? sc,
+              addonChips: (t.addonChips as number) ?? sc,
             };
           });
         }

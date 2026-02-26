@@ -54,11 +54,14 @@ export type Tournament = {
   timerStartedAt: number | null;
   remainingMs: number;
   startingChips: number;
-  // F5: リエントリー/リバイ分離
+  // エントリー管理
   initialEntries: number;   // 初回参加者数
   reEntryCount: number;     // リエントリー数（プレイヤー増加）
+  reEntryChips: number;     // リエントリー時のチップ数
   rebuyCount: number;       // リバイ数（チップのみ）
+  rebuyChips: number;       // リバイ時のチップ数
   addonCount: number;
+  addonChips: number;       // アドオン時のチップ数
   // 単価
   buyInAmount: number;
   reEntryAmount: number;

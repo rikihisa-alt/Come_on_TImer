@@ -209,17 +209,27 @@ function TournamentStats({ tournament: t }: { tournament: Tournament }) {
   const up = (p: Partial<Tournament>) => useStore.getState().updateTournament(t.id, p);
   const totalPlayLevels = t.levels.filter(l => l.type === 'play').length;
   const activePlayers = t.initialEntries + t.reEntryCount;
-  const totalChips = (activePlayers + t.rebuyCount + t.addonCount) * t.startingChips + t.earlyBirdCount * t.earlyBirdBonus;
+  const totalChips = t.initialEntries * t.startingChips
+    + t.reEntryCount * t.reEntryChips
+    + t.rebuyCount * t.rebuyChips
+    + t.addonCount * t.addonChips
+    + t.earlyBirdCount * t.earlyBirdBonus;
   const avg = activePlayers > 0 ? Math.round(totalChips / activePlayers) : 0;
 
-  const CountRow = ({ label, count, countKey }: { label: string; count: number; countKey: keyof Tournament }) => (
-    <div className="flex items-center gap-2">
+  const CountRow = ({ label, count, countKey, chips, chipsKey }: { label: string; count: number; countKey: keyof Tournament; chips?: number; chipsKey?: keyof Tournament }) => (
+    <div className="flex items-center gap-2 flex-wrap">
       <span className="text-[11px] text-white/30 w-24 shrink-0">{label}</span>
       <div className="flex gap-0.5 items-center">
         <button className="btn btn-ghost btn-sm px-1.5" onClick={() => up({ [countKey]: Math.max(0, count - 1) } as Partial<Tournament>)}>-</button>
         <input type="number" className="input input-sm w-14 text-center" value={count} onChange={e => up({ [countKey]: Math.max(0, +e.target.value) } as Partial<Tournament>)} />
         <button className="btn btn-ghost btn-sm px-1.5" onClick={() => up({ [countKey]: count + 1 } as Partial<Tournament>)}>+</button>
       </div>
+      {chipsKey && (
+        <div className="flex items-center gap-1">
+          <input type="number" className="input input-sm w-20 text-center" value={chips || 0} onChange={e => up({ [chipsKey]: Math.max(0, +e.target.value) } as Partial<Tournament>)} />
+          <span className="text-[10px] text-white/20">chips</span>
+        </div>
+      )}
     </div>
   );
 
@@ -242,9 +252,9 @@ function TournamentStats({ tournament: t }: { tournament: Tournament }) {
       {/* Entry / Re-Entry / Rebuy / Add-on カウント */}
       <div className="border-t border-white/[0.06] pt-3 space-y-2">
         <CountRow label="Entries (Single)" count={t.initialEntries} countKey="initialEntries" />
-        <CountRow label="Re-Entries" count={t.reEntryCount} countKey="reEntryCount" />
-        <CountRow label="Rebuys" count={t.rebuyCount} countKey="rebuyCount" />
-        <CountRow label="Add-ons" count={t.addonCount} countKey="addonCount" />
+        <CountRow label="Re-Entries" count={t.reEntryCount} countKey="reEntryCount" chips={t.reEntryChips} chipsKey="reEntryChips" />
+        <CountRow label="Rebuys" count={t.rebuyCount} countKey="rebuyCount" chips={t.rebuyChips} chipsKey="rebuyChips" />
+        <CountRow label="Add-ons" count={t.addonCount} countKey="addonCount" chips={t.addonChips} chipsKey="addonChips" />
       </div>
 
       {/* アーリーバード / 特典 */}

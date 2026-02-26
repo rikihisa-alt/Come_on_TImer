@@ -191,7 +191,11 @@ function Inner() {
   const tte = computeTimeToEnd(tournament.levels, tournament.currentLevelIndex, displayMs);
   const regClose = computeRegCloseTime(tournament.levels, tournament.currentLevelIndex, displayMs, tournament.regCloseLevel);
   const activePlayers = tournament.initialEntries + tournament.reEntryCount;
-  const totalChips = (activePlayers + tournament.rebuyCount + tournament.addonCount) * tournament.startingChips + tournament.earlyBirdCount * tournament.earlyBirdBonus;
+  const totalChips = tournament.initialEntries * tournament.startingChips
+    + tournament.reEntryCount * tournament.reEntryChips
+    + tournament.rebuyCount * tournament.rebuyChips
+    + tournament.addonCount * tournament.addonChips
+    + tournament.earlyBirdCount * tournament.earlyBirdBonus;
   const avg = activePlayers > 0 ? Math.round(totalChips / activePlayers) : 0;
   const pc = theme?.primaryColor || '#60a5fa';
   const layout = tournament.sectionLayout || DEFAULT_SECTION_LAYOUT;
@@ -284,7 +288,8 @@ function Inner() {
               </div>
             )}
             {dt.showTimer && (
-              <div className={`text-[13vw] lg:text-[11vw] font-black timer-font leading-[0.85] transition-colors duration-300 ${isWarn ? 'text-amber-400 warning-pulse' : isBrk ? 'text-green-400' : 'text-white'}`}>
+              <div className={`font-black timer-font leading-[0.85] transition-colors duration-300 ${isWarn ? 'text-amber-400 warning-pulse' : isBrk ? 'text-green-400' : 'text-white'}`}
+                style={{ fontSize: 'calc(11vw * var(--fs, 1))' }}>
                 {formatTimer(displayMs)}
               </div>
             )}
@@ -298,11 +303,11 @@ function Inner() {
             )}
             {dt.showFooter && cur && !isBrk && (
               <div className="mt-4 text-center">
-                <div className="text-4xl lg:text-5xl font-black timer-font" style={{ color: pc }}>
+                <div className="font-black timer-font" style={{ color: pc, fontSize: 'calc(3.5vw * var(--fs, 1))' }}>
                   {cur.smallBlind.toLocaleString()} / {cur.bigBlind.toLocaleString()}
                 </div>
                 {cur.ante > 0 && (
-                  <div className="text-lg text-white/30 font-semibold mt-1">Ante {cur.ante.toLocaleString()}</div>
+                  <div className="text-white/30 font-semibold mt-1" style={{ fontSize: 'calc(1.2vw * var(--fs, 1))' }}>Ante {cur.ante.toLocaleString()}</div>
                 )}
               </div>
             )}
@@ -368,7 +373,8 @@ function Inner() {
             </div>
           )}
           {dt.showTimer && (
-            <div className={`text-[17vw] font-black timer-font leading-[0.85] transition-colors duration-300 ${isWarn ? 'text-amber-400 warning-pulse' : isBrk ? 'text-green-400' : 'text-white'}`}>
+            <div className={`font-black timer-font leading-[0.85] transition-colors duration-300 ${isWarn ? 'text-amber-400 warning-pulse' : isBrk ? 'text-green-400' : 'text-white'}`}
+              style={{ fontSize: 'calc(17vw * var(--fs, 1))' }}>
               {formatTimer(displayMs)}
             </div>
           )}

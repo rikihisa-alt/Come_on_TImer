@@ -66,7 +66,11 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
   const tte = computeTimeToEnd(tournament.levels, tournament.currentLevelIndex, displayMs);
   const regClose = computeRegCloseTime(tournament.levels, tournament.currentLevelIndex, displayMs, tournament.regCloseLevel);
   const activePlayers = tournament.initialEntries + tournament.reEntryCount;
-  const totalChips = (activePlayers + tournament.rebuyCount + tournament.addonCount) * tournament.startingChips + tournament.earlyBirdCount * tournament.earlyBirdBonus;
+  const totalChips = tournament.initialEntries * tournament.startingChips
+    + tournament.reEntryCount * tournament.reEntryChips
+    + tournament.rebuyCount * tournament.rebuyChips
+    + tournament.addonCount * tournament.addonChips
+    + tournament.earlyBirdCount * tournament.earlyBirdBonus;
   const avg = activePlayers > 0 ? Math.round(totalChips / activePlayers) : 0;
   const pc = theme?.primaryColor || '#60a5fa';
   const tickerSpeed = dt.tickerSpeed || 25;
@@ -129,7 +133,8 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
               )}
             </div>
           )}
-          <div className={`text-[11vw] lg:text-[5.5vw] font-black timer-font leading-[0.85] ${isWarn ? 'text-amber-400 warning-pulse' : isBrk ? 'text-green-400' : 'text-white'}`}>
+          <div className={`font-black timer-font leading-[0.85] ${isWarn ? 'text-amber-400 warning-pulse' : isBrk ? 'text-green-400' : 'text-white'}`}
+            style={{ fontSize: 'calc(5.5vw * var(--fs, 1))' }}>
             {formatTimer(displayMs)}
           </div>
           {dt.showProgressBar && (
@@ -138,7 +143,7 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
             </div>
           )}
           {dt.showFooter && cur && !isBrk && (
-            <div className="mt-1 text-lg lg:text-2xl font-black timer-font" style={{ color: pc }}>
+            <div className="mt-1 font-black timer-font" style={{ color: pc, fontSize: 'calc(1.8vw * var(--fs, 1))' }}>
               {cur.smallBlind.toLocaleString()}/{cur.bigBlind.toLocaleString()}
             </div>
           )}
@@ -519,12 +524,12 @@ function SplitInner() {
   const leftName = leftTournament?.name || leftCash?.name || '左';
   const rightName = rightTournament?.name || rightCash?.name || '右';
 
-  return (
-    <DisplayWrapper bgStyle={bgStyle} className="flex flex-col select-none">
-      {(leftDt.backgroundImageUrl || rightDt.backgroundImageUrl) && !hasSeparateThemes && <div className="absolute inset-0 bg-black/50 pointer-events-none z-[1]" />}
-      {!hasSeparateThemes && theme && theme.overlayOpacity > 0 && <div className="absolute inset-0 bg-black pointer-events-none z-[1]" style={{ opacity: theme.overlayOpacity / 100 }} />}
+  /* Neutral dark bg for overall wrapper (header uses this) */
+  const neutralBg = { background: 'linear-gradient(160deg, #0e1c36 0%, #152d52 50%, #1c3d6e 100%)' };
 
-      {/* Header */}
+  return (
+    <DisplayWrapper bgStyle={neutralBg} className="flex flex-col select-none">
+      {/* Header - neutral dark bg, no panel theme bleeding */}
       <div className="g-topbar relative z-10 flex items-center px-4 md:px-6 py-2.5 md:py-3">
         <div className="flex items-center gap-2 shrink-0">
           <span className="text-sm md:text-base font-black text-blue-400 tracking-tight">COME ON</span>
@@ -533,12 +538,12 @@ function SplitInner() {
         <div className="flex-1 flex items-center justify-center gap-2 md:gap-4 min-w-0">
           <div className="flex items-center gap-1.5 min-w-0">
             <span className="text-sm md:text-lg lg:text-xl font-black text-white/60 truncate max-w-[20vw]">{leftName}</span>
-            <SplitTimerSelector label="左" selectedId={selLeft} onSelect={setSelLeft} tournaments={tournaments} cashGames={cashGames} />
+            <SplitTimerSelector label="L" selectedId={selLeft} onSelect={setSelLeft} tournaments={tournaments} cashGames={cashGames} />
           </div>
           <span className="text-white/15 font-light text-lg shrink-0">|</span>
           <div className="flex items-center gap-1.5 min-w-0">
             <span className="text-sm md:text-lg lg:text-xl font-black text-white/60 truncate max-w-[20vw]">{rightName}</span>
-            <SplitTimerSelector label="右" selectedId={selRight} onSelect={setSelRight} tournaments={tournaments} cashGames={cashGames} />
+            <SplitTimerSelector label="R" selectedId={selRight} onSelect={setSelRight} tournaments={tournaments} cashGames={cashGames} />
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0 ml-2">
@@ -553,10 +558,10 @@ function SplitInner() {
 
       {/* Split panels */}
       <div className="relative z-10 flex-1 flex">
-        {/* LEFT PANEL */}
-        <div className="flex-1 flex flex-col border-r border-white/[0.08] relative overflow-hidden">
-          {hasSeparateThemes && <div className="absolute inset-0 z-0" style={leftBgStyle} />}
-          {hasSeparateThemes && leftTheme && leftTheme.overlayOpacity > 0 && <div className="absolute inset-0 bg-black z-0" style={{ opacity: leftTheme.overlayOpacity / 100 }} />}
+        {/* LEFT PANEL - always has own bg */}
+        <div className="flex-1 flex flex-col relative overflow-hidden">
+          <div className="absolute inset-0 z-0" style={leftBgStyle} />
+          {leftTheme && leftTheme.overlayOpacity > 0 && <div className="absolute inset-0 bg-black z-0" style={{ opacity: leftTheme.overlayOpacity / 100 }} />}
           <div className="relative z-[1] flex-1 flex flex-col">
             {hasLeft ? (
               leftTournament ? <TournamentPanel tournament={leftTournament} theme={leftTheme} displayToggles={leftDt} sound={leftSnd} />
@@ -568,10 +573,13 @@ function SplitInner() {
           </div>
         </div>
 
-        {/* RIGHT PANEL */}
+        {/* CENTER DIVIDER - きれいな縦線 */}
+        <div className="relative z-10 w-[2px] bg-white/20 shrink-0" />
+
+        {/* RIGHT PANEL - always has own bg */}
         <div className="flex-1 flex flex-col relative overflow-hidden">
-          {hasSeparateThemes && <div className="absolute inset-0 z-0" style={rightBgStyle} />}
-          {hasSeparateThemes && rightTheme && rightTheme.overlayOpacity > 0 && <div className="absolute inset-0 bg-black z-0" style={{ opacity: rightTheme.overlayOpacity / 100 }} />}
+          <div className="absolute inset-0 z-0" style={rightBgStyle} />
+          {rightTheme && rightTheme.overlayOpacity > 0 && <div className="absolute inset-0 bg-black z-0" style={{ opacity: rightTheme.overlayOpacity / 100 }} />}
           <div className="relative z-[1] flex-1 flex flex-col">
             {hasRight ? (
               rightTournament ? <TournamentPanel tournament={rightTournament} theme={rightTheme} displayToggles={rightDt} sound={rightSnd} />
