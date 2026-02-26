@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useStore } from '@/stores/useStore';
 import { formatTimer, formatTimerHMS, formatChips, uid } from '@/lib/utils';
-import { PRESET_OPTIONS, DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND, DEFAULT_SECTION_LAYOUT, DEFAULT_CASH_SECTION_LAYOUT } from '@/lib/presets';
+import { PRESET_OPTIONS, DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND, DEFAULT_SECTION_LAYOUT, DEFAULT_CASH_SECTION_LAYOUT, FONT_OPTIONS, DEFAULT_SYSTEM_STYLE } from '@/lib/presets';
 import { playSound, playTestSound, playWarningBeep, speakTTS, fillTTSTemplate, PRESET_LABELS } from '@/lib/audio';
 import { BlindLevel, Tournament, CashGame, SoundPreset, PrizeEntry, SoundSettings, DisplayToggles, ThemeConfig, TournamentSectionId, SectionPosition, SectionLayout, CashSectionId, CashSectionLayout } from '@/lib/types';
 
@@ -1150,9 +1150,64 @@ function SplitTab() {
 }
 
 /* ── Settings Tab (Global Theme Only) ── */
+function SystemStyleEditor() {
+  const systemStyle = useStore(s => s.systemStyle) || DEFAULT_SYSTEM_STYLE;
+  const updateSystemStyle = useStore(s => s.updateSystemStyle);
+  const currentFont = FONT_OPTIONS.find(f => f.id === systemStyle.fontFamily) || FONT_OPTIONS[0];
+
+  return (
+    <div className="g-card p-4 space-y-4">
+      <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">
+        System Style (システムスタイル)
+      </div>
+      <p className="text-[11px] text-white/20">アプリ全体のフォントとアクセントカラーを変更できます。</p>
+
+      {/* Font Selector */}
+      <div>
+        <label className="text-[11px] text-white/25 block mb-1">Font (フォント)</label>
+        <select className="input input-sm" value={systemStyle.fontFamily}
+          onChange={e => updateSystemStyle({ fontFamily: e.target.value })}>
+          {FONT_OPTIONS.map(f => (
+            <option key={f.id} value={f.id}>{f.label}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* UI Accent Color */}
+      <div>
+        <label className="text-[11px] text-white/25 block mb-1">UI Accent Color (アクセントカラー)</label>
+        <div className="flex items-center gap-2">
+          <input type="color" className="w-8 h-8 rounded cursor-pointer border-0 bg-transparent"
+            value={systemStyle.uiAccentColor}
+            onChange={e => updateSystemStyle({ uiAccentColor: e.target.value })} />
+          <input className="input input-sm flex-1" value={systemStyle.uiAccentColor}
+            onChange={e => updateSystemStyle({ uiAccentColor: e.target.value })} />
+        </div>
+      </div>
+
+      {/* Preview */}
+      <div className="g-card-inner p-4 space-y-2">
+        <div className="text-[11px] text-white/25 mb-2">Preview</div>
+        <div style={{ fontFamily: currentFont.value }}>
+          <div className="text-lg font-bold" style={{ color: systemStyle.uiAccentColor }}>
+            COME ON Timer
+          </div>
+          <div className="text-sm text-white/50">
+            The quick brown fox jumps over the lazy dog
+          </div>
+          <div className="text-2xl font-black timer-font text-white/70 mt-1">
+            12:34
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function SettingsTab() {
   return (
     <div className="space-y-6 fade-in">
+      <SystemStyleEditor />
       <ThemePicker />
     </div>
   );
@@ -1180,10 +1235,10 @@ function ThemePicker() {
   return (
     <div className="g-card p-4 space-y-4">
       <div className="flex items-center justify-between">
-        <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Color Themes</div>
+        <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Timer Themes (タイマーテーマ)</div>
         <button className="btn btn-ghost btn-sm" onClick={handleAdd}>+ Add Theme</button>
       </div>
-      <p className="text-[11px] text-white/20">システム全体のカラーテーマを管理します。各タイマーの設定で個別にテーマを選択できます。</p>
+      <p className="text-[11px] text-white/20">各ディスプレイの背景・カラーテーマを管理します。各タイマーの設定で個別にテーマを選択できます。</p>
 
       {/* Default Theme Selector */}
       <div className="space-y-2">

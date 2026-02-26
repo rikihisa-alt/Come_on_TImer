@@ -1,9 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Tournament, CashGame, DisplayAssignment, ThemeConfig, SoundSettings, DisplayToggles, BlindLevel, PrizeEntry, SectionLayout, TournamentSectionId, SectionPosition, CashSectionId, CashSectionLayout } from '@/lib/types';
+import { Tournament, CashGame, DisplayAssignment, ThemeConfig, SoundSettings, DisplayToggles, BlindLevel, PrizeEntry, SectionLayout, TournamentSectionId, SectionPosition, CashSectionId, CashSectionLayout, SystemStyle } from '@/lib/types';
 import { uid } from '@/lib/utils';
 import { broadcast } from '@/lib/sync';
-import { DEFAULT_THEMES, STANDARD_PRESET, DEFAULT_TTS_MESSAGES, DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND, DEFAULT_SECTION_LAYOUT, DEFAULT_CASH_SECTION_LAYOUT } from '@/lib/presets';
+import { DEFAULT_THEMES, STANDARD_PRESET, DEFAULT_TTS_MESSAGES, DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND, DEFAULT_SECTION_LAYOUT, DEFAULT_CASH_SECTION_LAYOUT, DEFAULT_SYSTEM_STYLE } from '@/lib/presets';
 
 interface AppState {
   tournaments: Tournament[];
@@ -13,6 +13,8 @@ interface AppState {
   sound: SoundSettings;
   displayToggles: DisplayToggles;
   defaultThemeId: string;
+  systemStyle: SystemStyle;
+  updateSystemStyle: (partial: Partial<SystemStyle>) => void;
   addTournament: (name?: string, levels?: BlindLevel[]) => string;
   removeTournament: (id: string) => void;
   updateTournament: (id: string, partial: Partial<Tournament>) => void;
@@ -97,7 +99,9 @@ export const useStore = create<AppState>()(
       },
       displayToggles: { ...DEFAULT_DISPLAY_TOGGLES },
       defaultThemeId: 'come-on-blue',
+      systemStyle: { ...DEFAULT_SYSTEM_STYLE },
 
+      updateSystemStyle: (partial) => { set(s => ({ systemStyle: { ...s.systemStyle, ...partial } })); get().broadcastAll(); },
       addTournament: (name, levels) => {
         const t = mkTournament(name, levels);
         set(s => ({ tournaments: [...s.tournaments, t] }));
@@ -308,12 +312,12 @@ export const useStore = create<AppState>()(
       removeTheme: (id) => { set(s => ({ themes: s.themes.filter(t => t.id !== id) })); get().broadcastAll(); },
       broadcastAll: () => {
         const s = get();
-        broadcast('FULL_SYNC', { tournaments: s.tournaments, cashGames: s.cashGames, displays: s.displays, themes: s.themes, sound: s.sound, displayToggles: s.displayToggles, defaultThemeId: s.defaultThemeId });
+        broadcast('FULL_SYNC', { tournaments: s.tournaments, cashGames: s.cashGames, displays: s.displays, themes: s.themes, sound: s.sound, displayToggles: s.displayToggles, defaultThemeId: s.defaultThemeId, systemStyle: s.systemStyle });
       },
     }),
     {
       name: 'come-on-timer-v3',
-      version: 9,
+      version: 10,
       migrate: (persisted: unknown, version: number) => {
         const state = persisted as Record<string, unknown>;
         if (version < 4) {
@@ -380,9 +384,12 @@ export const useStore = create<AppState>()(
             return t;
           });
         }
+        if (version < 10) {
+          state.systemStyle = state.systemStyle || { ...DEFAULT_SYSTEM_STYLE };
+        }
         return state as unknown as AppState;
       },
-      partialize: (s) => ({ tournaments: s.tournaments, cashGames: s.cashGames, displays: s.displays, themes: s.themes, sound: s.sound, displayToggles: s.displayToggles, defaultThemeId: s.defaultThemeId }),
+      partialize: (s) => ({ tournaments: s.tournaments, cashGames: s.cashGames, displays: s.displays, themes: s.themes, sound: s.sound, displayToggles: s.displayToggles, defaultThemeId: s.defaultThemeId, systemStyle: s.systemStyle }),
     }
   )
 );

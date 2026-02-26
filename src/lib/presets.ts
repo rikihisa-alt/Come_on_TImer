@@ -1,4 +1,4 @@
-import { BlindLevel, ThemeConfig, TTSMessage, DisplayToggles, SoundSettings, SectionLayout, CashSectionLayout } from './types';
+import { BlindLevel, ThemeConfig, TTSMessage, DisplayToggles, SoundSettings, SectionLayout, CashSectionLayout, SystemStyle } from './types';
 import { uid } from './utils';
 
 function bl(level: number, sb: number, bb: number, ante: number, dur: number): BlindLevel {
@@ -81,6 +81,18 @@ export const DEFAULT_CASH_SECTION_LAYOUT: CashSectionLayout = {
   bbCard:   { x: 36, y: 80, w: 28, h: 14 },
   anteCard: { x: 67, y: 80, w: 28, h: 14 },
   ticker:   { x: 1,  y: 93, w: 98, h: 6 },
+};
+
+export const FONT_OPTIONS = [
+  { id: 'serif', label: 'Serif (Classic)', value: "'Times New Roman', Times, serif" },
+  { id: 'sans', label: 'Sans Serif (Modern)', value: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" },
+  { id: 'mono', label: 'Monospace (Digital)', value: "'Courier New', Courier, monospace" },
+  { id: 'rounded', label: 'Rounded', value: "'Trebuchet MS', 'Lucida Grande', sans-serif" },
+] as const;
+
+export const DEFAULT_SYSTEM_STYLE: SystemStyle = {
+  fontFamily: 'serif',
+  uiAccentColor: '#3b82f6',
 };
 
 export const DEFAULT_DISPLAY_TOGGLES: DisplayToggles = {

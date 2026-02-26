@@ -147,6 +147,11 @@ export type DisplayToggles = {
   backgroundImageUrl: string;
 };
 
+export type SystemStyle = {
+  fontFamily: string;
+  uiAccentColor: string;
+};
+
 export type SyncMessageType = 'FULL_SYNC' | 'TIMER_TICK' | 'LEVEL_CHANGE';
 
 export type SyncMessage = {

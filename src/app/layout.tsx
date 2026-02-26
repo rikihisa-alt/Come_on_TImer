@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { GlobalNav } from '@/components/GlobalNav';
+import { SystemStyleProvider } from '@/components/SystemStyleProvider';
 
 export const metadata: Metadata = {
   title: 'COME ON Timer - ポーカータイマー',
@@ -18,7 +19,8 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ja">
-      <body className="antialiased" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
+      <body className="antialiased">
+        <SystemStyleProvider />
         <GlobalNav />
         {children}
         <script
