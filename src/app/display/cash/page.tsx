@@ -32,7 +32,7 @@ function TimerSelector({ selectedId, onSelect, cashGames }: {
   return (
     <div ref={ref} className="relative">
       <button onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.1] hover:border-white/[0.2] transition-all duration-200 cursor-pointer">
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.1] hover:border-white/[0.2] transition-all duration-200 cursor-pointer min-w-[140px]">
         <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-md bg-green-500/20 text-green-400">C</span>
         <span className="text-[10px] lg:text-xs text-white/60 font-medium truncate max-w-[160px]">{current?.name || '選択'}</span>
         <svg className={`w-2.5 h-2.5 text-white/30 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
@@ -57,18 +57,19 @@ function TimerSelector({ selectedId, onSelect, cashGames }: {
 function CashDisplayInner() {
   const params = useSearchParams();
   const displayId = params.get('display') || '';
-  const targetIdParam = params.get('id') || '';
+  const targetIdParam = params.get('id') || params.get('timer') || '';
+  const themeParam = params.get('theme') || '';
 
-  const { cashGames, displays, themes, displayToggles: globalToggles } = useStore();
+  const { cashGames, displays, themes, displayToggles: globalToggles, defaultThemeId } = useStore();
 
   const assignment = displays.find(d => d.displayId === displayId);
   const defaultTargetId = assignment?.targetId || targetIdParam || cashGames[0]?.id || '';
-  const themeId = assignment?.themeId || 'come-on-blue';
-  const theme: ThemeConfig | undefined = themes.find(t => t.id === themeId) || themes[0];
 
   const [selectedId, setSelectedId] = useState(defaultTargetId);
   const activeId = assignment?.targetId || selectedId || defaultTargetId;
   const cashGame: CashGame | undefined = cashGames.find(c => c.id === activeId);
+  const themeId = themeParam || cashGame?.themeId || assignment?.themeId || defaultThemeId || 'come-on-blue';
+  const theme: ThemeConfig | undefined = themes.find(t => t.id === themeId) || themes[0];
 
   const [elapsed, setElapsed] = useState(0);
   const [countdown, setCountdown] = useState(0);
@@ -88,6 +89,7 @@ function CashDisplayInner() {
         if (p.displays) useStore.setState({ displays: p.displays as never });
         if (p.themes) useStore.setState({ themes: p.themes as never });
         if (p.displayToggles) useStore.setState({ displayToggles: p.displayToggles as never });
+        if (p.defaultThemeId) useStore.setState({ defaultThemeId: p.defaultThemeId as never });
       }
     });
   }, []);

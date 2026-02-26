@@ -2,23 +2,45 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
+function getFullscreenElement(): Element | null {
+  return document.fullscreenElement || (document as unknown as { webkitFullscreenElement?: Element }).webkitFullscreenElement || null;
+}
+
+function exitFullscreen(): Promise<void> {
+  if (document.exitFullscreen) return document.exitFullscreen();
+  const doc = document as unknown as { webkitExitFullscreen?: () => Promise<void> };
+  if (doc.webkitExitFullscreen) return doc.webkitExitFullscreen();
+  return Promise.reject(new Error('Fullscreen API not supported'));
+}
+
+function requestFullscreen(el: HTMLElement): Promise<void> {
+  if (el.requestFullscreen) return el.requestFullscreen();
+  const elem = el as unknown as { webkitRequestFullscreen?: () => Promise<void> };
+  if (elem.webkitRequestFullscreen) return elem.webkitRequestFullscreen();
+  return Promise.reject(new Error('Fullscreen API not supported'));
+}
+
 export function FullscreenButton() {
   const [isFs, setIsFs] = useState(false);
 
   const updateState = useCallback(() => {
-    setIsFs(!!document.fullscreenElement);
+    setIsFs(!!getFullscreenElement());
   }, []);
 
   useEffect(() => {
     document.addEventListener('fullscreenchange', updateState);
-    return () => document.removeEventListener('fullscreenchange', updateState);
+    document.addEventListener('webkitfullscreenchange', updateState);
+    return () => {
+      document.removeEventListener('fullscreenchange', updateState);
+      document.removeEventListener('webkitfullscreenchange', updateState);
+    };
   }, [updateState]);
 
   const toggle = () => {
-    if (document.fullscreenElement) {
-      document.exitFullscreen();
+    if (getFullscreenElement()) {
+      exitFullscreen().catch((e) => console.warn('Exit fullscreen failed:', e));
     } else {
-      document.documentElement.requestFullscreen().catch(() => {});
+      requestFullscreen(document.documentElement).catch((e) => console.warn('Request fullscreen failed:', e));
     }
   };
 

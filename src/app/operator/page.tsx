@@ -8,22 +8,21 @@ import { playSound, playTestSound, playWarningBeep, speakTTS, fillTTSTemplate, P
 import { BlindLevel, Tournament, CashGame, SoundPreset, PrizeEntry, SoundSettings, DisplayToggles, ThemeConfig } from '@/lib/types';
 
 export default function OperatorPage() {
-  const [tab, setTab] = useState<'tournaments' | 'cash' | 'displays' | 'settings'>('tournaments');
+  const [tab, setTab] = useState<'tournaments' | 'cash' | 'settings'>('tournaments');
   return (
     <div className="min-h-screen" style={{ background: 'linear-gradient(160deg, #0e1c36 0%, #152d52 50%, #1c3d6e 100%)' }}>
       {/* Glass Tab Nav */}
       <nav className="flex px-3 py-2 gap-1.5 border-b border-white/[0.06]">
-        {(['tournaments', 'cash', 'displays', 'settings'] as const).map(t => (
+        {(['tournaments', 'cash', 'settings'] as const).map(t => (
           <button key={t} onClick={() => setTab(t)}
             className={`flex-1 py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all duration-200 ${tab === t ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'text-white/30 hover:text-white/50 hover:bg-white/[0.04] border border-transparent'}`}>
-            {t === 'tournaments' ? 'Tournaments' : t === 'cash' ? 'Cash Games' : t === 'displays' ? 'Displays' : 'Settings'}
+            {t === 'tournaments' ? 'Tournaments' : t === 'cash' ? 'Cash Games' : 'Settings'}
           </button>
         ))}
       </nav>
       <div className="p-4 max-w-4xl mx-auto">
         {tab === 'tournaments' && <TournamentsTab />}
         {tab === 'cash' && <CashTab />}
-        {tab === 'displays' && <DisplaysTab />}
         {tab === 'settings' && <SettingsTab />}
       </div>
     </div>
@@ -83,10 +82,12 @@ function TournamentEditor({ id }: { id: string }) {
       </button>
       {showSettings && (
         <div className="space-y-4 fade-in">
+          <div className="g-card p-4"><ThemeSelector timerId={id} timerType="tournament" /></div>
           <div className="g-card p-4"><TickerPanel timerId={id} timerType="tournament" /></div>
           <div className="g-card p-4"><TogglesPanel timerId={id} timerType="tournament" /></div>
           <div className="g-card p-4"><DisplaySettingsPanel timerId={id} timerType="tournament" /></div>
           <div className="g-card p-4"><SoundPanel timerId={id} timerType="tournament" /></div>
+          <InlinePreview timerId={id} timerType="tournament" />
         </div>
       )}
     </div>
@@ -530,19 +531,107 @@ function CashEditor({ id, onDelete }: { id: string; onDelete: (id: string) => vo
       </button>
       {showSettings && (
         <div className="space-y-4 fade-in">
+          <div className="g-card p-4"><ThemeSelector timerId={id} timerType="cash" /></div>
           <div className="g-card p-4"><TickerPanel timerId={id} timerType="cash" /></div>
           <div className="g-card p-4"><TogglesPanel timerId={id} timerType="cash" /></div>
           <div className="g-card p-4"><DisplaySettingsPanel timerId={id} timerType="cash" /></div>
           <div className="g-card p-4"><SoundPanel timerId={id} timerType="cash" /></div>
+          <InlinePreview timerId={id} timerType="cash" />
         </div>
       )}
     </div>
   );
 }
 
+/* ── Theme Selector (per-timer) ── */
+function ThemeSelector({ timerId, timerType }: { timerId: string; timerType: 'tournament' | 'cash' }) {
+  const store = useStore();
+  const timer = timerType === 'tournament'
+    ? store.tournaments.find(t => t.id === timerId)
+    : store.cashGames.find(c => c.id === timerId);
+  const currentThemeId = timer?.themeId || store.defaultThemeId || 'come-on-blue';
+
+  const setTheme = (themeId: string) => {
+    if (timerType === 'tournament') store.updateTournamentTheme(timerId, themeId);
+    else store.updateCashTheme(timerId, themeId);
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Color Theme</div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        {store.themes.map(th => (
+          <button
+            key={th.id}
+            onClick={() => setTheme(th.id)}
+            className={`relative rounded-xl overflow-hidden border-2 transition-all duration-200 ${currentThemeId === th.id ? 'border-blue-400 ring-1 ring-blue-400/30' : 'border-white/[0.08] hover:border-white/[0.2]'}`}
+          >
+            <div
+              className="h-10 w-full"
+              style={
+                th.type === 'gradient'
+                  ? { background: `linear-gradient(135deg, ${th.gradientFrom || '#0f172a'}, ${th.gradientTo || '#1e3a5f'})` }
+                  : th.type === 'image' && th.imageUrl
+                  ? { backgroundImage: `url(${th.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                  : { background: th.bgColor || '#0a0e1a' }
+              }
+            />
+            <div className="px-2 py-1.5 bg-white/[0.03]">
+              <span className="text-[10px] text-white/50 font-medium">{th.name}</span>
+            </div>
+            {currentThemeId === th.id && (
+              <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center">
+                <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                </svg>
+              </div>
+            )}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── Inline Preview (per-timer) ── */
+function InlinePreview({ timerId, timerType }: { timerId: string; timerType: 'tournament' | 'cash' }) {
+  const store = useStore();
+  const timer = timerType === 'tournament'
+    ? store.tournaments.find(t => t.id === timerId)
+    : store.cashGames.find(c => c.id === timerId);
+  const themeId = timer?.themeId || store.defaultThemeId || 'come-on-blue';
+  const themeName = store.themes.find(th => th.id === themeId)?.name || '';
+  const [showPreview, setShowPreview] = useState(false);
+
+  const route = timerType === 'tournament' ? 'tournament' : 'cash';
+
+  return (
+    <div>
+      <button
+        onClick={() => setShowPreview(!showPreview)}
+        className="w-full flex items-center justify-between px-4 py-3 g-card hover:bg-white/[0.04] transition-colors"
+      >
+        <span className="text-xs text-white/40 font-semibold uppercase tracking-wider">Live Preview</span>
+        <svg className={`w-4 h-4 text-white/30 transition-transform duration-200 ${showPreview ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+        </svg>
+      </button>
+      {showPreview && (
+        <DisplayPreview
+          route={route}
+          displayId=""
+          targetName={timer?.name || ''}
+          themeLabel={themeName}
+          overridePath={`/display/${route}?timer=${timerId}&theme=${themeId}`}
+        />
+      )}
+    </div>
+  );
+}
+
 /* ── Enhanced Display Preview ── */
-function DisplayPreview({ route, displayId, targetName, themeLabel }: {
-  route: string; displayId: string; targetName: string; themeLabel: string;
+function DisplayPreview({ route, displayId, targetName, themeLabel, overridePath }: {
+  route: string; displayId: string; targetName: string; themeLabel: string; overridePath?: string;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.25);
@@ -562,11 +651,11 @@ function DisplayPreview({ route, displayId, targetName, themeLabel }: {
     return () => window.removeEventListener('resize', update);
   }, [expanded]);
 
-  const path = route === 'split'
+  const path = overridePath || (route === 'split'
     ? `/display/split?display=${displayId}`
     : route === 'cash'
     ? `/display/cash?display=${displayId}`
-    : `/display/tournament?display=${displayId}`;
+    : `/display/tournament?display=${displayId}`);
 
   const fullUrl = typeof window !== 'undefined' ? `${window.location.origin}${path}` : path;
   const routeLabel = route === 'split' ? 'Split View' : route === 'cash' ? 'Cash Game' : 'Tournament';
@@ -659,107 +748,6 @@ function DisplayPreview({ route, displayId, targetName, themeLabel }: {
   );
 }
 
-function DisplaysTab() {
-  const { displays, tournaments, cashGames, themes, setDisplay, removeDisplay } = useStore();
-  const [newId, setNewId] = useState('');
-
-  const detectType = (id: string): 'tournament' | 'cash' => {
-    if (cashGames.find(c => c.id === id)) return 'cash';
-    return 'tournament';
-  };
-
-  const allTimers = [
-    ...tournaments.map(t => ({ id: t.id, name: t.name, kind: 'tournament' as const })),
-    ...cashGames.map(c => ({ id: c.id, name: c.name, kind: 'cash' as const })),
-  ];
-
-  return (
-    <div className="space-y-4 fade-in">
-      <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Display Assignments</div>
-      <div className="g-card p-3 space-y-2">
-        <p className="text-xs text-white/20">ディスプレイURLに <code className="text-blue-400/60">?display=TV1</code> を付けてアクセス</p>
-        <div className="text-[10px] text-white/15 space-y-0.5">
-          <div>Tournament: <code className="text-blue-400/40">/display/tournament?display=TV1</code></div>
-          <div>Cash: <code className="text-blue-400/40">/display/cash?display=TV1</code></div>
-          <div>Split (2画面): <code className="text-blue-400/40">/display/split?display=TV1</code></div>
-        </div>
-      </div>
-      {displays.map(d => (
-        <div key={d.displayId} className="g-card p-4 space-y-3">
-          <div className="flex items-center gap-3 flex-wrap">
-            <span className="font-bold text-sm text-blue-400 min-w-[60px]">{d.displayId}</span>
-            <select className="input input-sm w-32" value={d.route} onChange={e => {
-              const route = e.target.value as 'tournament' | 'cash' | 'split';
-              if (route === 'split') {
-                const firstId = allTimers[0]?.id || '';
-                const secondId = allTimers[1]?.id || allTimers[0]?.id || '';
-                setDisplay({ ...d, route, targetId: firstId, leftRoute: detectType(firstId), splitTargetId: secondId, splitRoute: detectType(secondId) });
-              } else {
-                setDisplay({ ...d, route, targetId: route === 'tournament' ? (tournaments[0]?.id || '') : (cashGames[0]?.id || '') });
-              }
-            }}>
-              <option value="tournament">Tournament</option>
-              <option value="cash">Cash</option>
-              <option value="split">Split (2画面)</option>
-            </select>
-            {d.route !== 'split' && (
-              <select className="input input-sm w-40" value={d.targetId} onChange={e => setDisplay({ ...d, targetId: e.target.value })}>
-                {d.route === 'tournament' ? tournaments.map(t => <option key={t.id} value={t.id}>{t.name}</option>) : cashGames.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-            )}
-            <select className="input input-sm w-32" value={d.themeId} onChange={e => setDisplay({ ...d, themeId: e.target.value })}>{themes.map(th => <option key={th.id} value={th.id}>{th.name}</option>)}</select>
-            <button onClick={() => removeDisplay(d.displayId)} className="btn btn-danger btn-sm ml-auto">Remove</button>
-          </div>
-          {d.route === 'split' && (
-            <div className="space-y-2 pl-4 border-l-2 border-blue-500/20 ml-2">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs text-white/40 font-semibold w-16">左パネル</span>
-                <select className="input input-sm flex-1 max-w-[200px]" value={d.targetId} onChange={e => {
-                  const id = e.target.value;
-                  setDisplay({ ...d, targetId: id, leftRoute: detectType(id) });
-                }}>
-                  {tournaments.length > 0 && <optgroup label="Tournament">{tournaments.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</optgroup>}
-                  {cashGames.length > 0 && <optgroup label="Cash Game">{cashGames.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</optgroup>}
-                </select>
-                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${detectType(d.targetId) === 'tournament' ? 'bg-blue-500/20 text-blue-400' : 'bg-green-500/20 text-green-400'}`}>
-                  {detectType(d.targetId) === 'tournament' ? 'Tournament' : 'Cash'}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs text-white/40 font-semibold w-16">右パネル</span>
-                <select className="input input-sm flex-1 max-w-[200px]" value={d.splitTargetId || ''} onChange={e => {
-                  const id = e.target.value;
-                  setDisplay({ ...d, splitTargetId: id, splitRoute: detectType(id) });
-                }}>
-                  {tournaments.length > 0 && <optgroup label="Tournament">{tournaments.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</optgroup>}
-                  {cashGames.length > 0 && <optgroup label="Cash Game">{cashGames.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</optgroup>}
-                </select>
-                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${detectType(d.splitTargetId || '') === 'tournament' ? 'bg-blue-500/20 text-blue-400' : 'bg-green-500/20 text-green-400'}`}>
-                  {detectType(d.splitTargetId || '') === 'tournament' ? 'Tournament' : 'Cash'}
-                </span>
-              </div>
-            </div>
-          )}
-          <DisplayPreview
-            route={d.route}
-            displayId={d.displayId}
-            targetName={
-              d.route === 'split'
-                ? `${(tournaments.find(t => t.id === d.targetId) || cashGames.find(c => c.id === d.targetId))?.name || '?'} + ${(tournaments.find(t => t.id === d.splitTargetId) || cashGames.find(c => c.id === d.splitTargetId))?.name || '?'}`
-                : (d.route === 'tournament' ? tournaments.find(t => t.id === d.targetId)?.name : cashGames.find(c => c.id === d.targetId)?.name) || '?'
-            }
-            themeLabel={themes.find(th => th.id === d.themeId)?.name || ''}
-          />
-        </div>
-      ))}
-      <div className="flex gap-2">
-        <input className="input w-32" value={newId} onChange={e => setNewId(e.target.value)} placeholder="e.g. TV1" />
-        <button className="btn btn-primary" onClick={() => { if (!newId.trim()) return; setDisplay({ displayId: newId.trim(), route: 'tournament', targetId: tournaments[0]?.id || '', themeId: 'come-on-blue' }); setNewId(''); }}>Add Display</button>
-      </div>
-    </div>
-  );
-}
-
 /* ── Settings Tab (Global Theme Only) ── */
 function SettingsTab() {
   return (
@@ -770,7 +758,7 @@ function SettingsTab() {
 }
 
 function ThemePicker() {
-  const { themes, addTheme, updateTheme, removeTheme } = useStore();
+  const { themes, addTheme, updateTheme, removeTheme, defaultThemeId, setDefaultThemeId } = useStore();
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const handleAdd = () => {
@@ -794,7 +782,32 @@ function ThemePicker() {
         <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Color Themes</div>
         <button className="btn btn-ghost btn-sm" onClick={handleAdd}>+ Add Theme</button>
       </div>
-      <p className="text-[11px] text-white/20">ディスプレイのカラーテーマを管理します。Displaysタブで各ディスプレイにテーマを割り当てられます。</p>
+      <p className="text-[11px] text-white/20">システム全体のカラーテーマを管理します。各タイマーの設定で個別にテーマを選択できます。</p>
+
+      {/* Default Theme Selector */}
+      <div className="space-y-2">
+        <div className="text-[11px] text-white/25 font-semibold">Default Theme (デフォルトテーマ)</div>
+        <div className="flex items-center gap-2 flex-wrap">
+          {themes.map(th => (
+            <button
+              key={th.id}
+              onClick={() => setDefaultThemeId(th.id)}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${defaultThemeId === th.id ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-white/[0.05] text-white/40 border border-white/[0.08] hover:border-white/[0.15]'}`}
+            >
+              <span
+                className="w-3 h-3 rounded-full shrink-0 border border-white/10"
+                style={
+                  th.type === 'gradient'
+                    ? { background: `linear-gradient(135deg, ${th.gradientFrom || '#0f172a'}, ${th.gradientTo || '#1e3a5f'})` }
+                    : { background: th.bgColor || '#0a0e1a' }
+                }
+              />
+              {th.name}
+              {defaultThemeId === th.id && <span className="text-[9px] text-blue-400/60">DEFAULT</span>}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {themes.map(t => (

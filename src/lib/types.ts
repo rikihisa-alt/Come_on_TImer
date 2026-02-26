@@ -34,6 +34,7 @@ export type Tournament = {
   scheduledStartTime?: number | null;
   displayToggles?: DisplayToggles;
   sound?: SoundSettings;
+  themeId?: string;
 };
 
 export type CashGame = {
@@ -52,6 +53,7 @@ export type CashGame = {
   createdAt: number;
   displayToggles?: DisplayToggles;
   sound?: SoundSettings;
+  themeId?: string;
 };
 
 export type DisplayAssignment = {

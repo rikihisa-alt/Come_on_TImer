@@ -239,7 +239,7 @@ function TabSelector({ selectedId, onSelect, tournaments, cashGames, label }: {
       <span className="text-xs text-white/70 font-bold mr-1 shrink-0">{label}</span>
       {allTimers.map(t => (
         <button key={t.id} onClick={() => onSelect(t.id)}
-          className={`px-3 py-1.5 rounded-lg text-sm font-bold whitespace-nowrap transition-all duration-150 ${
+          className={`px-3 py-1.5 rounded-lg text-sm font-bold whitespace-nowrap transition-all duration-150 min-w-[100px] text-center ${
             t.id === selectedId
               ? 'bg-blue-500 text-white shadow-md shadow-blue-500/30'
               : 'bg-slate-700 text-slate-200 hover:bg-slate-600'
@@ -257,7 +257,7 @@ function TabSelector({ selectedId, onSelect, tournaments, cashGames, label }: {
 function SplitInner() {
   const params = useSearchParams();
   const displayId = params.get('display') || '';
-  const { tournaments, cashGames, displays, themes, sound: globalSound, displayToggles: globalToggles } = useStore();
+  const { tournaments, cashGames, displays, themes, sound: globalSound, displayToggles: globalToggles, defaultThemeId } = useStore();
 
   const detectType = useCallback((id: string): 'tournament' | 'cash' => {
     if (cashGames.find(c => c.id === id)) return 'cash';
@@ -293,12 +293,10 @@ function SplitInner() {
         if (p.themes) useStore.setState({ themes: p.themes as never });
         if (p.sound) useStore.setState({ sound: p.sound as never });
         if (p.displayToggles) useStore.setState({ displayToggles: p.displayToggles as never });
+        if (p.defaultThemeId) useStore.setState({ defaultThemeId: p.defaultThemeId as never });
       }
     });
   }, []);
-
-  const themeId = assignment?.themeId || 'come-on-blue';
-  const theme = themes.find(t => t.id === themeId) || themes[0];
 
   const leftType = detectType(selLeft);
   const rightType = detectType(selRight);
@@ -307,6 +305,10 @@ function SplitInner() {
   const leftCash = leftType === 'cash' ? cashGames.find(c => c.id === selLeft) : undefined;
   const rightTournament = rightType === 'tournament' ? tournaments.find(t => t.id === selRight) : undefined;
   const rightCash = rightType === 'cash' ? cashGames.find(c => c.id === selRight) : undefined;
+
+  const leftTimerThemeId = leftTournament?.themeId || leftCash?.themeId;
+  const themeId = leftTimerThemeId || assignment?.themeId || defaultThemeId || 'come-on-blue';
+  const theme = themes.find(t => t.id === themeId) || themes[0];
 
   /* per-timer settings for each panel */
   const leftDt = (leftTournament?.displayToggles || leftCash?.displayToggles) || globalToggles;

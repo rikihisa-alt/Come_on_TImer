@@ -32,7 +32,7 @@ function TimerSelector({ selectedId, onSelect, tournaments }: {
   return (
     <div ref={ref} className="relative">
       <button onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.1] hover:border-white/[0.2] transition-all duration-200 cursor-pointer">
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.1] hover:border-white/[0.2] transition-all duration-200 cursor-pointer min-w-[140px]">
         <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-md bg-blue-500/20 text-blue-400">T</span>
         <span className="text-[10px] lg:text-xs text-white/60 font-medium truncate max-w-[160px]">{current?.name || '\u9078\u629E'}</span>
         <svg className={`w-2.5 h-2.5 text-white/30 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
@@ -67,15 +67,16 @@ function GlassStat({ label, value, accent }: { label: string; value: string; acc
 function Inner() {
   const params = useSearchParams();
   const displayId = params.get('display') || '';
-  const targetIdParam = params.get('id') || '';
-  const { tournaments, displays, themes, sound: globalSound, displayToggles: globalToggles } = useStore();
+  const targetIdParam = params.get('id') || params.get('timer') || '';
+  const themeParam = params.get('theme') || '';
+  const { tournaments, displays, themes, sound: globalSound, displayToggles: globalToggles, defaultThemeId } = useStore();
   const assignment = displays.find(d => d.displayId === displayId);
   const defaultId = assignment?.targetId || targetIdParam || tournaments[0]?.id || '';
-  const themeId = assignment?.themeId || 'come-on-blue';
-  const theme: ThemeConfig | undefined = themes.find(t => t.id === themeId) || themes[0];
   const [selectedId, setSelectedId] = useState(defaultId);
   const activeId = assignment?.targetId || selectedId || defaultId;
   const tournament: Tournament | undefined = tournaments.find(t => t.id === activeId);
+  const themeId = themeParam || tournament?.themeId || assignment?.themeId || defaultThemeId || 'come-on-blue';
+  const theme: ThemeConfig | undefined = themes.find(t => t.id === themeId) || themes[0];
   const [displayMs, setDisplayMs] = useState(0);
   const prevRef = useRef(-1);
   const warnRef = useRef(false);
@@ -112,6 +113,7 @@ function Inner() {
         if (p.themes) useStore.setState({ themes: p.themes as never });
         if (p.sound) useStore.setState({ sound: p.sound as never });
         if (p.displayToggles) useStore.setState({ displayToggles: p.displayToggles as never });
+        if (p.defaultThemeId) useStore.setState({ defaultThemeId: p.defaultThemeId as never });
       }
     });
   }, []);
