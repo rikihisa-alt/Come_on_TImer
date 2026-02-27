@@ -3,9 +3,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useStore } from '@/stores/useStore';
 import { formatTimer, formatTimerHMS, formatChips, uid } from '@/lib/utils';
-import { PRESET_OPTIONS, DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND, DEFAULT_SECTION_LAYOUT, DEFAULT_CASH_SECTION_LAYOUT, FONT_OPTIONS, DEFAULT_SYSTEM_STYLE, ASPECT_RATIO_OPTIONS } from '@/lib/presets';
+import { PRESET_OPTIONS, DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND, DEFAULT_SECTION_LAYOUT, DEFAULT_CASH_SECTION_LAYOUT, FONT_OPTIONS, DEFAULT_SYSTEM_STYLE, ASPECT_RATIO_OPTIONS, SYSTEM_THEMES, getSystemTheme } from '@/lib/presets';
 import { playSound, playTestSound, playWarningBeep, speakTTS, fillTTSTemplate, PRESET_LABELS } from '@/lib/audio';
-import { BlindLevel, Tournament, CashGame, SoundPreset, PrizeEntry, SoundSettings, DisplayToggles, ThemeConfig, TournamentSectionId, SectionPosition, SectionLayout, CashSectionId, CashSectionLayout, AspectRatioMode, TournamentPreset } from '@/lib/types';
+import { BlindLevel, Tournament, CashGame, SoundPreset, PrizeEntry, SoundSettings, DisplayToggles, ThemeConfig, TournamentSectionId, SectionPosition, SectionLayout, CashSectionId, CashSectionLayout, AspectRatioMode, TournamentPreset, SystemThemeId } from '@/lib/types';
 import { RoomSync } from '@/components/RoomSync';
 
 const TAB_ORDER = ['tournaments', 'cash', 'split', 'settings'] as const;
@@ -25,7 +25,7 @@ export default function OperatorPage() {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: 'linear-gradient(160deg, #0e1c36 0%, #152d52 50%, #1c3d6e 100%)' }}>
+    <div className="min-h-screen" style={{ background: 'linear-gradient(160deg, var(--sys-bg-from) 0%, var(--sys-bg-to) 100%)' }}>
       {/* Room Sync Bar */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-white/[0.04]">
         <div className="flex items-center gap-2">
@@ -1468,7 +1468,67 @@ function SystemStyleEditor() {
       <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">
         System Style (システムスタイル)
       </div>
-      <p className="text-[11px] text-white/20">アプリ全体のフォント、アクセントカラー、ディスプレイ設定を変更できます。</p>
+      <p className="text-[11px]" style={{ color: 'var(--sys-text-muted)' }}>アプリ全体のテーマ、フォント、アクセントカラー、ディスプレイ設定を変更できます。</p>
+
+      {/* System Theme Picker */}
+      <div>
+        <label className="text-[11px] block mb-2" style={{ color: 'var(--sys-text-muted)' }}>System Theme (システムテーマ)</label>
+        <div className="grid grid-cols-3 gap-2">
+          {SYSTEM_THEMES.map(t => (
+            <button key={t.id}
+              onClick={() => updateSystemStyle({ systemThemeId: t.id as SystemThemeId })}
+              className={`p-2 rounded-xl border transition-all ${
+                (systemStyle.systemThemeId || 'bright-blue') === t.id
+                  ? 'border-[var(--ui-accent)] ring-2 ring-[var(--ui-accent)]/30'
+                  : 'border-[var(--sys-input-border)] hover:border-[var(--sys-glass-border)]'
+              }`}>
+              <div className="w-full h-8 rounded-lg mb-1.5"
+                style={{ background: `linear-gradient(135deg, ${t.bgFrom}, ${t.bgTo})` }} />
+              <div className="text-[10px] font-medium truncate" style={{ color: 'var(--sys-text)' }}>{t.name}</div>
+              <div className="text-[9px] truncate" style={{ color: 'var(--sys-text-muted)' }}>{t.nameJa}</div>
+            </button>
+          ))}
+          {/* Custom option */}
+          <button
+            onClick={() => updateSystemStyle({ systemThemeId: 'custom' })}
+            className={`p-2 rounded-xl border transition-all ${
+              systemStyle.systemThemeId === 'custom'
+                ? 'border-[var(--ui-accent)] ring-2 ring-[var(--ui-accent)]/30'
+                : 'border-[var(--sys-input-border)] hover:border-[var(--sys-glass-border)]'
+            }`}>
+            <div className="w-full h-8 rounded-lg mb-1.5 flex items-center justify-center text-[16px]"
+              style={{ background: systemStyle.systemThemeId === 'custom'
+                ? `linear-gradient(135deg, ${systemStyle.customBgFrom || '#0e1c36'}, ${systemStyle.customBgTo || '#1c3d6e'})`
+                : 'var(--sys-glass-inner-bg)' }}>
+              🎨
+            </div>
+            <div className="text-[10px] font-medium truncate" style={{ color: 'var(--sys-text)' }}>Custom</div>
+            <div className="text-[9px] truncate" style={{ color: 'var(--sys-text-muted)' }}>カスタム</div>
+          </button>
+        </div>
+        {systemStyle.systemThemeId === 'custom' && (
+          <div className="grid grid-cols-2 gap-3 mt-3 g-card-inner p-3">
+            <div>
+              <label className="text-[10px] block mb-1" style={{ color: 'var(--sys-text-muted)' }}>Gradient Start</label>
+              <div className="flex items-center gap-2">
+                <input type="color" value={systemStyle.customBgFrom || '#0e1c36'} className="w-8 h-8 rounded cursor-pointer border-0 p-0"
+                  onChange={e => updateSystemStyle({ customBgFrom: e.target.value })} />
+                <input className="input input-sm flex-1 font-mono text-xs" value={systemStyle.customBgFrom || '#0e1c36'}
+                  onChange={e => { if (/^#[0-9a-fA-F]{6}$/.test(e.target.value)) updateSystemStyle({ customBgFrom: e.target.value }); }} />
+              </div>
+            </div>
+            <div>
+              <label className="text-[10px] block mb-1" style={{ color: 'var(--sys-text-muted)' }}>Gradient End</label>
+              <div className="flex items-center gap-2">
+                <input type="color" value={systemStyle.customBgTo || '#1c3d6e'} className="w-8 h-8 rounded cursor-pointer border-0 p-0"
+                  onChange={e => updateSystemStyle({ customBgTo: e.target.value })} />
+                <input className="input input-sm flex-1 font-mono text-xs" value={systemStyle.customBgTo || '#1c3d6e'}
+                  onChange={e => { if (/^#[0-9a-fA-F]{6}$/.test(e.target.value)) updateSystemStyle({ customBgTo: e.target.value }); }} />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Font Selector */}
       <div>

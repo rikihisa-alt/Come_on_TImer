@@ -10,9 +10,21 @@
   --glass-bg: rgba(255,255,255,0.06);
   --glass-border: rgba(255,255,255,0.12);
   --glass-blur: 12px;
+  /* System theme (overridden by SystemStyleProvider) */
+  --sys-bg-from: #1e3a5f;
+  --sys-bg-to: #3b82f6;
+  --sys-text: #f0f4ff;
+  --sys-text-secondary: rgba(255,255,255,0.7);
+  --sys-text-muted: rgba(255,255,255,0.4);
+  --sys-glass-bg: rgba(255,255,255,0.10);
+  --sys-glass-border: rgba(255,255,255,0.18);
+  --sys-glass-inner-bg: rgba(255,255,255,0.06);
+  --sys-nav-bg: rgba(15,23,42,0.85);
+  --sys-input-bg: rgba(255,255,255,0.08);
+  --sys-input-border: rgba(255,255,255,0.15);
 }
 * { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; background: var(--bg-dark); color: #e2e8f0; -webkit-font-smoothing: antialiased; font-feature-settings: "tnum"; font-family: 'Times New Roman', Times, serif; }
+html, body { margin: 0; padding: 0; background: var(--bg-dark); color: var(--sys-text); -webkit-font-smoothing: antialiased; font-feature-settings: "tnum"; font-family: 'Times New Roman', Times, serif; }
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
@@ -124,8 +136,8 @@ html, body { margin: 0; padding: 0; background: var(--bg-dark); color: #e2e8f0; 
 .btn:active { transform: scale(0.97); }
 .btn-primary { background: rgba(var(--ui-accent-rgb), 0.8); color: white; border: 1px solid rgba(var(--ui-accent-rgb), 0.4); }
 .btn-primary:hover { background: rgba(var(--ui-accent-rgb), 0.95); box-shadow: 0 0 20px rgba(var(--ui-accent-rgb), 0.3); }
-.btn-ghost { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.7); border: 1px solid rgba(255,255,255,0.08); }
-.btn-ghost:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.15); }
+.btn-ghost { background: var(--sys-glass-inner-bg); color: var(--sys-text-secondary); border: 1px solid var(--sys-input-border); }
+.btn-ghost:hover { background: var(--sys-glass-bg); border-color: var(--sys-glass-border); }
 .btn-danger { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.2); }
 .btn-danger:hover { background: rgba(239,68,68,0.25); }
 .btn-sm { padding: 4px 10px; font-size: 12px; border-radius: 8px; }
@@ -136,8 +148,8 @@ html, body { margin: 0; padding: 0; background: var(--bg-dark); color: #e2e8f0; 
 
 /* Inputs - glassmorphism */
 .input {
-  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 10px; padding: 8px 12px; color: white; font-size: 14px;
+  background: var(--sys-input-bg); border: 1px solid var(--sys-input-border);
+  border-radius: 10px; padding: 8px 12px; color: var(--sys-text); font-size: 14px;
   outline: none; transition: all 0.2s; width: 100%;
   backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
 }
@@ -158,9 +170,9 @@ select.input {
 /* Navigation */
 .nav-link {
   padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: 500;
-  color: rgba(255,255,255,0.4); text-decoration: none; transition: all 0.2s;
+  color: var(--sys-text-muted); text-decoration: none; transition: all 0.2s;
 }
-.nav-link:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.06); }
+.nav-link:hover { color: var(--sys-text); background: var(--sys-glass-inner-bg); }
 .nav-link.active { color: var(--ui-accent); background: rgba(var(--ui-accent-rgb), 0.1); }
 
 /* Bottom nav (mobile) */
@@ -168,9 +180,9 @@ select.input {
   position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
   display: flex; justify-content: space-around; padding: 6px 4px;
   padding-bottom: max(6px, env(safe-area-inset-bottom));
-  background: rgba(10,14,26,0.9);
+  background: var(--sys-nav-bg);
   backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-  border-top: 1px solid rgba(255,255,255,0.06);
+  border-top: 1px solid var(--sys-glass-border);
 }
 .bottom-nav a {
   display: flex; flex-direction: column; align-items: center; gap: 2px;
@@ -195,26 +207,26 @@ select.input {
 
 /* ═══ Glassmorphism Dashboard Card System ═══ */
 .g-card {
-  background: rgba(255, 255, 255, 0.07);
+  background: var(--sys-glass-bg);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.13);
+  border: 1px solid var(--sys-glass-border);
   border-radius: 20px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 .g-card-inner {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--sys-glass-inner-bg);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  border: 1px solid var(--sys-glass-border);
   border-radius: 16px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 .g-topbar {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--sys-glass-inner-bg);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--sys-glass-border);
 }
 .g-ticker {
   background: rgba(255, 255, 255, 0.03);
@@ -259,3 +271,25 @@ input[type="range"]::-moz-range-thumb {
 /* Mobile padding for bottom nav */
 .pb-mobile { padding-bottom: 70px; }
 @media (min-width: 768px) { .pb-mobile { padding-bottom: 0; } }
+
+/* ═══ Light Theme Overrides ═══ */
+[data-theme-mode="light"] { color-scheme: light; }
+[data-theme-mode="light"] .tab-bar { background: rgba(0,0,0,0.06); }
+[data-theme-mode="light"] .tab-item { color: rgba(15,23,42,0.4); }
+[data-theme-mode="light"] .tab-item:hover { color: rgba(15,23,42,0.6); background: rgba(0,0,0,0.04); }
+[data-theme-mode="light"] .tab-item.active { color: var(--ui-accent); }
+[data-theme-mode="light"] .toggle { background: rgba(0,0,0,0.12); }
+[data-theme-mode="light"] .bottom-nav a { color: rgba(15,23,42,0.4); }
+[data-theme-mode="light"] .bottom-nav a.active { color: var(--ui-accent); }
+[data-theme-mode="light"] .btn-primary { color: white; }
+[data-theme-mode="light"] .btn-danger { background: rgba(239,68,68,0.1); }
+[data-theme-mode="light"] .btn-success { background: rgba(34,197,94,0.1); }
+[data-theme-mode="light"] .btn-warning { background: rgba(245,158,11,0.1); }
+[data-theme-mode="light"] select.input {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23475569' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+}
+[data-theme-mode="light"] input[type="range"]::-webkit-slider-thumb { background: white; border-color: rgba(0,0,0,0.15); }
+[data-theme-mode="light"] ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); }
+[data-theme-mode="light"] .custom-scrollbar { scrollbar-color: rgba(0,0,0,0.1) transparent; }
+[data-theme-mode="light"] .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); }
+[data-theme-mode="light"] .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.18); }

@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useStore } from '@/stores/useStore';
-import { FONT_OPTIONS, DEFAULT_SYSTEM_STYLE } from '@/lib/presets';
+import { FONT_OPTIONS, DEFAULT_SYSTEM_STYLE, getSystemTheme } from '@/lib/presets';
 
 export function SystemStyleProvider() {
   const systemStyle = useStore(s => s.systemStyle) || DEFAULT_SYSTEM_STYLE;
@@ -26,6 +26,28 @@ export function SystemStyleProvider() {
 
     // Apply display font scale
     document.documentElement.style.setProperty('--display-font-scale', String(systemStyle.displayFontScale || 1));
+
+    // Apply system theme CSS variables
+    const theme = getSystemTheme(
+      systemStyle.systemThemeId || 'bright-blue',
+      systemStyle.customBgFrom,
+      systemStyle.customBgTo,
+    );
+    const el = document.documentElement;
+    el.style.setProperty('--sys-bg-from', theme.bgFrom);
+    el.style.setProperty('--sys-bg-to', theme.bgTo);
+    el.style.setProperty('--sys-text', theme.textPrimary);
+    el.style.setProperty('--sys-text-secondary', theme.textSecondary);
+    el.style.setProperty('--sys-text-muted', theme.textMuted);
+    el.style.setProperty('--sys-glass-bg', theme.glassBg);
+    el.style.setProperty('--sys-glass-border', theme.glassBorder);
+    el.style.setProperty('--sys-glass-inner-bg', theme.glassInnerBg);
+    el.style.setProperty('--sys-nav-bg', theme.navBg);
+    el.style.setProperty('--sys-input-bg', theme.inputBg);
+    el.style.setProperty('--sys-input-border', theme.inputBorder);
+
+    // Set theme mode attribute for light-mode CSS overrides
+    el.setAttribute('data-theme-mode', theme.mode);
   }, [systemStyle]);
 
   return null;

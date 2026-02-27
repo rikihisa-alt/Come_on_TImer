@@ -1,4 +1,4 @@
-import { BlindLevel, ThemeConfig, TTSMessage, DisplayToggles, SoundSettings, SectionLayout, CashSectionLayout, SystemStyle, AspectRatioMode } from './types';
+import { BlindLevel, ThemeConfig, TTSMessage, DisplayToggles, SoundSettings, SectionLayout, CashSectionLayout, SystemStyle, AspectRatioMode, SystemThemeId } from './types';
 import { uid } from './utils';
 
 function bl(level: number, sb: number, bb: number, ante: number, dur: number): BlindLevel {
@@ -98,11 +98,91 @@ export const ASPECT_RATIO_OPTIONS: { id: AspectRatioMode; label: string; desc: s
   { id: 'panorama', label: 'パノラマ (21:9)', desc: 'ウルトラワイド' },
 ];
 
+export type SystemThemePreset = {
+  id: SystemThemeId;
+  name: string;
+  nameJa: string;
+  bgFrom: string;
+  bgTo: string;
+  mode: 'dark' | 'light';
+  textPrimary: string;
+  textSecondary: string;
+  textMuted: string;
+  glassBg: string;
+  glassBorder: string;
+  glassInnerBg: string;
+  navBg: string;
+  inputBg: string;
+  inputBorder: string;
+};
+
+export const SYSTEM_THEMES: SystemThemePreset[] = [
+  {
+    id: 'dark-navy', name: 'Dark Navy', nameJa: 'ダークネイビー',
+    bgFrom: '#0e1c36', bgTo: '#1c3d6e', mode: 'dark',
+    textPrimary: '#e2e8f0', textSecondary: 'rgba(255,255,255,0.6)', textMuted: 'rgba(255,255,255,0.3)',
+    glassBg: 'rgba(255,255,255,0.07)', glassBorder: 'rgba(255,255,255,0.13)',
+    glassInnerBg: 'rgba(255,255,255,0.04)', navBg: 'rgba(10,14,26,0.9)',
+    inputBg: 'rgba(255,255,255,0.05)', inputBorder: 'rgba(255,255,255,0.1)',
+  },
+  {
+    id: 'bright-blue', name: 'Bright Blue', nameJa: 'ブライトブルー',
+    bgFrom: '#1e3a5f', bgTo: '#3b82f6', mode: 'dark',
+    textPrimary: '#f0f4ff', textSecondary: 'rgba(255,255,255,0.7)', textMuted: 'rgba(255,255,255,0.4)',
+    glassBg: 'rgba(255,255,255,0.10)', glassBorder: 'rgba(255,255,255,0.18)',
+    glassInnerBg: 'rgba(255,255,255,0.06)', navBg: 'rgba(15,23,42,0.85)',
+    inputBg: 'rgba(255,255,255,0.08)', inputBorder: 'rgba(255,255,255,0.15)',
+  },
+  {
+    id: 'light', name: 'Light', nameJa: 'ライト',
+    bgFrom: '#e8ecf1', bgTo: '#d1d9e6', mode: 'light',
+    textPrimary: '#0f172a', textSecondary: 'rgba(15,23,42,0.6)', textMuted: 'rgba(15,23,42,0.35)',
+    glassBg: 'rgba(255,255,255,0.6)', glassBorder: 'rgba(0,0,0,0.1)',
+    glassInnerBg: 'rgba(255,255,255,0.4)', navBg: 'rgba(255,255,255,0.85)',
+    inputBg: 'rgba(255,255,255,0.7)', inputBorder: 'rgba(0,0,0,0.12)',
+  },
+  {
+    id: 'dark-gray', name: 'Dark Gray', nameJa: 'ダークグレー',
+    bgFrom: '#1a1a2e', bgTo: '#16213e', mode: 'dark',
+    textPrimary: '#e2e8f0', textSecondary: 'rgba(255,255,255,0.6)', textMuted: 'rgba(255,255,255,0.3)',
+    glassBg: 'rgba(255,255,255,0.06)', glassBorder: 'rgba(255,255,255,0.1)',
+    glassInnerBg: 'rgba(255,255,255,0.03)', navBg: 'rgba(10,10,20,0.9)',
+    inputBg: 'rgba(255,255,255,0.05)', inputBorder: 'rgba(255,255,255,0.08)',
+  },
+  {
+    id: 'emerald', name: 'Emerald', nameJa: 'エメラルド',
+    bgFrom: '#042f2e', bgTo: '#115e59', mode: 'dark',
+    textPrimary: '#e2e8f0', textSecondary: 'rgba(255,255,255,0.6)', textMuted: 'rgba(255,255,255,0.3)',
+    glassBg: 'rgba(255,255,255,0.07)', glassBorder: 'rgba(255,255,255,0.12)',
+    glassInnerBg: 'rgba(255,255,255,0.04)', navBg: 'rgba(4,30,28,0.9)',
+    inputBg: 'rgba(255,255,255,0.05)', inputBorder: 'rgba(255,255,255,0.1)',
+  },
+];
+
+function isLightColor(hex: string): boolean {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.5;
+}
+
+export function getSystemTheme(id: SystemThemeId, customFrom?: string, customTo?: string): SystemThemePreset {
+  if (id === 'custom') {
+    const from = customFrom || '#0e1c36';
+    const to = customTo || '#1c3d6e';
+    const light = isLightColor(from);
+    const template = light ? SYSTEM_THEMES.find(t => t.mode === 'light')! : SYSTEM_THEMES[0];
+    return { ...template, id: 'custom', name: 'Custom', nameJa: 'カスタム', bgFrom: from, bgTo: to };
+  }
+  return SYSTEM_THEMES.find(t => t.id === id) || SYSTEM_THEMES[0];
+}
+
 export const DEFAULT_SYSTEM_STYLE: SystemStyle = {
   fontFamily: 'serif',
   uiAccentColor: '#3b82f6',
   displayAspectRatio: 'zoom',
   displayFontScale: 1.0,
+  systemThemeId: 'bright-blue',
 };
 
 export const DEFAULT_DISPLAY_TOGGLES: DisplayToggles = {

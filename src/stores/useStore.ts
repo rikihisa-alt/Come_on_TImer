@@ -385,7 +385,7 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'come-on-timer-v3',
-      version: 15,
+      version: 16,
       migrate: (persisted: unknown, version: number) => {
         const state = persisted as Record<string, unknown>;
         if (version < 4) {
@@ -530,6 +530,12 @@ export const useStore = create<AppState>()(
         }
         if (version < 15) {
           state.tournamentPresets = (state.tournamentPresets as unknown[]) || [];
+        }
+        if (version < 16) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const ss = (state.systemStyle as any) || {};
+          ss.systemThemeId = ss.systemThemeId || 'dark-navy';
+          state.systemStyle = ss;
         }
         return state as unknown as AppState;
       },

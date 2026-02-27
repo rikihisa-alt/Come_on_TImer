@@ -193,11 +193,16 @@ export type DisplayToggles = {
 
 export type AspectRatioMode = '16:9' | '4:3' | 'panorama' | 'zoom';
 
+export type SystemThemeId = 'dark-navy' | 'bright-blue' | 'light' | 'dark-gray' | 'emerald' | 'custom';
+
 export type SystemStyle = {
   fontFamily: string;
   uiAccentColor: string;
   displayAspectRatio: AspectRatioMode;
   displayFontScale: number;
+  systemThemeId: SystemThemeId;
+  customBgFrom?: string;
+  customBgTo?: string;
 };
 
 export type SyncMessageType = 'FULL_SYNC' | 'TIMER_TICK' | 'LEVEL_CHANGE';
