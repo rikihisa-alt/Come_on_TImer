@@ -52,6 +52,11 @@ export function computeTimeToEnd(
   return totalMs;
 }
 
+/** Convert full-width digits (０-９) to half-width and strip non-numeric chars */
+export function toHalfWidthNumber(str: string): string {
+  return str.replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)).replace(/[^0-9]/g, '');
+}
+
 export function computeRegCloseTime(
   levels: { type: string; duration: number; level: number }[],
   currentIndex: number,

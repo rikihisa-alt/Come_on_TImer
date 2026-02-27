@@ -136,34 +136,43 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
 
       {/* Timer */}
       <AbsoluteSection pos={layout.timer}>
-        <div className="g-card h-full flex flex-col items-center justify-center p-2 overflow-hidden">
-          {dt.showLevelInfo && (
-            <div className="mb-0.5 text-center">
-              {isBrk ? (
-                <span className="text-green-400 text-base lg:text-xl font-black tracking-[0.15em]">BREAK</span>
-              ) : (
-                <span className="text-white/20 text-xs lg:text-sm font-black tracking-[0.2em]">Level {cur?.level || '-'}</span>
-              )}
-            </div>
-          )}
-          <div className={`font-black timer-font leading-[0.85] ${isWarn ? 'text-amber-400 warning-pulse' : isBrk ? 'text-green-400' : 'text-white'}`}
-            style={{ fontSize: `${5.5 * tds}vw` }}>
-            {formatTimer(displayMs)}
+        <div className="g-card h-full p-2 overflow-hidden" style={{ display: 'grid', gridTemplateRows: '1fr auto 1fr' }}>
+          {/* Top: Level info */}
+          <div className="flex flex-col items-center justify-end pb-0.5">
+            {dt.showLevelInfo && (
+              <div className="text-center">
+                {isBrk ? (
+                  <span className="text-green-400 text-base lg:text-xl font-black tracking-[0.15em]">BREAK</span>
+                ) : (
+                  <span className="text-white/20 text-xs lg:text-sm font-black tracking-[0.2em]">Level {cur?.level || '-'}</span>
+                )}
+              </div>
+            )}
           </div>
-          {dt.showProgressBar && (
-            <div className="w-3/4 h-1 bg-white/[0.06] rounded-full mt-1 overflow-hidden">
-              <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(prog * 100, 100)}%`, background: isWarn ? '#f59e0b' : isBrk ? '#22c55e' : pc }} />
+          {/* Middle: Timer digits */}
+          <div className="flex items-center justify-center">
+            <div className={`font-black timer-font leading-[0.85] ${isWarn ? 'text-amber-400 warning-pulse' : isBrk ? 'text-green-400' : 'text-white'}`}
+              style={{ fontSize: `${5.5 * tds}vw` }}>
+              {formatTimer(displayMs)}
             </div>
-          )}
-          {isBrk && cur?.note && (
-            <div className="text-green-400/70 text-[8px] lg:text-[10px] font-semibold mt-1 text-center">{cur.note}</div>
-          )}
-          {dt.showFooter && cur && !isBrk && (
-            <div className="mt-1 font-black timer-font" style={{ color: pc, fontSize: `${1.8 * bds}vw` }}>
-              {cur.smallBlind.toLocaleString()}/{cur.bigBlind.toLocaleString()}
-            </div>
-          )}
-          {cur && cur.ante > 0 && !isBrk && <div className="font-semibold" style={{ color: pc, fontSize: `${0.7 * ads}vw` }}>Ante {cur.ante.toLocaleString()}</div>}
+          </div>
+          {/* Bottom: Progress + blinds/telop */}
+          <div className="flex flex-col items-center pt-0.5">
+            {dt.showProgressBar && (
+              <div className="w-3/4 h-1 bg-white/[0.06] rounded-full mt-1 overflow-hidden">
+                <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(prog * 100, 100)}%`, background: isWarn ? '#f59e0b' : isBrk ? '#22c55e' : pc }} />
+              </div>
+            )}
+            {isBrk && cur?.note && (
+              <div className="text-green-400/70 text-[8px] lg:text-[10px] font-semibold mt-1 text-center">{cur.note}</div>
+            )}
+            {dt.showFooter && cur && !isBrk && (
+              <div className="mt-1 font-black timer-font" style={{ color: pc, fontSize: `${1.8 * bds}vw` }}>
+                {cur.smallBlind.toLocaleString()}/{cur.bigBlind.toLocaleString()}
+              </div>
+            )}
+            {cur && cur.ante > 0 && !isBrk && <div className="font-semibold" style={{ color: pc, fontSize: `${0.7 * ads}vw` }}>Ante {cur.ante.toLocaleString()}</div>}
+          </div>
         </div>
       </AbsoluteSection>
 
@@ -548,8 +557,7 @@ function SplitInner() {
       {/* Header - solid bg, above overlays */}
       <div className="relative z-50 flex items-center px-4 md:px-6 py-2.5 md:py-3" style={{ background: '#0e1c36' }}>
         <div className="flex items-center gap-2 shrink-0">
-          <span className="text-sm md:text-base font-black text-blue-400 tracking-tight">COME ON</span>
-          <span className="text-white/25 font-medium text-[10px] md:text-xs">Timer</span>
+          <RoomSync />
         </div>
         <div className="flex-1 flex items-center justify-center gap-2 md:gap-4 min-w-0">
           <div className="flex items-center gap-1.5 min-w-0">
@@ -563,13 +571,8 @@ function SplitInner() {
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0 ml-2">
-          <RoomSync />
+          <FullscreenButton />
         </div>
-      </div>
-
-      {/* Fullscreen button (below top bar, right) */}
-      <div className="absolute top-14 right-3 z-20">
-        <FullscreenButton />
       </div>
 
       {/* Split panels */}

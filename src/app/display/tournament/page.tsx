@@ -287,43 +287,52 @@ function Inner() {
 
         {/* Center: Timer */}
         <AbsoluteSection pos={layout.timer}>
-          <div className="g-card h-full flex flex-col items-center justify-center p-5 relative overflow-hidden">
-            {dt.showLevelInfo && (
-              <div className="mb-2 text-center">
-                {isBrk ? (
-                  <span className="text-green-400 text-3xl lg:text-4xl font-black tracking-[0.15em]">BREAK</span>
-                ) : (
-                  <span className="text-white/25 text-2xl lg:text-3xl font-black tracking-[0.2em]">Level {cur?.level || '-'}</span>
-                )}
-              </div>
-            )}
-            {dt.showTimer && (
-              <div className={`font-black timer-font leading-[0.85] transition-colors duration-300 ${isWarn ? 'text-amber-400 warning-pulse' : isBrk ? 'text-green-400' : 'text-white'}`}
-                style={{ fontSize: `${11 * tds}vw` }}>
-                {formatTimer(displayMs)}
-              </div>
-            )}
-            {dt.showProgressBar && (
-              <div className="w-[80%] h-2 bg-white/[0.06] rounded-full mt-4 overflow-hidden">
-                <div className="h-full rounded-full transition-all duration-500" style={{
-                  width: `${Math.min(prog * 100, 100)}%`,
-                  background: isWarn ? 'linear-gradient(to right, #f59e0b, #ef4444)' : isBrk ? '#22c55e' : `linear-gradient(to right, ${pc}, ${theme?.accentColor || '#93c5fd'})`
-                }} />
-              </div>
-            )}
-            {isBrk && cur?.note && (
-              <div className="text-green-400/70 text-sm lg:text-lg font-semibold mt-3 text-center">{cur.note}</div>
-            )}
-            {dt.showFooter && cur && !isBrk && (
-              <div className="mt-4 text-center">
-                <div className="font-black timer-font" style={{ color: pc, fontSize: `${3.5 * bds}vw` }}>
-                  {cur.smallBlind.toLocaleString()} / {cur.bigBlind.toLocaleString()}
+          <div className="g-card h-full p-5 relative overflow-hidden" style={{ display: 'grid', gridTemplateRows: '1fr auto 1fr' }}>
+            {/* Top row: Level info - pinned to bottom */}
+            <div className="flex flex-col items-center justify-end pb-2">
+              {dt.showLevelInfo && (
+                <div className="text-center">
+                  {isBrk ? (
+                    <span className="text-green-400 text-3xl lg:text-4xl font-black tracking-[0.15em]">BREAK</span>
+                  ) : (
+                    <span className="text-white/25 text-2xl lg:text-3xl font-black tracking-[0.2em]">Level {cur?.level || '-'}</span>
+                  )}
                 </div>
-                {cur.ante > 0 && (
-                  <div className="font-semibold mt-1" style={{ color: pc, fontSize: `${1.2 * ads}vw` }}>Ante {cur.ante.toLocaleString()}</div>
-                )}
-              </div>
-            )}
+              )}
+            </div>
+            {/* Middle row: Timer digits - always centered */}
+            <div className="flex items-center justify-center">
+              {dt.showTimer && (
+                <div className={`font-black timer-font leading-[0.85] transition-colors duration-300 ${isWarn ? 'text-amber-400 warning-pulse' : isBrk ? 'text-green-400' : 'text-white'}`}
+                  style={{ fontSize: `${11 * tds}vw` }}>
+                  {formatTimer(displayMs)}
+                </div>
+              )}
+            </div>
+            {/* Bottom row: Progress bar + blinds/telop - pinned to top */}
+            <div className="flex flex-col items-center pt-2">
+              {dt.showProgressBar && (
+                <div className="w-[80%] h-2 bg-white/[0.06] rounded-full mt-2 overflow-hidden">
+                  <div className="h-full rounded-full transition-all duration-500" style={{
+                    width: `${Math.min(prog * 100, 100)}%`,
+                    background: isWarn ? 'linear-gradient(to right, #f59e0b, #ef4444)' : isBrk ? '#22c55e' : `linear-gradient(to right, ${pc}, ${theme?.accentColor || '#93c5fd'})`
+                  }} />
+                </div>
+              )}
+              {isBrk && cur?.note && (
+                <div className="text-green-400/70 text-sm lg:text-lg font-semibold mt-3 text-center">{cur.note}</div>
+              )}
+              {dt.showFooter && cur && !isBrk && (
+                <div className="mt-2 text-center">
+                  <div className="font-black timer-font" style={{ color: pc, fontSize: `${3.5 * bds}vw` }}>
+                    {cur.smallBlind.toLocaleString()} / {cur.bigBlind.toLocaleString()}
+                  </div>
+                  {cur.ante > 0 && (
+                    <div className="font-semibold mt-1" style={{ color: pc, fontSize: `${1.2 * ads}vw` }}>Ante {cur.ante.toLocaleString()}</div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </AbsoluteSection>
 
@@ -375,45 +384,54 @@ function Inner() {
       {/* ═══ Mobile: Flex Layout ═══ */}
       <div className="relative z-10 flex-1 flex md:hidden flex-col p-2.5 gap-2.5 min-h-0">
         {/* Main Timer Card */}
-        <div className="g-card flex-1 flex flex-col items-center justify-center p-3 relative overflow-hidden min-h-0">
-          {dt.showLevelInfo && (
-            <div className="mb-1 text-center">
-              {isBrk ? (
-                <span className="text-green-400 text-xl font-black tracking-[0.15em]">BREAK</span>
-              ) : (
-                <span className="text-white/25 text-base font-black tracking-[0.2em]">Level {cur?.level || '-'}</span>
-              )}
-            </div>
-          )}
-          {dt.showTimer && (
-            <div className={`font-black timer-font leading-[0.85] transition-colors duration-300 ${isWarn ? 'text-amber-400 warning-pulse' : isBrk ? 'text-green-400' : 'text-white'}`}
-              style={{ fontSize: `${17 * fs}vw` }}>
-              {formatTimer(displayMs)}
-            </div>
-          )}
-          {dt.showProgressBar && (
-            <div className="w-[80%] h-1.5 bg-white/[0.06] rounded-full mt-2 overflow-hidden">
-              <div className="h-full rounded-full transition-all duration-500" style={{
-                width: `${Math.min(prog * 100, 100)}%`,
-                background: isWarn ? 'linear-gradient(to right, #f59e0b, #ef4444)' : isBrk ? '#22c55e' : `linear-gradient(to right, ${pc}, ${theme?.accentColor || '#93c5fd'})`
-              }} />
-            </div>
-          )}
-          {isBrk && cur?.note && (
-            <div className="text-green-400/70 text-xs font-semibold mt-2 text-center">{cur.note}</div>
-          )}
-          {dt.showFooter && cur && !isBrk && (
-            <div className="mt-2 text-center">
-              <div className="text-2xl font-black timer-font" style={{ color: pc }}>
-                {cur.smallBlind.toLocaleString()} / {cur.bigBlind.toLocaleString()}
+        <div className="g-card flex-1 p-3 relative overflow-hidden min-h-0" style={{ display: 'grid', gridTemplateRows: '1fr auto 1fr auto' }}>
+          {/* Top: Level info */}
+          <div className="flex flex-col items-center justify-end pb-1">
+            {dt.showLevelInfo && (
+              <div className="text-center">
+                {isBrk ? (
+                  <span className="text-green-400 text-xl font-black tracking-[0.15em]">BREAK</span>
+                ) : (
+                  <span className="text-white/25 text-base font-black tracking-[0.2em]">Level {cur?.level || '-'}</span>
+                )}
               </div>
-              {cur.ante > 0 && (
-                <div className="text-sm text-white/30 font-semibold mt-1">Ante {cur.ante.toLocaleString()}</div>
-              )}
-            </div>
-          )}
+            )}
+          </div>
+          {/* Middle: Timer digits */}
+          <div className="flex items-center justify-center">
+            {dt.showTimer && (
+              <div className={`font-black timer-font leading-[0.85] transition-colors duration-300 ${isWarn ? 'text-amber-400 warning-pulse' : isBrk ? 'text-green-400' : 'text-white'}`}
+                style={{ fontSize: `${17 * fs}vw` }}>
+                {formatTimer(displayMs)}
+              </div>
+            )}
+          </div>
+          {/* Below timer: Progress + blinds/telop */}
+          <div className="flex flex-col items-center pt-1">
+            {dt.showProgressBar && (
+              <div className="w-[80%] h-1.5 bg-white/[0.06] rounded-full mt-1 overflow-hidden">
+                <div className="h-full rounded-full transition-all duration-500" style={{
+                  width: `${Math.min(prog * 100, 100)}%`,
+                  background: isWarn ? 'linear-gradient(to right, #f59e0b, #ef4444)' : isBrk ? '#22c55e' : `linear-gradient(to right, ${pc}, ${theme?.accentColor || '#93c5fd'})`
+                }} />
+              </div>
+            )}
+            {isBrk && cur?.note && (
+              <div className="text-green-400/70 text-xs font-semibold mt-2 text-center">{cur.note}</div>
+            )}
+            {dt.showFooter && cur && !isBrk && (
+              <div className="mt-2 text-center">
+                <div className="text-2xl font-black timer-font" style={{ color: pc }}>
+                  {cur.smallBlind.toLocaleString()} / {cur.bigBlind.toLocaleString()}
+                </div>
+                {cur.ante > 0 && (
+                  <div className="text-sm text-white/30 font-semibold mt-1">Ante {cur.ante.toLocaleString()}</div>
+                )}
+              </div>
+            )}
+          </div>
           {/* Mobile compact stats */}
-          <div className="flex items-center gap-3 mt-3 flex-wrap justify-center text-[10px] text-white/30">
+          <div className="flex items-center gap-3 flex-wrap justify-center text-[10px] text-white/30 pt-1">
             <span>Players <span className="text-white/50 font-bold">{activePlayers}</span></span>
             <span>R <span className="text-white/50 font-bold">{tournament.rebuyCount}</span></span>
             <span>A <span className="text-white/50 font-bold">{tournament.addonCount}</span></span>

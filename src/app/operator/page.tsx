@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useStore } from '@/stores/useStore';
-import { formatTimer, formatTimerHMS, formatChips, uid } from '@/lib/utils';
+import { formatTimer, formatTimerHMS, formatChips, uid, toHalfWidthNumber } from '@/lib/utils';
 import { PRESET_OPTIONS, DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND, DEFAULT_SECTION_LAYOUT, DEFAULT_CASH_SECTION_LAYOUT, FONT_OPTIONS, DEFAULT_SYSTEM_STYLE, ASPECT_RATIO_OPTIONS, SYSTEM_THEMES, getSystemTheme } from '@/lib/presets';
 import { playSound, playTestSound, playWarningBeep, speakTTS, fillTTSTemplate, PRESET_LABELS } from '@/lib/audio';
 import { BlindLevel, Tournament, CashGame, SoundPreset, PrizeEntry, SoundSettings, DisplayToggles, ThemeConfig, TournamentSectionId, SectionPosition, SectionLayout, CashSectionId, CashSectionLayout, AspectRatioMode, TournamentPreset, SystemThemeId } from '@/lib/types';
@@ -34,7 +34,8 @@ export default function OperatorPage() {
       <nav className="flex px-3 py-2 gap-1.5 border-b border-white/[0.06]">
         {TAB_ORDER.map(t => (
           <button key={t} onClick={() => switchTab(t)}
-            className={`flex-1 py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all duration-200 ${tab === t ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'text-white/30 hover:text-white/50 hover:bg-white/[0.04] border border-transparent'}`}>
+            className={`flex-1 py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all duration-200 ${tab === t ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'hover:bg-white/[0.04] border border-transparent'}`}
+            style={tab !== t ? { color: 'var(--sys-text-muted)' } : undefined}>
             {t === 'tournaments' ? 'Tournaments' : t === 'cash' ? 'Cash Games' : t === 'split' ? 'Split' : 'Settings'}
           </button>
         ))}
@@ -173,7 +174,7 @@ function TournamentPresetPanel({ tournament: t }: { tournament: Tournament }) {
                 <div className="flex-1 min-w-0">
                   <div className="text-xs text-white/50 font-medium truncate">{p.name}</div>
                   <div className="text-[10px] text-white/20">
-                    {(p.startingChips / 1000).toFixed(0)}K stack · {fp ? `${fp.smallBlind}/${fp.bigBlind}` : '--'} · {p.levels.filter(l => l.type === 'play').length}lvl
+                    {p.tournamentName ? `${p.tournamentName} · ` : ''}{(p.startingChips / 1000).toFixed(0)}K · {fp ? `${fp.smallBlind}/${fp.bigBlind}` : '--'} · {p.levels.filter(l => l.type === 'play').length}lvl
                   </div>
                 </div>
                 <button className="btn btn-ghost btn-sm text-[10px]" onClick={() => store.loadTournamentPreset(t.id, p.id)}>Load</button>
@@ -606,9 +607,9 @@ function BlindEditor({ tournament: t }: { tournament: Tournament }) {
             <div className="flex items-center gap-2">
               <button onClick={() => store.tJumpLevel(t.id, i)} className="text-[11px] text-white/20 hover:text-blue-400 w-5 text-center cursor-pointer transition-colors shrink-0">{i === t.currentLevelIndex ? '\u25B8' : (i + 1)}</button>
               {lv.type === 'break' ? (
-                <><span className="text-green-400 text-xs font-semibold flex-1">BREAK</span><input type="number" className="input input-sm w-16 text-center" value={Math.floor(lv.duration / 60)} onChange={e => upLv(i, { duration: +e.target.value * 60 })} min={1} /><span className="text-[11px] text-white/20">min</span></>
+                <><span className="text-green-400 text-xs font-semibold flex-1">BREAK</span><input type="text" inputMode="numeric" className="input input-sm w-16 text-center" value={Math.floor(lv.duration / 60)} onChange={e => { const v = toHalfWidthNumber(e.target.value); upLv(i, { duration: (Number(v) || 1) * 60 }); }} /><span className="text-[11px] text-white/20">min</span></>
               ) : (
-                <><span className="text-[11px] text-white/30 w-6 shrink-0">Lv{lv.level}</span><input type="number" className="input input-sm w-16" value={lv.smallBlind} onChange={e => upLv(i, { smallBlind: +e.target.value })} /><span className="text-white/15">/</span><input type="number" className="input input-sm w-16" value={lv.bigBlind} onChange={e => upLv(i, { bigBlind: +e.target.value })} /><span className="text-[11px] text-white/20 ml-1">A:</span><input type="number" className="input input-sm w-14" value={lv.ante} onChange={e => upLv(i, { ante: +e.target.value })} /><input type="number" className="input input-sm w-14 text-center" value={Math.floor(lv.duration / 60)} onChange={e => upLv(i, { duration: +e.target.value * 60 })} min={1} /><span className="text-[11px] text-white/20">m</span></>
+                <><span className="text-[11px] text-white/30 w-6 shrink-0">Lv{lv.level}</span><input type="text" inputMode="numeric" className="input input-sm w-16" value={lv.smallBlind} onChange={e => { const v = Number(toHalfWidthNumber(e.target.value)) || 0; upLv(i, { smallBlind: v, bigBlind: v * 2, ante: v }); }} /><span className="text-white/15">/</span><input type="text" inputMode="numeric" className="input input-sm w-16" value={lv.bigBlind} onChange={e => { const v = toHalfWidthNumber(e.target.value); upLv(i, { bigBlind: Number(v) || 0 }); }} /><span className="text-[11px] text-white/20 ml-1">A:</span><input type="text" inputMode="numeric" className="input input-sm w-14" value={lv.ante} onChange={e => { const v = toHalfWidthNumber(e.target.value); upLv(i, { ante: Number(v) || 0 }); }} /><input type="text" inputMode="numeric" className="input input-sm w-14 text-center" value={Math.floor(lv.duration / 60)} onChange={e => { const v = toHalfWidthNumber(e.target.value); upLv(i, { duration: (Number(v) || 1) * 60 }); }} /><span className="text-[11px] text-white/20">m</span></>
               )}
               <button onClick={() => rmLv(i)} className="text-white/15 hover:text-red-400 text-xs ml-1 transition-colors shrink-0">x</button>
             </div>

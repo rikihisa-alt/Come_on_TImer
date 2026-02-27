@@ -26,6 +26,7 @@ export type BlindTemplate = {
 export type TournamentPreset = {
   id: string;
   name: string;
+  tournamentName: string;
   levels: BlindLevel[];
   startingChips: number;
   buyInAmount: number;
@@ -37,6 +38,13 @@ export type TournamentPreset = {
   addonChips: number;
   regCloseLevel?: number;
   preLevelDuration?: number;
+  earlyBirdBonus: number;
+  prizeStructure: PrizeEntry[];
+  displayToggles?: DisplayToggles;
+  sound?: SoundSettings;
+  themeId?: string;
+  sectionLayout?: SectionLayout;
+  splitSectionLayout?: SectionLayout;
   createdAt: number;
 };
 

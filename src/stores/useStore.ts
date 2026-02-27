@@ -351,12 +351,20 @@ export const useStore = create<AppState>()(
       },
       addTournamentPreset: (name, tournament) => {
         const preset: TournamentPreset = {
-          id: uid(), name, levels: [...tournament.levels],
+          id: uid(), name, tournamentName: tournament.name,
+          levels: [...tournament.levels],
           startingChips: tournament.startingChips,
           buyInAmount: tournament.buyInAmount, reEntryAmount: tournament.reEntryAmount,
           rebuyAmount: tournament.rebuyAmount, addonAmount: tournament.addonAmount,
           reEntryChips: tournament.reEntryChips, rebuyChips: tournament.rebuyChips, addonChips: tournament.addonChips,
           regCloseLevel: tournament.regCloseLevel, preLevelDuration: tournament.preLevelDuration,
+          earlyBirdBonus: tournament.earlyBirdBonus,
+          prizeStructure: tournament.prizeStructure.map(p => ({ ...p })),
+          displayToggles: tournament.displayToggles ? { ...tournament.displayToggles } : undefined,
+          sound: tournament.sound ? { ...tournament.sound } : undefined,
+          themeId: tournament.themeId,
+          sectionLayout: tournament.sectionLayout ? { ...tournament.sectionLayout } : undefined,
+          splitSectionLayout: tournament.splitSectionLayout ? { ...tournament.splitSectionLayout } : undefined,
           createdAt: Date.now(),
         };
         set(s => ({ tournamentPresets: [...s.tournamentPresets, preset] }));
@@ -368,11 +376,19 @@ export const useStore = create<AppState>()(
         const preset = get().tournamentPresets.find(p => p.id === presetId);
         if (!preset) return;
         set(s => ({ tournaments: s.tournaments.map(t => t.id === tournamentId ? {
-          ...t, levels: [...preset.levels], startingChips: preset.startingChips,
+          ...t, name: preset.tournamentName || t.name,
+          levels: [...preset.levels], startingChips: preset.startingChips,
           buyInAmount: preset.buyInAmount, reEntryAmount: preset.reEntryAmount,
           rebuyAmount: preset.rebuyAmount, addonAmount: preset.addonAmount,
           reEntryChips: preset.reEntryChips, rebuyChips: preset.rebuyChips, addonChips: preset.addonChips,
           regCloseLevel: preset.regCloseLevel, preLevelDuration: preset.preLevelDuration,
+          earlyBirdBonus: preset.earlyBirdBonus ?? t.earlyBirdBonus,
+          prizeStructure: preset.prizeStructure ? preset.prizeStructure.map(p => ({ ...p })) : t.prizeStructure,
+          displayToggles: preset.displayToggles ? { ...preset.displayToggles } : t.displayToggles,
+          sound: preset.sound ? { ...preset.sound } : t.sound,
+          themeId: preset.themeId ?? t.themeId,
+          sectionLayout: preset.sectionLayout ? { ...preset.sectionLayout } : t.sectionLayout,
+          splitSectionLayout: preset.splitSectionLayout ? { ...preset.splitSectionLayout } : t.splitSectionLayout,
           currentLevelIndex: 0, remainingMs: preset.levels[0]?.duration ? preset.levels[0].duration * 1000 : 900000,
           status: 'idle' as const, timerStartedAt: null,
         } : t) }));
