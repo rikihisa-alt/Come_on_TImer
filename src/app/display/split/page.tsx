@@ -171,7 +171,7 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
                 {cur.smallBlind.toLocaleString()}/{cur.bigBlind.toLocaleString()}
               </div>
             )}
-            {cur && cur.ante > 0 && !isBrk && <div className="font-semibold" style={{ color: pc, fontSize: `${0.7 * ads}vw` }}>Ante {cur.ante.toLocaleString()}</div>}
+            {cur && cur.ante > 0 && !isBrk && <div className="font-black timer-font" style={{ color: pc, fontSize: `${1.8 * bds}vw` }}>Ante {cur.ante.toLocaleString()}</div>}
           </div>
         </div>
       </AbsoluteSection>

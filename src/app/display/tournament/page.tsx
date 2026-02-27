@@ -328,7 +328,7 @@ function Inner() {
                     {cur.smallBlind.toLocaleString()} / {cur.bigBlind.toLocaleString()}
                   </div>
                   {cur.ante > 0 && (
-                    <div className="font-semibold mt-1" style={{ color: pc, fontSize: `${1.2 * ads}vw` }}>Ante {cur.ante.toLocaleString()}</div>
+                    <div className="font-black timer-font mt-1" style={{ color: pc, fontSize: `${3.5 * bds}vw` }}>Ante {cur.ante.toLocaleString()}</div>
                   )}
                 </div>
               )}
@@ -425,7 +425,7 @@ function Inner() {
                   {cur.smallBlind.toLocaleString()} / {cur.bigBlind.toLocaleString()}
                 </div>
                 {cur.ante > 0 && (
-                  <div className="text-sm text-white/30 font-semibold mt-1">Ante {cur.ante.toLocaleString()}</div>
+                  <div className="text-2xl font-black timer-font mt-1" style={{ color: pc }}>Ante {cur.ante.toLocaleString()}</div>
                 )}
               </div>
             )}

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useStore } from '@/stores/useStore';
 import { formatTimer, formatTimerHMS, formatChips, uid, toHalfWidthNumber } from '@/lib/utils';
-import { PRESET_OPTIONS, DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND, DEFAULT_SECTION_LAYOUT, DEFAULT_CASH_SECTION_LAYOUT, FONT_OPTIONS, DEFAULT_SYSTEM_STYLE, ASPECT_RATIO_OPTIONS, SYSTEM_THEMES, getSystemTheme } from '@/lib/presets';
+import { DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND, DEFAULT_SECTION_LAYOUT, DEFAULT_CASH_SECTION_LAYOUT, FONT_OPTIONS, DEFAULT_SYSTEM_STYLE, ASPECT_RATIO_OPTIONS, SYSTEM_THEMES, getSystemTheme } from '@/lib/presets';
 import { playSound, playTestSound, playWarningBeep, speakTTS, fillTTSTemplate, PRESET_LABELS } from '@/lib/audio';
 import { BlindLevel, Tournament, CashGame, SoundPreset, PrizeEntry, SoundSettings, DisplayToggles, ThemeConfig, TournamentSectionId, SectionPosition, SectionLayout, CashSectionId, CashSectionLayout, AspectRatioMode, TournamentPreset, SystemThemeId } from '@/lib/types';
 import { RoomSync } from '@/components/RoomSync';
@@ -153,6 +153,7 @@ function TournamentPresetPanel({ tournament: t }: { tournament: Tournament }) {
   const store = useStore();
   const [presetName, setPresetName] = useState('');
   const [showSave, setShowSave] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const savePreset = () => {
     if (!presetName.trim()) return;
     store.addTournamentPreset(presetName.trim(), t);
@@ -162,36 +163,41 @@ function TournamentPresetPanel({ tournament: t }: { tournament: Tournament }) {
   const firstPlay = (levels: BlindLevel[]) => levels.find(l => l.type === 'play');
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between">
+      <button onClick={() => setExpanded(!expanded)} className="w-full flex items-center justify-between">
         <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Tournament Presets</div>
-      </div>
-      {store.tournamentPresets.length > 0 && (
-        <div className="space-y-1">
-          {store.tournamentPresets.map(p => {
-            const fp = firstPlay(p.levels);
-            return (
-              <div key={p.id} className="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-white/[0.03] transition-colors">
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs text-white/50 font-medium truncate">{p.name}</div>
-                  <div className="text-[10px] text-white/20">
-                    {p.tournamentName ? `${p.tournamentName} · ` : ''}{(p.startingChips / 1000).toFixed(0)}K · {fp ? `${fp.smallBlind}/${fp.bigBlind}` : '--'} · {p.levels.filter(l => l.type === 'play').length}lvl
+        <svg className={`w-4 h-4 text-white/30 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+      </button>
+      {expanded && (
+        <div className="space-y-2 fade-in">
+          {store.tournamentPresets.length > 0 && (
+            <div className="space-y-1">
+              {store.tournamentPresets.map(p => {
+                const fp = firstPlay(p.levels);
+                return (
+                  <div key={p.id} className="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-white/[0.03] transition-colors">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs text-white/50 font-medium truncate">{p.name}</div>
+                      <div className="text-[10px] text-white/20">
+                        {p.tournamentName ? `${p.tournamentName} · ` : ''}{(p.startingChips / 1000).toFixed(0)}K · {fp ? `${fp.smallBlind}/${fp.bigBlind}` : '--'} · {p.levels.filter(l => l.type === 'play').length}lvl
+                      </div>
+                    </div>
+                    <button className="btn btn-ghost btn-sm text-[10px]" onClick={() => store.loadTournamentPreset(t.id, p.id)}>Load</button>
+                    <button className="text-white/15 hover:text-red-400 text-xs transition-colors" onClick={() => store.removeTournamentPreset(p.id)}>x</button>
                   </div>
-                </div>
-                <button className="btn btn-ghost btn-sm text-[10px]" onClick={() => store.loadTournamentPreset(t.id, p.id)}>Load</button>
-                <button className="text-white/15 hover:text-red-400 text-xs transition-colors" onClick={() => store.removeTournamentPreset(p.id)}>x</button>
-              </div>
-            );
-          })}
+                );
+              })}
+            </div>
+          )}
+          {showSave ? (
+            <div className="flex items-center gap-2">
+              <input className="input input-sm flex-1" value={presetName} onChange={e => setPresetName(e.target.value)} placeholder="プリセット名" onKeyDown={e => e.key === 'Enter' && savePreset()} autoFocus />
+              <button className="btn btn-primary btn-sm" onClick={savePreset}>Save</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => setShowSave(false)}>Cancel</button>
+            </div>
+          ) : (
+            <button className="btn btn-ghost btn-sm text-[10px]" onClick={() => setShowSave(true)}>Save Current as Preset</button>
+          )}
         </div>
-      )}
-      {showSave ? (
-        <div className="flex items-center gap-2">
-          <input className="input input-sm flex-1" value={presetName} onChange={e => setPresetName(e.target.value)} placeholder="プリセット名" onKeyDown={e => e.key === 'Enter' && savePreset()} autoFocus />
-          <button className="btn btn-primary btn-sm" onClick={savePreset}>Save</button>
-          <button className="btn btn-ghost btn-sm" onClick={() => setShowSave(false)}>Cancel</button>
-        </div>
-      ) : (
-        <button className="btn btn-ghost btn-sm text-[10px]" onClick={() => setShowSave(true)}>💾 Save Current as Preset</button>
       )}
     </div>
   );
@@ -552,8 +558,6 @@ function PrizeEditor({ tournament: t }: { tournament: Tournament }) {
 
 function BlindEditor({ tournament: t }: { tournament: Tournament }) {
   const store = useStore();
-  const [templateName, setTemplateName] = useState('');
-  const [showSave, setShowSave] = useState(false);
   const addLevel = (type: 'play' | 'break') => {
     const levels = [...t.levels];
     const last = [...levels].reverse().find(l => l.type === 'play');
@@ -563,43 +567,9 @@ function BlindEditor({ tournament: t }: { tournament: Tournament }) {
   };
   const upLv = (i: number, p: Partial<BlindLevel>) => { const lvs = t.levels.map((l, j) => j === i ? { ...l, ...p } : l); store.updateTournament(t.id, { levels: lvs }); };
   const rmLv = (i: number) => store.updateTournament(t.id, { levels: t.levels.filter((_, j) => j !== i) });
-  const loadPreset = (p: typeof PRESET_OPTIONS[number]) => store.updateTournament(t.id, { levels: [...p.levels], currentLevelIndex: 0, remainingMs: p.levels[0].duration * 1000, status: 'idle', timerStartedAt: null });
-  const saveTemplate = () => {
-    if (!templateName.trim()) return;
-    store.addBlindTemplate(templateName.trim(), t.levels);
-    setTemplateName('');
-    setShowSave(false);
-  };
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Blind Structure</div>
-        <div className="flex gap-1">{PRESET_OPTIONS.map(p => <button key={p.value} onClick={() => loadPreset(p)} className="btn btn-ghost btn-sm">{p.label}</button>)}</div>
-      </div>
-
-      {/* My Templates (F1) */}
-      {store.blindTemplates.length > 0 && (
-        <div className="space-y-1">
-          <div className="text-[10px] text-white/20 font-semibold uppercase tracking-wider">My Templates</div>
-          {store.blindTemplates.map(tmpl => (
-            <div key={tmpl.id} className="flex items-center gap-2 py-1">
-              <span className="text-xs text-white/40 flex-1 truncate">{tmpl.name}</span>
-              <span className="text-[10px] text-white/15">{tmpl.levels.filter(l => l.type === 'play').length}lvl</span>
-              <button className="btn btn-ghost btn-sm text-[10px]" onClick={() => store.loadBlindTemplate(t.id, tmpl.id)}>Load</button>
-              <button className="text-white/15 hover:text-red-400 text-xs transition-colors" onClick={() => store.removeBlindTemplate(tmpl.id)}>x</button>
-            </div>
-          ))}
-        </div>
-      )}
-      {showSave ? (
-        <div className="flex items-center gap-2">
-          <input className="input input-sm flex-1" value={templateName} onChange={e => setTemplateName(e.target.value)} placeholder="テンプレート名" onKeyDown={e => e.key === 'Enter' && saveTemplate()} autoFocus />
-          <button className="btn btn-primary btn-sm" onClick={saveTemplate}>Save</button>
-          <button className="btn btn-ghost btn-sm" onClick={() => setShowSave(false)}>Cancel</button>
-        </div>
-      ) : (
-        <button className="btn btn-ghost btn-sm text-[10px]" onClick={() => setShowSave(true)}>Save Current as Template</button>
-      )}
+      <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Blind Structure</div>
 
       <div className="space-y-1">
         {t.levels.map((lv, i) => (
@@ -609,7 +579,7 @@ function BlindEditor({ tournament: t }: { tournament: Tournament }) {
               {lv.type === 'break' ? (
                 <><span className="text-green-400 text-xs font-semibold flex-1">BREAK</span><input type="text" inputMode="numeric" className="input input-sm w-16 text-center" value={Math.floor(lv.duration / 60)} onChange={e => { const v = toHalfWidthNumber(e.target.value); upLv(i, { duration: (Number(v) || 1) * 60 }); }} /><span className="text-[11px] text-white/20">min</span></>
               ) : (
-                <><span className="text-[11px] text-white/30 w-6 shrink-0">Lv{lv.level}</span><input type="text" inputMode="numeric" className="input input-sm w-16" value={lv.smallBlind} onChange={e => { const v = Number(toHalfWidthNumber(e.target.value)) || 0; upLv(i, { smallBlind: v, bigBlind: v * 2, ante: v }); }} /><span className="text-white/15">/</span><input type="text" inputMode="numeric" className="input input-sm w-16" value={lv.bigBlind} onChange={e => { const v = toHalfWidthNumber(e.target.value); upLv(i, { bigBlind: Number(v) || 0 }); }} /><span className="text-[11px] text-white/20 ml-1">A:</span><input type="text" inputMode="numeric" className="input input-sm w-14" value={lv.ante} onChange={e => { const v = toHalfWidthNumber(e.target.value); upLv(i, { ante: Number(v) || 0 }); }} /><input type="text" inputMode="numeric" className="input input-sm w-14 text-center" value={Math.floor(lv.duration / 60)} onChange={e => { const v = toHalfWidthNumber(e.target.value); upLv(i, { duration: (Number(v) || 1) * 60 }); }} /><span className="text-[11px] text-white/20">m</span></>
+                <><span className="text-[11px] text-white/30 w-6 shrink-0">Lv{lv.level}</span><input type="text" inputMode="numeric" className="input input-sm w-16" value={lv.smallBlind} onChange={e => { const v = Number(toHalfWidthNumber(e.target.value)) || 0; upLv(i, { smallBlind: v, bigBlind: v * 2, ante: v * 2 }); }} /><span className="text-white/15">/</span><input type="text" inputMode="numeric" className="input input-sm w-16" value={lv.bigBlind} onChange={e => { const v = toHalfWidthNumber(e.target.value); upLv(i, { bigBlind: Number(v) || 0 }); }} /><span className="text-[11px] text-white/20 ml-1">A:</span><input type="text" inputMode="numeric" className="input input-sm w-14" value={lv.ante} onChange={e => { const v = toHalfWidthNumber(e.target.value); upLv(i, { ante: Number(v) || 0 }); }} /><input type="text" inputMode="numeric" className="input input-sm w-14 text-center" value={Math.floor(lv.duration / 60)} onChange={e => { const v = toHalfWidthNumber(e.target.value); upLv(i, { duration: (Number(v) || 1) * 60 }); }} /><span className="text-[11px] text-white/20">m</span></>
               )}
               <button onClick={() => rmLv(i)} className="text-white/15 hover:text-red-400 text-xs ml-1 transition-colors shrink-0">x</button>
             </div>
@@ -984,9 +954,23 @@ function GenericLayoutEditor<T extends string>({
               <span className="text-white/60 font-semibold text-center leading-tight pointer-events-none" style={{ fontSize: 'clamp(6px, 0.7vw, 11px)' }}>
                 {labels[sectionId]}
               </span>
-              {(sectionId === 'timer' || sectionId === ('rate' as T)) && (
+              {sectionId === 'timer' ? (
                 <span className="text-white/40 font-bold pointer-events-none" style={{ fontSize: 'clamp(10px, 2.5vw, 32px)' }}>12:00</span>
-              )}
+              ) : sectionId === ('rate' as T) ? (
+                <span className="text-white/40 font-bold pointer-events-none" style={{ fontSize: 'clamp(10px, 2.5vw, 32px)' }}>12:00</span>
+              ) : (sectionId === 'players' || sectionId === 'reEntry' || sectionId === 'rebuy' || sectionId === 'addon') ? (
+                <span className="text-white/40 font-bold pointer-events-none" style={{ fontSize: 'clamp(8px, 1.2vw, 18px)' }}>0</span>
+              ) : sectionId === 'avgStack' ? (
+                <span className="text-white/40 font-bold pointer-events-none" style={{ fontSize: 'clamp(7px, 0.9vw, 14px)' }}>25.0K</span>
+              ) : sectionId === 'nextLevel' ? (
+                <span className="text-white/35 font-bold pointer-events-none" style={{ fontSize: 'clamp(7px, 0.8vw, 12px)' }}>200/400</span>
+              ) : sectionId === 'cornerTime' || sectionId === 'nextBreak' ? (
+                <span className="text-white/35 font-bold pointer-events-none" style={{ fontSize: 'clamp(7px, 0.9vw, 14px)' }}>1:30:00</span>
+              ) : sectionId === 'regClose' ? (
+                <span className="text-white/35 font-bold pointer-events-none" style={{ fontSize: 'clamp(7px, 0.9vw, 14px)' }}>0:45:00</span>
+              ) : sectionId === 'tournamentName' ? (
+                <span className="text-white/40 font-bold pointer-events-none" style={{ fontSize: 'clamp(8px, 1vw, 16px)' }}>{timerName}</span>
+              ) : null}
               {/* Resize handles */}
               {isSelected && !isDragging && RESIZE_HANDLES.map(rh => (
                 <div key={rh.handle}
