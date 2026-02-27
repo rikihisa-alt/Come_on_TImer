@@ -136,7 +136,7 @@ export const SYSTEM_THEMES: SystemThemePreset[] = [
   {
     id: 'light', name: 'Light', nameJa: 'ライト',
     bgFrom: '#e8ecf1', bgTo: '#d1d9e6', mode: 'light',
-    textPrimary: '#0f172a', textSecondary: 'rgba(15,23,42,0.6)', textMuted: 'rgba(15,23,42,0.35)',
+    textPrimary: '#0f172a', textSecondary: 'rgba(15,23,42,0.65)', textMuted: 'rgba(15,23,42,0.45)',
     glassBg: 'rgba(255,255,255,0.6)', glassBorder: 'rgba(0,0,0,0.1)',
     glassInnerBg: 'rgba(255,255,255,0.4)', navBg: 'rgba(255,255,255,0.85)',
     inputBg: 'rgba(255,255,255,0.7)', inputBorder: 'rgba(0,0,0,0.12)',
