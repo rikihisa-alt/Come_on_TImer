@@ -203,6 +203,7 @@ export type SystemStyle = {
   systemThemeId: SystemThemeId;
   customBgFrom?: string;
   customBgTo?: string;
+  customTextColor?: string;
 };
 
 export type SyncMessageType = 'FULL_SYNC' | 'TIMER_TICK' | 'LEVEL_CHANGE';

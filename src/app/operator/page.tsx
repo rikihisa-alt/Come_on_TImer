@@ -1541,6 +1541,34 @@ function SystemStyleEditor() {
         </select>
       </div>
 
+      {/* Text Color Override */}
+      <div>
+        <label className="text-[11px] text-white/25 block mb-1">Text Color (文字色)</label>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl border border-white/10 shrink-0"
+            style={{ background: systemStyle.customTextColor || getSystemTheme(systemStyle.systemThemeId || 'bright-blue', systemStyle.customBgFrom, systemStyle.customBgTo).textPrimary }} />
+          <input className="input input-sm flex-1 font-mono text-xs"
+            value={systemStyle.customTextColor || ''}
+            placeholder={getSystemTheme(systemStyle.systemThemeId || 'bright-blue', systemStyle.customBgFrom, systemStyle.customBgTo).textPrimary}
+            onChange={e => {
+              const v = e.target.value;
+              if (v === '') { updateSystemStyle({ customTextColor: undefined }); }
+              else if (/^#[0-9a-fA-F]{6}$/.test(v)) { updateSystemStyle({ customTextColor: v }); }
+            }} />
+          <input type="color"
+            value={systemStyle.customTextColor || getSystemTheme(systemStyle.systemThemeId || 'bright-blue', systemStyle.customBgFrom, systemStyle.customBgTo).textPrimary}
+            className="w-8 h-8 rounded cursor-pointer border-0 p-0 shrink-0"
+            onChange={e => updateSystemStyle({ customTextColor: e.target.value })} />
+          {systemStyle.customTextColor && (
+            <button className="btn btn-sm btn-ghost text-[10px] shrink-0"
+              onClick={() => updateSystemStyle({ customTextColor: undefined })}>
+              リセット
+            </button>
+          )}
+        </div>
+        <p className="text-[10px] text-white/15 mt-1">空欄でテーマデフォルトの文字色を使用します</p>
+      </div>
+
       {/* UI Accent Color — Slider */}
       <div className="space-y-3">
         <label className="text-[11px] text-white/25 block">UI Accent Color (アクセントカラー)</label>
