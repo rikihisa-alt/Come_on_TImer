@@ -288,17 +288,17 @@ function TournamentStats({ tournament: t }: { tournament: Tournament }) {
   const avg = activePlayers > 0 ? Math.round(totalChips / activePlayers) : 0;
 
   const CountRow = ({ label, count, countKey, chips, chipsKey }: { label: string; count: number; countKey: keyof Tournament; chips?: number; chipsKey?: keyof Tournament }) => (
-    <div className="flex items-center gap-2">
-      <span className="text-[11px] text-white/30 w-24 shrink-0">{label}</span>
+    <div className="flex items-center gap-1">
+      <span className="text-[10px] text-white/30 w-16 shrink-0">{label}</span>
       <div className="flex gap-0.5 items-center shrink-0">
-        <button className="btn btn-ghost btn-sm px-1.5" onClick={() => up({ [countKey]: Math.max(0, count - 1) } as Partial<Tournament>)}>-</button>
-        <input type="number" className="input input-sm w-14 text-center" value={count} onChange={e => up({ [countKey]: Math.max(0, +e.target.value) } as Partial<Tournament>)} />
-        <button className="btn btn-ghost btn-sm px-1.5" onClick={() => up({ [countKey]: count + 1 } as Partial<Tournament>)}>+</button>
+        <button className="btn btn-ghost btn-sm px-1" onClick={() => up({ [countKey]: Math.max(0, count - 1) } as Partial<Tournament>)}>-</button>
+        <input type="number" className="input input-sm w-12 text-center" value={count} onChange={e => up({ [countKey]: Math.max(0, +e.target.value) } as Partial<Tournament>)} />
+        <button className="btn btn-ghost btn-sm px-1" onClick={() => up({ [countKey]: count + 1 } as Partial<Tournament>)}>+</button>
       </div>
       {chipsKey && (
-        <div className="flex items-center gap-1 shrink-0">
-          <input type="number" className="input input-sm w-20 text-center" value={chips || 0} onChange={e => up({ [chipsKey]: Math.max(0, +e.target.value) } as Partial<Tournament>)} />
-          <span className="text-[10px] text-white/20">chips</span>
+        <div className="flex items-center gap-0.5 shrink-0">
+          <input type="number" className="input input-sm w-16 text-center" value={chips || 0} onChange={e => up({ [chipsKey]: Math.max(0, +e.target.value) } as Partial<Tournament>)} />
+          <span className="text-[9px] text-white/20">chips</span>
         </div>
       )}
     </div>
@@ -322,10 +322,10 @@ function TournamentStats({ tournament: t }: { tournament: Tournament }) {
 
       {/* Entry / Re-Entry / Rebuy / Add-on カウント */}
       <div className="border-t border-white/[0.06] pt-3 space-y-2">
-        <CountRow label="Entries (Single)" count={t.initialEntries} countKey="initialEntries" />
-        <CountRow label="Re-Entries" count={t.reEntryCount} countKey="reEntryCount" chips={t.reEntryChips} chipsKey="reEntryChips" />
-        <CountRow label="Rebuys" count={t.rebuyCount} countKey="rebuyCount" chips={t.rebuyChips} chipsKey="rebuyChips" />
-        <CountRow label="Add-ons" count={t.addonCount} countKey="addonCount" chips={t.addonChips} chipsKey="addonChips" />
+        <CountRow label="Entry" count={t.initialEntries} countKey="initialEntries" />
+        <CountRow label="Re-Entry" count={t.reEntryCount} countKey="reEntryCount" chips={t.reEntryChips} chipsKey="reEntryChips" />
+        <CountRow label="Rebuy" count={t.rebuyCount} countKey="rebuyCount" chips={t.rebuyChips} chipsKey="rebuyChips" />
+        <CountRow label="Add-on" count={t.addonCount} countKey="addonCount" chips={t.addonChips} chipsKey="addonChips" />
       </div>
 
       {/* アーリーバード / 特典 */}
@@ -609,19 +609,6 @@ function BlindEditor({ tournament: t }: { tournament: Tournament }) {
           <div key={i} className={`p-2 rounded-xl transition-colors ${i === t.currentLevelIndex ? 'bg-blue-500/10 border border-blue-500/20' : 'hover:bg-white/[0.02]'}`}>
             <div className="flex items-center gap-2">
               <button onClick={() => store.tJumpLevel(t.id, i)} className="text-[11px] text-white/20 hover:text-blue-400 w-5 text-center cursor-pointer transition-colors shrink-0">{i === t.currentLevelIndex ? '\u25B8' : (i + 1)}</button>
-              {/* F4: Type toggle */}
-              <select className={`input input-sm w-16 text-[10px] shrink-0 ${lv.type === 'break' ? 'text-green-400' : 'text-white/50'}`}
-                value={lv.type} onChange={e => {
-                  const newType = e.target.value as 'play' | 'break';
-                  if (newType === 'break') upLv(i, { type: 'break', smallBlind: 0, bigBlind: 0, ante: 0, level: 0 });
-                  else {
-                    const last = [...t.levels.slice(0, i)].reverse().find(l => l.type === 'play');
-                    upLv(i, { type: 'play', level: (last?.level || 0) + 1, smallBlind: last?.smallBlind || 100, bigBlind: last?.bigBlind || 200, ante: last?.ante || 0 });
-                  }
-                }}>
-                <option value="play">Play</option>
-                <option value="break">Break</option>
-              </select>
               {lv.type === 'break' ? (
                 <><span className="text-green-400 text-xs font-semibold flex-1">BREAK</span><input type="number" className="input input-sm w-16 text-center" value={Math.floor(lv.duration / 60)} onChange={e => upLv(i, { duration: +e.target.value * 60 })} min={1} /><span className="text-[11px] text-white/20">min</span></>
               ) : (
