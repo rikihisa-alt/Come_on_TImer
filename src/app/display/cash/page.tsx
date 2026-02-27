@@ -155,7 +155,7 @@ function CashDisplayInner() {
       )}
 
       {/* ═══ Glass Top Bar ═══ */}
-      <div className="g-topbar relative z-10 flex items-center px-4 md:px-6 py-2.5 md:py-3">
+      <div className="relative z-50 flex items-center px-4 md:px-6 py-2.5 md:py-3" style={{ background: 'var(--sys-bg-from, #0e1c36)' }}>
         <div className="flex items-center gap-2 shrink-0">
           <span className="text-sm md:text-base font-black text-blue-400 tracking-tight">COME ON</span>
           <span className="text-white/25 font-medium text-[10px] md:text-xs">Timer</span>

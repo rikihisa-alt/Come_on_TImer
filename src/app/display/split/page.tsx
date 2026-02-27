@@ -138,12 +138,9 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
       <AbsoluteSection pos={layout.timer}>
         <div className="g-card h-full flex flex-col items-center justify-center p-2 overflow-hidden">
           {dt.showLevelInfo && (
-            <div className="mb-0.5">
+            <div className="mb-0.5 text-center">
               {isBrk ? (
-                <>
-                  <span className="text-green-400 text-base lg:text-xl font-black tracking-[0.15em]">BREAK</span>
-                  {cur?.note && <div className="text-green-400/60 text-[8px] lg:text-[10px] font-semibold">{cur.note}</div>}
-                </>
+                <span className="text-green-400 text-base lg:text-xl font-black tracking-[0.15em]">BREAK</span>
               ) : (
                 <span className="text-white/20 text-xs lg:text-sm font-black tracking-[0.2em]">Level {cur?.level || '-'}</span>
               )}
@@ -157,6 +154,9 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
             <div className="w-3/4 h-1 bg-white/[0.06] rounded-full mt-1 overflow-hidden">
               <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(prog * 100, 100)}%`, background: isWarn ? '#f59e0b' : isBrk ? '#22c55e' : pc }} />
             </div>
+          )}
+          {isBrk && cur?.note && (
+            <div className="text-green-400/70 text-[8px] lg:text-[10px] font-semibold mt-1 text-center">{cur.note}</div>
           )}
           {dt.showFooter && cur && !isBrk && (
             <div className="mt-1 font-black timer-font" style={{ color: pc, fontSize: `${1.8 * bds}vw` }}>
@@ -545,8 +545,8 @@ function SplitInner() {
 
   return (
     <DisplayWrapper bgStyle={neutralBg} className="flex flex-col select-none">
-      {/* Header - neutral dark bg, no panel theme bleeding */}
-      <div className="g-topbar relative z-10 flex items-center px-4 md:px-6 py-2.5 md:py-3">
+      {/* Header - solid bg, above overlays */}
+      <div className="relative z-50 flex items-center px-4 md:px-6 py-2.5 md:py-3" style={{ background: '#0e1c36' }}>
         <div className="flex items-center gap-2 shrink-0">
           <span className="text-sm md:text-base font-black text-blue-400 tracking-tight">COME ON</span>
           <span className="text-white/25 font-medium text-[10px] md:text-xs">Timer</span>

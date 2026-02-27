@@ -224,7 +224,7 @@ function Inner() {
       {theme && theme.overlayOpacity > 0 && <div className="absolute inset-0 bg-black pointer-events-none z-[1]" style={{ opacity: theme.overlayOpacity / 100 }} />}
 
       {/* ═══ Glass Top Bar ═══ */}
-      <div className="g-topbar relative z-10 flex items-center px-4 md:px-6 py-2.5 md:py-3">
+      <div className="relative z-50 flex items-center px-4 md:px-6 py-2.5 md:py-3" style={{ background: 'var(--sys-bg-from, #0e1c36)' }}>
         <div className="flex items-center gap-2 shrink-0">
           <span className="text-sm md:text-base font-black text-blue-400 tracking-tight">COME ON</span>
           <span className="text-white/25 font-medium text-[10px] md:text-xs">Timer</span>
@@ -289,12 +289,9 @@ function Inner() {
         <AbsoluteSection pos={layout.timer}>
           <div className="g-card h-full flex flex-col items-center justify-center p-5 relative overflow-hidden">
             {dt.showLevelInfo && (
-              <div className="mb-2">
+              <div className="mb-2 text-center">
                 {isBrk ? (
-                  <>
-                    <span className="text-green-400 text-3xl lg:text-4xl font-black tracking-[0.15em]">BREAK</span>
-                    {cur?.note && <div className="text-green-400/60 text-sm lg:text-base font-semibold mt-1">{cur.note}</div>}
-                  </>
+                  <span className="text-green-400 text-3xl lg:text-4xl font-black tracking-[0.15em]">BREAK</span>
                 ) : (
                   <span className="text-white/25 text-2xl lg:text-3xl font-black tracking-[0.2em]">Level {cur?.level || '-'}</span>
                 )}
@@ -313,6 +310,9 @@ function Inner() {
                   background: isWarn ? 'linear-gradient(to right, #f59e0b, #ef4444)' : isBrk ? '#22c55e' : `linear-gradient(to right, ${pc}, ${theme?.accentColor || '#93c5fd'})`
                 }} />
               </div>
+            )}
+            {isBrk && cur?.note && (
+              <div className="text-green-400/70 text-sm lg:text-lg font-semibold mt-3 text-center">{cur.note}</div>
             )}
             {dt.showFooter && cur && !isBrk && (
               <div className="mt-4 text-center">
@@ -377,12 +377,9 @@ function Inner() {
         {/* Main Timer Card */}
         <div className="g-card flex-1 flex flex-col items-center justify-center p-3 relative overflow-hidden min-h-0">
           {dt.showLevelInfo && (
-            <div className="mb-1">
+            <div className="mb-1 text-center">
               {isBrk ? (
-                <>
-                  <span className="text-green-400 text-xl font-black tracking-[0.15em]">BREAK</span>
-                  {cur?.note && <div className="text-green-400/60 text-[10px] font-semibold">{cur.note}</div>}
-                </>
+                <span className="text-green-400 text-xl font-black tracking-[0.15em]">BREAK</span>
               ) : (
                 <span className="text-white/25 text-base font-black tracking-[0.2em]">Level {cur?.level || '-'}</span>
               )}
@@ -401,6 +398,9 @@ function Inner() {
                 background: isWarn ? 'linear-gradient(to right, #f59e0b, #ef4444)' : isBrk ? '#22c55e' : `linear-gradient(to right, ${pc}, ${theme?.accentColor || '#93c5fd'})`
               }} />
             </div>
+          )}
+          {isBrk && cur?.note && (
+            <div className="text-green-400/70 text-xs font-semibold mt-2 text-center">{cur.note}</div>
           )}
           {dt.showFooter && cur && !isBrk && (
             <div className="mt-2 text-center">
