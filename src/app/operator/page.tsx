@@ -810,20 +810,18 @@ const RESIZE_HANDLES: { handle: ResizeHandle; pos: React.CSSProperties; cursor: 
 ];
 
 function GenericLayoutEditor<T extends string>({
-  layout, defaultLayout, labels, timerName, themeId: timerThemeId,
-  visibleIds, onUpdatePosition, onReset,
+  layout, defaultLayout, labels, timerName,
+  visibleIds, onUpdatePosition, onReset, onBroadcast,
 }: {
   layout: Record<T, SectionPosition>;
   defaultLayout: Record<T, SectionPosition>;
   labels: Record<T, string>;
   timerName: string;
-  themeId?: string;
   visibleIds: T[];
   onUpdatePosition: (sectionId: T, pos: SectionPosition) => void;
   onReset: () => void;
+  onBroadcast: () => void;
 }) {
-  const store = useStore();
-  const theme = store.themes.find(th => th.id === (timerThemeId || store.defaultThemeId)) || store.themes[0];
   const canvasRef = useRef<HTMLDivElement>(null);
   const [selected, setSelected] = useState<T | null>(null);
   const [dragging, setDragging] = useState<T | null>(null);
@@ -852,7 +850,6 @@ function GenericLayoutEditor<T extends string>({
   const handlePointerMove = (e: React.PointerEvent) => {
     if (!canvasRef.current) return;
     const rect = canvasRef.current.getBoundingClientRect();
-    // Resize mode
     if (resizing && resizeStartRef.current) {
       const dx = ((e.clientX - resizeStartRef.current.mx) / rect.width) * 100;
       const dy = ((e.clientY - resizeStartRef.current.my) / rect.height) * 100;
@@ -867,7 +864,6 @@ function GenericLayoutEditor<T extends string>({
       setLocalPositions(prev => ({ ...prev, [resizing.sectionId]: { ...prev[resizing.sectionId], x: r(x), y: r(y), w: r(w), h: r(h) } }));
       return;
     }
-    // Drag mode
     if (dragging && dragStartRef.current) {
       const dx = ((e.clientX - dragStartRef.current.mx) / rect.width) * 100;
       const dy = ((e.clientY - dragStartRef.current.my) / rect.height) * 100;
@@ -879,8 +875,8 @@ function GenericLayoutEditor<T extends string>({
   };
 
   const handlePointerUp = () => {
-    if (resizing) { onUpdatePosition(resizing.sectionId, localPositions[resizing.sectionId]); setResizing(null); resizeStartRef.current = null; return; }
-    if (dragging) { onUpdatePosition(dragging, localPositions[dragging]); }
+    if (resizing) { onUpdatePosition(resizing.sectionId, localPositions[resizing.sectionId]); setResizing(null); resizeStartRef.current = null; onBroadcast(); return; }
+    if (dragging) { onUpdatePosition(dragging, localPositions[dragging]); onBroadcast(); }
     setDragging(null); dragStartRef.current = null;
   };
 
@@ -889,6 +885,7 @@ function GenericLayoutEditor<T extends string>({
     const newPos = { ...localPositions[selected], [field]: val };
     setLocalPositions(prev => ({ ...prev, [selected as T]: newPos }));
     onUpdatePosition(selected, newPos);
+    onBroadcast();
   };
 
   const undoLayoutRef = useRef<Record<T, SectionPosition> | null>(null);
@@ -900,6 +897,7 @@ function GenericLayoutEditor<T extends string>({
     setLocalPositions(defaultLayout);
     setSelected(null);
     setShowUndo(true);
+    onBroadcast();
     setTimeout(() => setShowUndo(false), 8000);
   };
   const handleUndo = () => {
@@ -908,75 +906,37 @@ function GenericLayoutEditor<T extends string>({
     Object.entries(undoLayoutRef.current).forEach(([k, v]) => onUpdatePosition(k as T, v as SectionPosition));
     undoLayoutRef.current = null;
     setShowUndo(false);
+    onBroadcast();
   };
 
-  const bgStyle = theme?.type === 'gradient'
-    ? { background: `linear-gradient(160deg, ${theme.gradientFrom || '#0f172a'}, ${theme.gradientTo || '#1e3a5f'})` }
-    : theme?.type === 'image' && theme.imageUrl
-    ? { backgroundImage: `url(${theme.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
-    : { background: theme?.bgColor || '#0a0e1a' };
-
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-xs text-white/30 font-semibold uppercase tracking-wider">Layout Editor</span>
-        <div className="flex gap-1">
-          {showUndo && <button className="btn btn-warning btn-sm text-[10px] animate-pulse" onClick={handleUndo}>↩ Undo</button>}
-          <button className="btn btn-ghost btn-sm" onClick={handleReset}>Reset Layout</button>
-        </div>
-      </div>
-
+  /* Returns: { overlay, propertiesPanel } for parent to compose */
+  return { showUndo, handleUndo, handleReset,
+    overlay: (
       <div ref={canvasRef}
-        className="relative rounded-xl overflow-hidden border border-white/[0.1] select-none"
-        style={{ ...bgStyle, aspectRatio: '16/9' }}
+        className="absolute inset-0 z-10 select-none"
         onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerLeave={handlePointerUp}
         onClick={() => setSelected(null)}
       >
-        <div className="absolute inset-x-0 top-0 h-[7%] bg-black/30 flex items-center px-[2%] z-10">
-          <span className="text-white/60 font-bold truncate" style={{ fontSize: 'clamp(6px, 0.8vw, 12px)' }}>COME ON Timer — {timerName}</span>
-        </div>
-
         {visibleIds.map(sectionId => {
           const pos = localPositions[sectionId];
           if (!pos) return null;
-          const isSelected = selected === sectionId;
-          const isDragging = dragging === sectionId;
+          const isSel = selected === sectionId;
+          const isDrag = dragging === sectionId;
           return (
             <div key={sectionId}
-              className={`absolute rounded-lg border-2 transition-shadow cursor-grab flex flex-col items-center justify-center overflow-visible
-                ${isDragging ? 'cursor-grabbing opacity-80 z-30' : 'z-20'}
-                ${isSelected ? 'border-blue-400 shadow-[0_0_12px_rgba(96,165,250,0.4)]' : 'border-white/20 hover:border-white/40'}`}
+              className={`absolute rounded-lg transition-all cursor-grab flex flex-col items-center justify-center
+                ${isDrag ? 'cursor-grabbing z-30' : 'z-20'}
+                ${isSel ? 'border-2 border-blue-400 shadow-[0_0_12px_rgba(96,165,250,0.4)]' : 'border border-dashed border-white/20 hover:border-white/40'}`}
               style={{ left: `${pos.x}%`, top: `${pos.y}%`, width: `${pos.w}%`, height: `${pos.h}%`,
-                background: 'rgba(255,255,255,0.06)', backdropFilter: 'blur(4px)', touchAction: 'none' }}
+                background: isSel ? 'rgba(96,165,250,0.08)' : isDrag ? 'rgba(96,165,250,0.12)' : 'rgba(255,255,255,0.03)',
+                touchAction: 'none' }}
               onPointerDown={e => handlePointerDown(e, sectionId)}
               onClick={e => { e.stopPropagation(); setSelected(sectionId); }}
             >
-              <span className="text-white/60 font-semibold text-center leading-tight pointer-events-none" style={{ fontSize: 'clamp(6px, 0.7vw, 11px)' }}>
+              <span className="text-white/50 font-semibold text-center leading-tight pointer-events-none" style={{ fontSize: 'clamp(5px, 0.6vw, 10px)' }}>
                 {labels[sectionId]}
               </span>
-              {sectionId === 'timer' ? (
-                <div className="flex flex-col items-center pointer-events-none gap-0 leading-none">
-                  <span className="text-white/30 font-semibold" style={{ fontSize: 'clamp(5px, 0.5vw, 8px)' }}>Level 1</span>
-                  <span className="text-white/40 font-bold" style={{ fontSize: 'clamp(10px, 2.5vw, 32px)' }}>12:00</span>
-                  <span className="text-white/30 font-bold" style={{ fontSize: 'clamp(5px, 0.6vw, 10px)' }}>100/200 (Ante 200)</span>
-                </div>
-              ) : sectionId === ('rate' as T) ? (
-                <span className="text-white/40 font-bold pointer-events-none" style={{ fontSize: 'clamp(10px, 2.5vw, 32px)' }}>12:00</span>
-              ) : (sectionId === 'players' || sectionId === 'reEntry' || sectionId === 'rebuy' || sectionId === 'addon') ? (
-                <span className="text-white/40 font-bold pointer-events-none" style={{ fontSize: 'clamp(8px, 1.2vw, 18px)' }}>0</span>
-              ) : sectionId === 'avgStack' ? (
-                <span className="text-white/40 font-bold pointer-events-none" style={{ fontSize: 'clamp(7px, 0.9vw, 14px)' }}>25.0K</span>
-              ) : sectionId === 'nextLevel' ? (
-                <span className="text-white/35 font-bold pointer-events-none" style={{ fontSize: 'clamp(7px, 0.8vw, 12px)' }}>200/400</span>
-              ) : sectionId === 'cornerTime' || sectionId === 'nextBreak' ? (
-                <span className="text-white/35 font-bold pointer-events-none" style={{ fontSize: 'clamp(7px, 0.9vw, 14px)' }}>1:30:00</span>
-              ) : sectionId === 'regClose' ? (
-                <span className="text-white/35 font-bold pointer-events-none" style={{ fontSize: 'clamp(7px, 0.9vw, 14px)' }}>0:45:00</span>
-              ) : sectionId === 'tournamentName' ? (
-                <span className="text-white/40 font-bold pointer-events-none" style={{ fontSize: 'clamp(8px, 1vw, 16px)' }}>{timerName}</span>
-              ) : null}
-              {/* Resize handles */}
-              {isSelected && !isDragging && RESIZE_HANDLES.map(rh => (
+              {isSel && !isDrag && RESIZE_HANDLES.map(rh => (
                 <div key={rh.handle}
                   className="absolute bg-blue-400 rounded-sm z-40 hover:bg-blue-300 hover:scale-125 transition-transform"
                   style={{ ...rh.pos, cursor: rh.cursor }}
@@ -987,55 +947,53 @@ function GenericLayoutEditor<T extends string>({
           );
         })}
       </div>
-
-      {selected && localPositions[selected] && (
-        <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] space-y-2 fade-in">
-          <div className="text-xs text-white/40 font-semibold">{labels[selected]} — Position & Size</div>
-          <div className="grid grid-cols-5 gap-2">
-            {(['x', 'y', 'w', 'h'] as const).map(f => (
-              <div key={f}>
-                <label className="text-[11px] text-white/25 block mb-1 uppercase">{f} (%)</label>
-                <input type="number" step={0.1} min={0} max={100} className="input input-sm text-center"
-                  value={localPositions[selected!][f]} onChange={e => updateField(f, +e.target.value)} />
+    ),
+    propertiesPanel: selected && localPositions[selected] ? (
+      <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] space-y-2 fade-in">
+        <div className="text-xs text-white/40 font-semibold">{labels[selected]} — Position & Size</div>
+        <div className="grid grid-cols-5 gap-2">
+          {(['x', 'y', 'w', 'h'] as const).map(f => (
+            <div key={f}>
+              <label className="text-[11px] text-white/25 block mb-1 uppercase">{f} (%)</label>
+              <input type="number" step={0.1} min={0} max={100} className="input input-sm text-center"
+                value={localPositions[selected!][f]} onChange={e => updateField(f, +e.target.value)} />
+            </div>
+          ))}
+          <div>
+            <label className="text-[11px] text-white/25 block mb-1">Font</label>
+            <input type="number" step={0.1} min={0.3} max={3.0} className="input input-sm text-center"
+              value={localPositions[selected!].fontSize ?? 1.0} onChange={e => updateField('fontSize', +e.target.value)} />
+          </div>
+        </div>
+        {(selected === 'timer' || selected === ('timer' as T)) && (
+          <div className="border-t border-white/[0.06] pt-2 mt-2">
+            <div className="text-[10px] text-white/30 font-semibold mb-1.5">Timer Sub-Elements Font Size</div>
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <label className="text-[10px] text-white/20 block mb-0.5">Timer Digit</label>
+                <input type="number" step={0.1} min={0.3} max={3.0} className="input input-sm text-center"
+                  value={localPositions[selected!].timerDigitScale ?? 1.0} onChange={e => updateField('timerDigitScale', +e.target.value)} />
               </div>
-            ))}
-            <div>
-              <label className="text-[11px] text-white/25 block mb-1">Font</label>
-              <input type="number" step={0.1} min={0.3} max={3.0} className="input input-sm text-center"
-                value={localPositions[selected!].fontSize ?? 1.0} onChange={e => updateField('fontSize', +e.target.value)} />
+              <div>
+                <label className="text-[10px] text-white/20 block mb-0.5">Blinds</label>
+                <input type="number" step={0.1} min={0.3} max={3.0} className="input input-sm text-center"
+                  value={localPositions[selected!].blindsScale ?? 1.0} onChange={e => updateField('blindsScale', +e.target.value)} />
+              </div>
+              <div>
+                <label className="text-[10px] text-white/20 block mb-0.5">Ante</label>
+                <input type="number" step={0.1} min={0.3} max={3.0} className="input input-sm text-center"
+                  value={localPositions[selected!].anteScale ?? 1.0} onChange={e => updateField('anteScale', +e.target.value)} />
+              </div>
             </div>
           </div>
-          {/* F1: Timer section sub-element font scales */}
-          {(selected === 'timer' || selected === ('timer' as T)) && (
-            <div className="border-t border-white/[0.06] pt-2 mt-2">
-              <div className="text-[10px] text-white/30 font-semibold mb-1.5">Timer Sub-Elements Font Size</div>
-              <div className="grid grid-cols-3 gap-2">
-                <div>
-                  <label className="text-[10px] text-white/20 block mb-0.5">Timer Digit</label>
-                  <input type="number" step={0.1} min={0.3} max={3.0} className="input input-sm text-center"
-                    value={localPositions[selected!].timerDigitScale ?? 1.0} onChange={e => updateField('timerDigitScale', +e.target.value)} />
-                </div>
-                <div>
-                  <label className="text-[10px] text-white/20 block mb-0.5">Blinds</label>
-                  <input type="number" step={0.1} min={0.3} max={3.0} className="input input-sm text-center"
-                    value={localPositions[selected!].blindsScale ?? 1.0} onChange={e => updateField('blindsScale', +e.target.value)} />
-                </div>
-                <div>
-                  <label className="text-[10px] text-white/20 block mb-0.5">Ante</label>
-                  <input type="number" step={0.1} min={0.3} max={3.0} className="input input-sm text-center"
-                    value={localPositions[selected!].anteScale ?? 1.0} onChange={e => updateField('anteScale', +e.target.value)} />
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
+        )}
+      </div>
+    ) : null,
+  };
 }
 
-/* Wrapper for tournament layout editor — supports Single/Split toggle (F6) */
-function LayoutEditor({ tournament: t }: { tournament: Tournament }) {
+/* Hook for tournament layout editor — supports Single/Split toggle */
+function useTournamentLayoutEditor(t: Tournament) {
   const store = useStore();
   const [layoutMode, setLayoutMode] = useState<'single' | 'split'>('single');
   const layout = layoutMode === 'split'
@@ -1043,42 +1001,29 @@ function LayoutEditor({ tournament: t }: { tournament: Tournament }) {
     : (t.sectionLayout || DEFAULT_SECTION_LAYOUT);
   const dt = t.displayToggles || DEFAULT_DISPLAY_TOGGLES;
   const visibleIds = (Object.keys(DEFAULT_SECTION_LAYOUT) as TournamentSectionId[]).filter(id => isSectionVisible(id, dt));
-  return (
-    <div className="space-y-2">
-      <div className="flex gap-1">
-        <button onClick={() => setLayoutMode('single')}
-          className={`flex-1 py-1.5 rounded-lg text-[10px] font-semibold transition-all ${layoutMode === 'single' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'text-white/25 border border-white/[0.06]'}`}>
-          Single Display
-        </button>
-        <button onClick={() => setLayoutMode('split')}
-          className={`flex-1 py-1.5 rounded-lg text-[10px] font-semibold transition-all ${layoutMode === 'split' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' : 'text-white/25 border border-white/[0.06]'}`}>
-          Split Display
-        </button>
-      </div>
-      <GenericLayoutEditor<TournamentSectionId>
-        layout={layout} defaultLayout={DEFAULT_SECTION_LAYOUT} labels={SECTION_LABELS}
-        timerName={t.name} themeId={t.themeId} visibleIds={visibleIds}
-        onUpdatePosition={(sid, pos) => layoutMode === 'split' ? store.updateSplitSectionPosition(t.id, sid, pos) : store.updateSectionPosition(t.id, sid, pos)}
-        onReset={() => layoutMode === 'split' ? store.resetSplitSectionLayout(t.id) : store.resetSectionLayout(t.id)}
-      />
-    </div>
-  );
+  const editor = GenericLayoutEditor<TournamentSectionId>({
+    layout, defaultLayout: DEFAULT_SECTION_LAYOUT, labels: SECTION_LABELS,
+    timerName: t.name, visibleIds,
+    onUpdatePosition: (sid, pos) => layoutMode === 'split' ? store.updateSplitSectionPosition(t.id, sid, pos) : store.updateSectionPosition(t.id, sid, pos),
+    onReset: () => { layoutMode === 'split' ? store.resetSplitSectionLayout(t.id) : store.resetSectionLayout(t.id); },
+    onBroadcast: () => store.broadcastAll(),
+  });
+  return { ...editor, layoutMode, setLayoutMode };
 }
 
-/* Wrapper for cash layout editor */
-function CashLayoutEditor({ cashGame: c }: { cashGame: CashGame }) {
+/* Hook for cash layout editor */
+function useCashLayoutEditor(c: CashGame) {
   const store = useStore();
   const layout = c.sectionLayout || DEFAULT_CASH_SECTION_LAYOUT;
   const dt = c.displayToggles || DEFAULT_DISPLAY_TOGGLES;
   const visibleIds = (Object.keys(DEFAULT_CASH_SECTION_LAYOUT) as CashSectionId[]).filter(id => isCashSectionVisible(id, dt));
-  return (
-    <GenericLayoutEditor<CashSectionId>
-      layout={layout} defaultLayout={DEFAULT_CASH_SECTION_LAYOUT} labels={CASH_SECTION_LABELS}
-      timerName={c.name} themeId={c.themeId} visibleIds={visibleIds}
-      onUpdatePosition={(sid, pos) => store.updateCashSectionPosition(c.id, sid, pos)}
-      onReset={() => store.resetCashSectionLayout(c.id)}
-    />
-  );
+  return GenericLayoutEditor<CashSectionId>({
+    layout, defaultLayout: DEFAULT_CASH_SECTION_LAYOUT, labels: CASH_SECTION_LABELS,
+    timerName: c.name, visibleIds,
+    onUpdatePosition: (sid, pos) => store.updateCashSectionPosition(c.id, sid, pos),
+    onReset: () => store.resetCashSectionLayout(c.id),
+    onBroadcast: () => store.broadcastAll(),
+  });
 }
 
 /* ── Theme Selector (per-timer) ── */
@@ -1131,7 +1076,7 @@ function ThemeSelector({ timerId, timerType }: { timerId: string; timerType: 'to
   );
 }
 
-/* ── Inline Preview (per-timer) ── */
+/* ── Inline Preview (per-timer) — combined live preview + layout editor ── */
 function InlinePreview({ timerId, timerType, sticky }: { timerId: string; timerType: 'tournament' | 'cash'; sticky?: boolean }) {
   const store = useStore();
   const timer = timerType === 'tournament'
@@ -1140,9 +1085,18 @@ function InlinePreview({ timerId, timerType, sticky }: { timerId: string; timerT
   const themeId = timer?.themeId || store.defaultThemeId || 'come-on-blue';
   const themeName = store.themes.find(th => th.id === themeId)?.name || '';
   const [showPreview, setShowPreview] = useState(sticky ? true : false);
-  const [previewMode, setPreviewMode] = useState<'layout' | 'live'>('layout');
+  const [editMode, setEditMode] = useState(false);
 
   const route = timerType === 'tournament' ? 'tournament' : 'cash';
+
+  // Layout editor hooks (always called — React rules of hooks)
+  const tournamentEditor = useTournamentLayoutEditor(
+    timerType === 'tournament' && timer ? (timer as Tournament) : store.tournaments[0]
+  );
+  const cashEditor = useCashLayoutEditor(
+    timerType === 'cash' && timer ? (timer as CashGame) : store.cashGames[0]
+  );
+  const editor = timerType === 'tournament' ? tournamentEditor : cashEditor;
 
   return (
     <div>
@@ -1151,44 +1105,159 @@ function InlinePreview({ timerId, timerType, sticky }: { timerId: string; timerT
           onClick={() => setShowPreview(!showPreview)}
           className="w-full flex items-center justify-between px-4 py-3 g-card hover:bg-white/[0.04] transition-colors"
         >
-          <span className="text-xs text-white/40 font-semibold uppercase tracking-wider">Live Preview</span>
+          <span className="text-xs text-white/40 font-semibold uppercase tracking-wider">Display Preview</span>
           <svg className={`w-4 h-4 text-white/30 transition-transform duration-200 ${showPreview ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
           </svg>
         </button>
       )}
-      {showPreview && (
-        <>
-          {/* Mode toggle */}
-          <div className="flex gap-1 mb-0 mt-2">
-            <button onClick={() => setPreviewMode('layout')}
-              className={`flex-1 py-2 rounded-t-xl text-xs font-semibold transition-all duration-200 ${previewMode === 'layout' ? 'bg-blue-500/15 text-blue-400 border border-blue-500/25 border-b-0' : 'text-white/25 hover:text-white/40 bg-white/[0.02] border border-white/[0.06] border-b-0'}`}>
-              Layout Editor
-            </button>
-            <button onClick={() => setPreviewMode('live')}
-              className={`flex-1 py-2 rounded-t-xl text-xs font-semibold transition-all duration-200 ${previewMode === 'live' ? 'bg-blue-500/15 text-blue-400 border border-blue-500/25 border-b-0' : 'text-white/25 hover:text-white/40 bg-white/[0.02] border border-white/[0.06] border-b-0'}`}>
-              Live Preview
-            </button>
-          </div>
+      {showPreview && timer && (
+        <CombinedPreview
+          route={route}
+          targetName={timer.name}
+          themeLabel={themeName}
+          path={`/display/${route}?timer=${timerId}&theme=${themeId}`}
+          editMode={editMode}
+          setEditMode={setEditMode}
+          editor={editor}
+          isTournament={timerType === 'tournament'}
+        />
+      )}
+    </div>
+  );
+}
 
-          {previewMode === 'layout' && timer ? (
-            <div className="g-card p-4 rounded-t-none border-t-0">
-              {timerType === 'tournament' ? (
-                <LayoutEditor tournament={timer as Tournament} />
-              ) : (
-                <CashLayoutEditor cashGame={timer as CashGame} />
-              )}
+/* ── Combined Preview: iframe + draggable overlay ── */
+function CombinedPreview({ route, targetName, themeLabel, path, editMode, setEditMode, editor, isTournament }: {
+  route: string; targetName: string; themeLabel: string; path: string;
+  editMode: boolean; setEditMode: (v: boolean) => void;
+  editor: ReturnType<typeof useTournamentLayoutEditor> | ReturnType<typeof useCashLayoutEditor>;
+  isTournament: boolean;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(0.25);
+  const [iframeKey, setIframeKey] = useState(0);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    const update = () => {
+      if (containerRef.current) setScale(containerRef.current.offsetWidth / 1280);
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
+  const fullUrl = typeof window !== 'undefined' ? `${window.location.origin}${path}` : path;
+  const routeLabel = route === 'cash' ? 'Cash Game' : 'Tournament';
+  const handleCopy = () => { navigator.clipboard.writeText(fullUrl); setCopied(true); setTimeout(() => setCopied(false), 2000); };
+
+  // Tournament layout mode toggle
+  const tEditor = isTournament ? (editor as ReturnType<typeof useTournamentLayoutEditor>) : null;
+
+  return (
+    <div className="mt-2 space-y-0">
+      {/* Toolbar */}
+      <div className="flex items-center gap-2 px-3 py-2 bg-white/[0.03] rounded-t-xl border border-white/[0.08] border-b-0">
+        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md shrink-0 ${
+          route === 'tournament' ? 'bg-blue-500/20 text-blue-400' : 'bg-green-500/20 text-green-400'
+        }`}>{routeLabel}</span>
+        <span className="text-[11px] text-white/40 truncate">{targetName}</span>
+        <span className="text-[10px] text-white/20 shrink-0">{themeLabel}</span>
+        <div className="ml-auto flex items-center gap-1">
+          {/* Edit mode toggle */}
+          <button onClick={() => setEditMode(!editMode)}
+            className={`px-2 py-1 rounded-lg text-[10px] font-semibold transition-all ${editMode ? 'bg-blue-500/25 text-blue-400 border border-blue-500/30' : 'bg-white/[0.05] text-white/30 hover:text-white/60 hover:bg-white/[0.1] border border-transparent'}`}
+            title={editMode ? 'Exit layout edit' : 'Edit layout'}>
+            <svg className="w-3.5 h-3.5 inline-block mr-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+            </svg>
+            Layout
+          </button>
+          <button onClick={() => setIframeKey(k => k + 1)}
+            className="p-1.5 rounded-lg hover:bg-white/[0.08] text-white/25 hover:text-white/60 transition-colors" title="Refresh">
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182" />
+            </svg>
+          </button>
+          <button onClick={() => window.open(path, '_blank')}
+            className="p-1.5 rounded-lg hover:bg-white/[0.08] text-white/25 hover:text-white/60 transition-colors" title="Open in new tab">
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      {/* URL bar */}
+      <div className="flex items-center gap-2 px-3 py-1.5 bg-white/[0.02] border-x border-white/[0.08]">
+        <svg className="w-3 h-3 text-white/15 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+        </svg>
+        <code className="text-[10px] text-blue-400/50 flex-1 truncate select-all">{fullUrl}</code>
+        <button onClick={handleCopy}
+          className={`text-[10px] px-2 py-0.5 rounded-md transition-all ${copied ? 'bg-green-500/20 text-green-400' : 'bg-white/[0.05] text-white/30 hover:text-white/60 hover:bg-white/[0.1]'}`}>
+          {copied ? 'Copied!' : 'Copy'}
+        </button>
+      </div>
+
+      {/* Edit mode: Single/Split toggle + Reset */}
+      {editMode && (
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-white/[0.02] border-x border-white/[0.08]">
+          {tEditor && (
+            <div className="flex gap-1">
+              <button onClick={() => tEditor.setLayoutMode('single')}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all ${tEditor.layoutMode === 'single' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'text-white/25 border border-white/[0.06]'}`}>
+                Single
+              </button>
+              <button onClick={() => tEditor.setLayoutMode('split')}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all ${tEditor.layoutMode === 'split' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' : 'text-white/25 border border-white/[0.06]'}`}>
+                Split
+              </button>
             </div>
-          ) : (
-            <DisplayPreview
-              route={route}
-              displayId=""
-              targetName={timer?.name || ''}
-              themeLabel={themeName}
-              overridePath={`/display/${route}?timer=${timerId}&theme=${themeId}`}
-            />
           )}
-        </>
+          <div className="ml-auto flex gap-1">
+            {editor.showUndo && <button className="text-[10px] px-2 py-1 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30 animate-pulse" onClick={editor.handleUndo}>↩ Undo</button>}
+            <button className="text-[10px] px-2 py-1 rounded-lg bg-white/[0.05] text-white/30 hover:text-white/60 border border-white/[0.06]" onClick={editor.handleReset}>Reset</button>
+          </div>
+        </div>
+      )}
+
+      {/* Preview area: iframe + overlay */}
+      <div ref={containerRef} className="rounded-b-xl overflow-hidden border border-white/[0.08] border-t-0 bg-black/40 relative"
+        style={{ height: `${Math.round(scale * 720)}px` }}>
+        <iframe
+          key={iframeKey}
+          src={path}
+          style={{
+            position: 'absolute', top: 0, left: 0,
+            width: '1280px', height: '720px',
+            transform: `scale(${scale})`, transformOrigin: 'top left',
+            border: 'none', pointerEvents: editMode ? 'none' : 'auto',
+          }}
+        />
+        {/* Draggable overlay (edit mode only) */}
+        {editMode && editor.overlay}
+        {/* LIVE indicator */}
+        {!editMode && (
+          <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/50 backdrop-blur-sm z-20">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+            <span className="text-[9px] text-white/40 font-semibold">LIVE</span>
+          </div>
+        )}
+        {editMode && (
+          <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/20 backdrop-blur-sm z-20 border border-blue-500/30">
+            <span className="text-[9px] text-blue-400 font-semibold">EDIT MODE</span>
+          </div>
+        )}
+      </div>
+
+      {/* Properties panel (edit mode) */}
+      {editMode && editor.propertiesPanel && (
+        <div className="mt-2">
+          {editor.propertiesPanel}
+        </div>
       )}
     </div>
   );
