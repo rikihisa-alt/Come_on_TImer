@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState, useEffect, useCallback } from 'react';
 
 const NAV_ITEMS = [
   { href: '/', label: 'Home' },
@@ -13,6 +14,22 @@ const NAV_ITEMS = [
 
 export function GlobalNav() {
   const pathname = usePathname();
+  const [isFs, setIsFs] = useState(false);
+
+  const updateState = useCallback(() => {
+    setIsFs(!!(document.fullscreenElement || (document as unknown as { webkitFullscreenElement?: Element }).webkitFullscreenElement));
+  }, []);
+
+  useEffect(() => {
+    document.addEventListener('fullscreenchange', updateState);
+    document.addEventListener('webkitfullscreenchange', updateState);
+    return () => {
+      document.removeEventListener('fullscreenchange', updateState);
+      document.removeEventListener('webkitfullscreenchange', updateState);
+    };
+  }, [updateState]);
+
+  if (isFs) return null;
 
   return (
     <nav className="g-topbar flex items-center justify-between px-5 py-3 border-b border-white/[0.06] sticky top-0 z-50">

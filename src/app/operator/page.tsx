@@ -27,11 +27,7 @@ export default function OperatorPage() {
   return (
     <div className="min-h-screen" style={{ background: 'linear-gradient(160deg, var(--sys-bg-from) 0%, var(--sys-bg-to) 100%)' }}>
       {/* Room Sync Bar */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-white/[0.04]">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-black text-blue-400 tracking-tight">COME ON</span>
-          <span className="text-white/25 font-medium text-[10px]">Timer</span>
-        </div>
+      <div className="flex items-center justify-end px-4 py-2 border-b border-white/[0.04]">
         <RoomSync />
       </div>
       {/* Glass Tab Nav */}
