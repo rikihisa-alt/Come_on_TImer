@@ -955,7 +955,11 @@ function GenericLayoutEditor<T extends string>({
                 {labels[sectionId]}
               </span>
               {sectionId === 'timer' ? (
-                <span className="text-white/40 font-bold pointer-events-none" style={{ fontSize: 'clamp(10px, 2.5vw, 32px)' }}>12:00</span>
+                <div className="flex flex-col items-center pointer-events-none gap-0 leading-none">
+                  <span className="text-white/30 font-semibold" style={{ fontSize: 'clamp(5px, 0.5vw, 8px)' }}>Level 1</span>
+                  <span className="text-white/40 font-bold" style={{ fontSize: 'clamp(10px, 2.5vw, 32px)' }}>12:00</span>
+                  <span className="text-white/30 font-bold" style={{ fontSize: 'clamp(5px, 0.6vw, 10px)' }}>100/200 (Ante 200)</span>
+                </div>
               ) : sectionId === ('rate' as T) ? (
                 <span className="text-white/40 font-bold pointer-events-none" style={{ fontSize: 'clamp(10px, 2.5vw, 32px)' }}>12:00</span>
               ) : (sectionId === 'players' || sectionId === 'reEntry' || sectionId === 'rebuy' || sectionId === 'addon') ? (
