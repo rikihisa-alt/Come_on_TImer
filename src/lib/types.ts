@@ -5,6 +5,7 @@ export type BlindLevel = {
   bigBlind: number;
   ante: number;
   duration: number;
+  note?: string;  // F5: ブレイク時のサブタイトル（例: "100chips カラーアップ"）
 };
 
 export type TournamentStatus = 'idle' | 'running' | 'paused' | 'finished';
@@ -22,6 +23,23 @@ export type BlindTemplate = {
   createdAt: number;
 };
 
+export type TournamentPreset = {
+  id: string;
+  name: string;
+  levels: BlindLevel[];
+  startingChips: number;
+  buyInAmount: number;
+  reEntryAmount: number;
+  rebuyAmount: number;
+  addonAmount: number;
+  reEntryChips: number;
+  rebuyChips: number;
+  addonChips: number;
+  regCloseLevel?: number;
+  preLevelDuration?: number;
+  createdAt: number;
+};
+
 export type TournamentSectionId =
   | 'players' | 'reEntry' | 'rebuy' | 'addon' | 'avgStack'
   | 'timer' | 'nextLevel'
@@ -35,6 +53,10 @@ export type SectionPosition = {
   w: number;
   h: number;
   fontSize?: number;
+  // F1: Timer section内のサブ要素スケール
+  timerDigitScale?: number;
+  blindsScale?: number;
+  anteScale?: number;
 };
 
 export type SectionLayout = Record<TournamentSectionId, SectionPosition>;

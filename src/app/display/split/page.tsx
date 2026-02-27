@@ -66,6 +66,10 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
   const tte = computeTimeToEnd(tournament.levels, tournament.currentLevelIndex, displayMs);
   const regClose = computeRegCloseTime(tournament.levels, tournament.currentLevelIndex, displayMs, tournament.regCloseLevel);
   const fs = useStore(s => s.systemStyle?.displayFontScale) || 1;
+  const timerPos = layout.timer;
+  const tds = (timerPos.timerDigitScale ?? 1) * fs;
+  const bds = (timerPos.blindsScale ?? 1) * fs;
+  const ads = (timerPos.anteScale ?? 1) * fs;
   const activePlayers = tournament.initialEntries + tournament.reEntryCount;
   const totalChips = tournament.initialEntries * tournament.startingChips
     + tournament.reEntryCount * tournament.reEntryChips
@@ -94,6 +98,14 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
           <div className="g-card-inner h-full flex flex-col items-center justify-center p-1">
             <div className="text-[7px] lg:text-[9px] text-white/30 uppercase tracking-wider font-semibold">Players</div>
             <div className="text-xs lg:text-base font-bold text-white/65 timer-font">{activePlayers}</div>
+          </div>
+        </AbsoluteSection>
+      )}
+      {dt.showEntryCount && (
+        <AbsoluteSection pos={layout.reEntry}>
+          <div className="g-card-inner h-full flex flex-col items-center justify-center p-1">
+            <div className="text-[7px] lg:text-[9px] text-white/30 uppercase tracking-wider font-semibold">Re-Entry</div>
+            <div className="text-xs lg:text-base font-bold text-white/65 timer-font">{tournament.reEntryCount}</div>
           </div>
         </AbsoluteSection>
       )}
@@ -128,14 +140,17 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
           {dt.showLevelInfo && (
             <div className="mb-0.5">
               {isBrk ? (
-                <span className="text-green-400 text-base lg:text-xl font-black tracking-[0.15em]">BREAK</span>
+                <>
+                  <span className="text-green-400 text-base lg:text-xl font-black tracking-[0.15em]">BREAK</span>
+                  {cur?.note && <div className="text-green-400/60 text-[8px] lg:text-[10px] font-semibold">{cur.note}</div>}
+                </>
               ) : (
                 <span className="text-white/20 text-xs lg:text-sm font-black tracking-[0.2em]">Level {cur?.level || '-'}</span>
               )}
             </div>
           )}
           <div className={`font-black timer-font leading-[0.85] ${isWarn ? 'text-amber-400 warning-pulse' : isBrk ? 'text-green-400' : 'text-white'}`}
-            style={{ fontSize: `${5.5 * fs}vw` }}>
+            style={{ fontSize: `${5.5 * tds}vw` }}>
             {formatTimer(displayMs)}
           </div>
           {dt.showProgressBar && (
@@ -144,11 +159,11 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
             </div>
           )}
           {dt.showFooter && cur && !isBrk && (
-            <div className="mt-1 font-black timer-font" style={{ color: pc, fontSize: `${1.8 * fs}vw` }}>
+            <div className="mt-1 font-black timer-font" style={{ color: pc, fontSize: `${1.8 * bds}vw` }}>
               {cur.smallBlind.toLocaleString()}/{cur.bigBlind.toLocaleString()}
             </div>
           )}
-          {cur && cur.ante > 0 && !isBrk && <div className="text-[10px] text-white/20 font-semibold">Ante {cur.ante.toLocaleString()}</div>}
+          {cur && cur.ante > 0 && !isBrk && <div className="font-semibold" style={{ color: pc, fontSize: `${0.7 * ads}vw` }}>Ante {cur.ante.toLocaleString()}</div>}
         </div>
       </AbsoluteSection>
 

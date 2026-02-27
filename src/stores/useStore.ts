@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Tournament, CashGame, DisplayAssignment, ThemeConfig, SoundSettings, DisplayToggles, BlindLevel, SectionLayout, TournamentSectionId, SectionPosition, CashSectionId, CashSectionLayout, SystemStyle, BlindTemplate } from '@/lib/types';
+import { Tournament, CashGame, DisplayAssignment, ThemeConfig, SoundSettings, DisplayToggles, BlindLevel, SectionLayout, TournamentSectionId, SectionPosition, CashSectionId, CashSectionLayout, SystemStyle, BlindTemplate, TournamentPreset } from '@/lib/types';
 import { uid } from '@/lib/utils';
 import { broadcast } from '@/lib/sync';
 import { DEFAULT_THEMES, STANDARD_PRESET, DEFAULT_TTS_MESSAGES, DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND, DEFAULT_SECTION_LAYOUT, DEFAULT_CASH_SECTION_LAYOUT, DEFAULT_SYSTEM_STYLE } from '@/lib/presets';
@@ -15,6 +15,7 @@ interface AppState {
   defaultThemeId: string;
   systemStyle: SystemStyle;
   blindTemplates: BlindTemplate[];
+  tournamentPresets: TournamentPreset[];
   updateSystemStyle: (partial: Partial<SystemStyle>) => void;
   addTournament: (name?: string, levels?: BlindLevel[]) => string;
   removeTournament: (id: string) => void;
@@ -61,6 +62,9 @@ interface AppState {
   loadBlindTemplate: (tournamentId: string, templateId: string) => void;
   updateSplitSectionPosition: (id: string, sectionId: TournamentSectionId, pos: SectionPosition) => void;
   resetSplitSectionLayout: (id: string) => void;
+  addTournamentPreset: (name: string, tournament: Tournament) => void;
+  removeTournamentPreset: (id: string) => void;
+  loadTournamentPreset: (tournamentId: string, presetId: string) => void;
   broadcastAll: () => void;
 }
 
@@ -110,6 +114,7 @@ export const useStore = create<AppState>()(
       defaultThemeId: 'come-on-blue',
       systemStyle: { ...DEFAULT_SYSTEM_STYLE },
       blindTemplates: [],
+      tournamentPresets: [],
 
       updateSystemStyle: (partial) => { set(s => ({ systemStyle: { ...s.systemStyle, ...partial } })); get().broadcastAll(); },
       addTournament: (name, levels) => {
@@ -344,14 +349,43 @@ export const useStore = create<AppState>()(
         set(s => ({ tournaments: s.tournaments.map(t => t.id === id ? { ...t, splitSectionLayout: undefined } : t) }));
         get().broadcastAll();
       },
+      addTournamentPreset: (name, tournament) => {
+        const preset: TournamentPreset = {
+          id: uid(), name, levels: [...tournament.levels],
+          startingChips: tournament.startingChips,
+          buyInAmount: tournament.buyInAmount, reEntryAmount: tournament.reEntryAmount,
+          rebuyAmount: tournament.rebuyAmount, addonAmount: tournament.addonAmount,
+          reEntryChips: tournament.reEntryChips, rebuyChips: tournament.rebuyChips, addonChips: tournament.addonChips,
+          regCloseLevel: tournament.regCloseLevel, preLevelDuration: tournament.preLevelDuration,
+          createdAt: Date.now(),
+        };
+        set(s => ({ tournamentPresets: [...s.tournamentPresets, preset] }));
+      },
+      removeTournamentPreset: (id) => {
+        set(s => ({ tournamentPresets: s.tournamentPresets.filter(p => p.id !== id) }));
+      },
+      loadTournamentPreset: (tournamentId, presetId) => {
+        const preset = get().tournamentPresets.find(p => p.id === presetId);
+        if (!preset) return;
+        set(s => ({ tournaments: s.tournaments.map(t => t.id === tournamentId ? {
+          ...t, levels: [...preset.levels], startingChips: preset.startingChips,
+          buyInAmount: preset.buyInAmount, reEntryAmount: preset.reEntryAmount,
+          rebuyAmount: preset.rebuyAmount, addonAmount: preset.addonAmount,
+          reEntryChips: preset.reEntryChips, rebuyChips: preset.rebuyChips, addonChips: preset.addonChips,
+          regCloseLevel: preset.regCloseLevel, preLevelDuration: preset.preLevelDuration,
+          currentLevelIndex: 0, remainingMs: preset.levels[0]?.duration ? preset.levels[0].duration * 1000 : 900000,
+          status: 'idle' as const, timerStartedAt: null,
+        } : t) }));
+        get().broadcastAll();
+      },
       broadcastAll: () => {
         const s = get();
-        broadcast('FULL_SYNC', { tournaments: s.tournaments, cashGames: s.cashGames, displays: s.displays, themes: s.themes, sound: s.sound, displayToggles: s.displayToggles, defaultThemeId: s.defaultThemeId, systemStyle: s.systemStyle, blindTemplates: s.blindTemplates });
+        broadcast('FULL_SYNC', { tournaments: s.tournaments, cashGames: s.cashGames, displays: s.displays, themes: s.themes, sound: s.sound, displayToggles: s.displayToggles, defaultThemeId: s.defaultThemeId, systemStyle: s.systemStyle, blindTemplates: s.blindTemplates, tournamentPresets: s.tournamentPresets });
       },
     }),
     {
       name: 'come-on-timer-v3',
-      version: 14,
+      version: 15,
       migrate: (persisted: unknown, version: number) => {
         const state = persisted as Record<string, unknown>;
         if (version < 4) {
@@ -494,9 +528,12 @@ export const useStore = create<AppState>()(
             };
           });
         }
+        if (version < 15) {
+          state.tournamentPresets = (state.tournamentPresets as unknown[]) || [];
+        }
         return state as unknown as AppState;
       },
-      partialize: (s) => ({ tournaments: s.tournaments, cashGames: s.cashGames, displays: s.displays, themes: s.themes, sound: s.sound, displayToggles: s.displayToggles, defaultThemeId: s.defaultThemeId, systemStyle: s.systemStyle, blindTemplates: s.blindTemplates }),
+      partialize: (s) => ({ tournaments: s.tournaments, cashGames: s.cashGames, displays: s.displays, themes: s.themes, sound: s.sound, displayToggles: s.displayToggles, defaultThemeId: s.defaultThemeId, systemStyle: s.systemStyle, blindTemplates: s.blindTemplates, tournamentPresets: s.tournamentPresets }),
     }
   )
 );

@@ -5,7 +5,7 @@ import { useStore } from '@/stores/useStore';
 import { formatTimer, formatTimerHMS, formatChips, uid } from '@/lib/utils';
 import { PRESET_OPTIONS, DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND, DEFAULT_SECTION_LAYOUT, DEFAULT_CASH_SECTION_LAYOUT, FONT_OPTIONS, DEFAULT_SYSTEM_STYLE, ASPECT_RATIO_OPTIONS } from '@/lib/presets';
 import { playSound, playTestSound, playWarningBeep, speakTTS, fillTTSTemplate, PRESET_LABELS } from '@/lib/audio';
-import { BlindLevel, Tournament, CashGame, SoundPreset, PrizeEntry, SoundSettings, DisplayToggles, ThemeConfig, TournamentSectionId, SectionPosition, SectionLayout, CashSectionId, CashSectionLayout, AspectRatioMode } from '@/lib/types';
+import { BlindLevel, Tournament, CashGame, SoundPreset, PrizeEntry, SoundSettings, DisplayToggles, ThemeConfig, TournamentSectionId, SectionPosition, SectionLayout, CashSectionId, CashSectionLayout, AspectRatioMode, TournamentPreset } from '@/lib/types';
 import { RoomSync } from '@/components/RoomSync';
 
 const TAB_ORDER = ['tournaments', 'cash', 'split', 'settings'] as const;
@@ -88,6 +88,7 @@ function TournamentEditor({ id }: { id: string }) {
       {/* ── Mobile: stacked ── */}
       <div className="lg:hidden space-y-4 fade-in">
         <InlinePreview timerId={id} timerType="tournament" sticky />
+        <div className="g-card p-4"><TournamentPresetPanel tournament={t} /></div>
         <div className="g-card p-4 space-y-4">
           <div className="flex items-center gap-3">
             <input className="input flex-1" value={t.name} onChange={e => store.updateTournament(id, { name: e.target.value })} placeholder="Tournament name" />
@@ -121,6 +122,7 @@ function TournamentEditor({ id }: { id: string }) {
         </div>
         {/* Right: Settings (独立スクロール) */}
         <div className="flex-1 overflow-y-auto min-h-0 space-y-4 min-w-0 pr-1 custom-scrollbar">
+          <div className="g-card p-4"><TournamentPresetPanel tournament={t} /></div>
           <div className="g-card p-4 space-y-4">
             <div className="flex items-center gap-3">
               <input className="input flex-1" value={t.name} onChange={e => store.updateTournament(id, { name: e.target.value })} placeholder="Tournament name" />
@@ -147,6 +149,54 @@ function TournamentEditor({ id }: { id: string }) {
         </div>
       </div>
     </>
+  );
+}
+
+function TournamentPresetPanel({ tournament: t }: { tournament: Tournament }) {
+  const store = useStore();
+  const [presetName, setPresetName] = useState('');
+  const [showSave, setShowSave] = useState(false);
+  const savePreset = () => {
+    if (!presetName.trim()) return;
+    store.addTournamentPreset(presetName.trim(), t);
+    setPresetName('');
+    setShowSave(false);
+  };
+  const firstPlay = (levels: BlindLevel[]) => levels.find(l => l.type === 'play');
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Tournament Presets</div>
+      </div>
+      {store.tournamentPresets.length > 0 && (
+        <div className="space-y-1">
+          {store.tournamentPresets.map(p => {
+            const fp = firstPlay(p.levels);
+            return (
+              <div key={p.id} className="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-white/[0.03] transition-colors">
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs text-white/50 font-medium truncate">{p.name}</div>
+                  <div className="text-[10px] text-white/20">
+                    {(p.startingChips / 1000).toFixed(0)}K stack · {fp ? `${fp.smallBlind}/${fp.bigBlind}` : '--'} · {p.levels.filter(l => l.type === 'play').length}lvl
+                  </div>
+                </div>
+                <button className="btn btn-ghost btn-sm text-[10px]" onClick={() => store.loadTournamentPreset(t.id, p.id)}>Load</button>
+                <button className="text-white/15 hover:text-red-400 text-xs transition-colors" onClick={() => store.removeTournamentPreset(p.id)}>x</button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      {showSave ? (
+        <div className="flex items-center gap-2">
+          <input className="input input-sm flex-1" value={presetName} onChange={e => setPresetName(e.target.value)} placeholder="プリセット名" onKeyDown={e => e.key === 'Enter' && savePreset()} autoFocus />
+          <button className="btn btn-primary btn-sm" onClick={savePreset}>Save</button>
+          <button className="btn btn-ghost btn-sm" onClick={() => setShowSave(false)}>Cancel</button>
+        </div>
+      ) : (
+        <button className="btn btn-ghost btn-sm text-[10px]" onClick={() => setShowSave(true)}>💾 Save Current as Preset</button>
+      )}
+    </div>
   );
 }
 
@@ -556,14 +606,35 @@ function BlindEditor({ tournament: t }: { tournament: Tournament }) {
 
       <div className="space-y-1">
         {t.levels.map((lv, i) => (
-          <div key={i} className={`flex items-center gap-2 p-2 rounded-xl transition-colors ${i === t.currentLevelIndex ? 'bg-blue-500/10 border border-blue-500/20' : 'hover:bg-white/[0.02]'}`}>
-            <button onClick={() => store.tJumpLevel(t.id, i)} className="text-[11px] text-white/20 hover:text-blue-400 w-5 text-center cursor-pointer transition-colors">{i === t.currentLevelIndex ? '\u25B8' : (i + 1)}</button>
-            {lv.type === 'break' ? (
-              <><span className="text-green-400 text-xs font-semibold flex-1">BREAK</span><input type="number" className="input input-sm w-16 text-center" value={Math.floor(lv.duration / 60)} onChange={e => upLv(i, { duration: +e.target.value * 60 })} min={1} /><span className="text-[11px] text-white/20">min</span></>
-            ) : (
-              <><span className="text-[11px] text-white/30 w-6">Lv{lv.level}</span><input type="number" className="input input-sm w-16" value={lv.smallBlind} onChange={e => upLv(i, { smallBlind: +e.target.value })} /><span className="text-white/15">/</span><input type="number" className="input input-sm w-16" value={lv.bigBlind} onChange={e => upLv(i, { bigBlind: +e.target.value })} /><span className="text-[11px] text-white/20 ml-1">A:</span><input type="number" className="input input-sm w-14" value={lv.ante} onChange={e => upLv(i, { ante: +e.target.value })} /><input type="number" className="input input-sm w-14 text-center" value={Math.floor(lv.duration / 60)} onChange={e => upLv(i, { duration: +e.target.value * 60 })} min={1} /><span className="text-[11px] text-white/20">m</span></>
+          <div key={i} className={`p-2 rounded-xl transition-colors ${i === t.currentLevelIndex ? 'bg-blue-500/10 border border-blue-500/20' : 'hover:bg-white/[0.02]'}`}>
+            <div className="flex items-center gap-2">
+              <button onClick={() => store.tJumpLevel(t.id, i)} className="text-[11px] text-white/20 hover:text-blue-400 w-5 text-center cursor-pointer transition-colors shrink-0">{i === t.currentLevelIndex ? '\u25B8' : (i + 1)}</button>
+              {/* F4: Type toggle */}
+              <select className={`input input-sm w-16 text-[10px] shrink-0 ${lv.type === 'break' ? 'text-green-400' : 'text-white/50'}`}
+                value={lv.type} onChange={e => {
+                  const newType = e.target.value as 'play' | 'break';
+                  if (newType === 'break') upLv(i, { type: 'break', smallBlind: 0, bigBlind: 0, ante: 0, level: 0 });
+                  else {
+                    const last = [...t.levels.slice(0, i)].reverse().find(l => l.type === 'play');
+                    upLv(i, { type: 'play', level: (last?.level || 0) + 1, smallBlind: last?.smallBlind || 100, bigBlind: last?.bigBlind || 200, ante: last?.ante || 0 });
+                  }
+                }}>
+                <option value="play">Play</option>
+                <option value="break">Break</option>
+              </select>
+              {lv.type === 'break' ? (
+                <><span className="text-green-400 text-xs font-semibold flex-1">BREAK</span><input type="number" className="input input-sm w-16 text-center" value={Math.floor(lv.duration / 60)} onChange={e => upLv(i, { duration: +e.target.value * 60 })} min={1} /><span className="text-[11px] text-white/20">min</span></>
+              ) : (
+                <><span className="text-[11px] text-white/30 w-6 shrink-0">Lv{lv.level}</span><input type="number" className="input input-sm w-16" value={lv.smallBlind} onChange={e => upLv(i, { smallBlind: +e.target.value })} /><span className="text-white/15">/</span><input type="number" className="input input-sm w-16" value={lv.bigBlind} onChange={e => upLv(i, { bigBlind: +e.target.value })} /><span className="text-[11px] text-white/20 ml-1">A:</span><input type="number" className="input input-sm w-14" value={lv.ante} onChange={e => upLv(i, { ante: +e.target.value })} /><input type="number" className="input input-sm w-14 text-center" value={Math.floor(lv.duration / 60)} onChange={e => upLv(i, { duration: +e.target.value * 60 })} min={1} /><span className="text-[11px] text-white/20">m</span></>
+              )}
+              <button onClick={() => rmLv(i)} className="text-white/15 hover:text-red-400 text-xs ml-1 transition-colors shrink-0">x</button>
+            </div>
+            {/* F5: Break note/subtitle */}
+            {lv.type === 'break' && (
+              <div className="mt-1 ml-7">
+                <input className="input input-sm text-[10px] w-full" value={lv.note || ''} onChange={e => upLv(i, { note: e.target.value })} placeholder="サブタイトル（例: 100chips カラーアップ）" />
+              </div>
             )}
-            <button onClick={() => rmLv(i)} className="text-white/15 hover:text-red-400 text-xs ml-1 transition-colors">x</button>
           </div>
         ))}
       </div>
@@ -859,14 +930,31 @@ function GenericLayoutEditor<T extends string>({
     setDragging(null); dragStartRef.current = null;
   };
 
-  const updateField = (field: 'x' | 'y' | 'w' | 'h' | 'fontSize', val: number) => {
+  const updateField = (field: 'x' | 'y' | 'w' | 'h' | 'fontSize' | 'timerDigitScale' | 'blindsScale' | 'anteScale', val: number) => {
     if (!selected) return;
     const newPos = { ...localPositions[selected], [field]: val };
     setLocalPositions(prev => ({ ...prev, [selected as T]: newPos }));
     onUpdatePosition(selected, newPos);
   };
 
-  const handleReset = () => { onReset(); setLocalPositions(defaultLayout); setSelected(null); };
+  const undoLayoutRef = useRef<Record<T, SectionPosition> | null>(null);
+  const [showUndo, setShowUndo] = useState(false);
+  const handleReset = () => {
+    if (!window.confirm('本当にレイアウトをリセットしますか？')) return;
+    undoLayoutRef.current = { ...localPositions };
+    onReset();
+    setLocalPositions(defaultLayout);
+    setSelected(null);
+    setShowUndo(true);
+    setTimeout(() => setShowUndo(false), 8000);
+  };
+  const handleUndo = () => {
+    if (!undoLayoutRef.current) return;
+    setLocalPositions(undoLayoutRef.current);
+    Object.entries(undoLayoutRef.current).forEach(([k, v]) => onUpdatePosition(k as T, v as SectionPosition));
+    undoLayoutRef.current = null;
+    setShowUndo(false);
+  };
 
   const bgStyle = theme?.type === 'gradient'
     ? { background: `linear-gradient(160deg, ${theme.gradientFrom || '#0f172a'}, ${theme.gradientTo || '#1e3a5f'})` }
@@ -876,9 +964,12 @@ function GenericLayoutEditor<T extends string>({
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <span className="text-xs text-white/30 font-semibold uppercase tracking-wider">Layout Editor</span>
-        <button className="btn btn-ghost btn-sm" onClick={handleReset}>Reset Layout</button>
+        <div className="flex gap-1">
+          {showUndo && <button className="btn btn-warning btn-sm text-[10px] animate-pulse" onClick={handleUndo}>↩ Undo</button>}
+          <button className="btn btn-ghost btn-sm" onClick={handleReset}>Reset Layout</button>
+        </div>
       </div>
 
       <div ref={canvasRef}
@@ -942,6 +1033,29 @@ function GenericLayoutEditor<T extends string>({
                 value={localPositions[selected!].fontSize ?? 1.0} onChange={e => updateField('fontSize', +e.target.value)} />
             </div>
           </div>
+          {/* F1: Timer section sub-element font scales */}
+          {(selected === 'timer' || selected === ('timer' as T)) && (
+            <div className="border-t border-white/[0.06] pt-2 mt-2">
+              <div className="text-[10px] text-white/30 font-semibold mb-1.5">Timer Sub-Elements Font Size</div>
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label className="text-[10px] text-white/20 block mb-0.5">Timer Digit</label>
+                  <input type="number" step={0.1} min={0.3} max={3.0} className="input input-sm text-center"
+                    value={localPositions[selected!].timerDigitScale ?? 1.0} onChange={e => updateField('timerDigitScale', +e.target.value)} />
+                </div>
+                <div>
+                  <label className="text-[10px] text-white/20 block mb-0.5">Blinds</label>
+                  <input type="number" step={0.1} min={0.3} max={3.0} className="input input-sm text-center"
+                    value={localPositions[selected!].blindsScale ?? 1.0} onChange={e => updateField('blindsScale', +e.target.value)} />
+                </div>
+                <div>
+                  <label className="text-[10px] text-white/20 block mb-0.5">Ante</label>
+                  <input type="number" step={0.1} min={0.3} max={3.0} className="input input-sm text-center"
+                    value={localPositions[selected!].anteScale ?? 1.0} onChange={e => updateField('anteScale', +e.target.value)} />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

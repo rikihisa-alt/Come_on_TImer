@@ -200,6 +200,10 @@ function Inner() {
   const avg = activePlayers > 0 ? Math.round(totalChips / activePlayers) : 0;
   const pc = theme?.primaryColor || '#60a5fa';
   const layout = tournament.sectionLayout || DEFAULT_SECTION_LAYOUT;
+  const timerPos = layout.timer;
+  const tds = (timerPos.timerDigitScale ?? 1) * fs;
+  const bds = (timerPos.blindsScale ?? 1) * fs;
+  const ads = (timerPos.anteScale ?? 1) * fs;
 
   const bgStyle = dt.backgroundImageUrl
     ? { backgroundImage: `url(${dt.backgroundImageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
@@ -261,6 +265,11 @@ function Inner() {
           </AbsoluteSection>
         )}
         {dt.showEntryCount && (
+          <AbsoluteSection pos={layout.reEntry}>
+            <GlassStat label="Re-Entry" value={String(tournament.reEntryCount)} />
+          </AbsoluteSection>
+        )}
+        {dt.showEntryCount && (
           <AbsoluteSection pos={layout.rebuy}>
             <GlassStat label="Rebuy" value={String(tournament.rebuyCount)} />
           </AbsoluteSection>
@@ -282,7 +291,10 @@ function Inner() {
             {dt.showLevelInfo && (
               <div className="mb-2">
                 {isBrk ? (
-                  <span className="text-green-400 text-3xl lg:text-4xl font-black tracking-[0.15em]">BREAK</span>
+                  <>
+                    <span className="text-green-400 text-3xl lg:text-4xl font-black tracking-[0.15em]">BREAK</span>
+                    {cur?.note && <div className="text-green-400/60 text-sm lg:text-base font-semibold mt-1">{cur.note}</div>}
+                  </>
                 ) : (
                   <span className="text-white/25 text-2xl lg:text-3xl font-black tracking-[0.2em]">Level {cur?.level || '-'}</span>
                 )}
@@ -290,7 +302,7 @@ function Inner() {
             )}
             {dt.showTimer && (
               <div className={`font-black timer-font leading-[0.85] transition-colors duration-300 ${isWarn ? 'text-amber-400 warning-pulse' : isBrk ? 'text-green-400' : 'text-white'}`}
-                style={{ fontSize: `${11 * fs}vw` }}>
+                style={{ fontSize: `${11 * tds}vw` }}>
                 {formatTimer(displayMs)}
               </div>
             )}
@@ -304,11 +316,11 @@ function Inner() {
             )}
             {dt.showFooter && cur && !isBrk && (
               <div className="mt-4 text-center">
-                <div className="font-black timer-font" style={{ color: pc, fontSize: `${3.5 * fs}vw` }}>
+                <div className="font-black timer-font" style={{ color: pc, fontSize: `${3.5 * bds}vw` }}>
                   {cur.smallBlind.toLocaleString()} / {cur.bigBlind.toLocaleString()}
                 </div>
                 {cur.ante > 0 && (
-                  <div className="text-white/30 font-semibold mt-1" style={{ fontSize: `${1.2 * fs}vw` }}>Ante {cur.ante.toLocaleString()}</div>
+                  <div className="font-semibold mt-1" style={{ color: pc, fontSize: `${1.2 * ads}vw` }}>Ante {cur.ante.toLocaleString()}</div>
                 )}
               </div>
             )}
@@ -367,7 +379,10 @@ function Inner() {
           {dt.showLevelInfo && (
             <div className="mb-1">
               {isBrk ? (
-                <span className="text-green-400 text-xl font-black tracking-[0.15em]">BREAK</span>
+                <>
+                  <span className="text-green-400 text-xl font-black tracking-[0.15em]">BREAK</span>
+                  {cur?.note && <div className="text-green-400/60 text-[10px] font-semibold">{cur.note}</div>}
+                </>
               ) : (
                 <span className="text-white/25 text-base font-black tracking-[0.2em]">Level {cur?.level || '-'}</span>
               )}
