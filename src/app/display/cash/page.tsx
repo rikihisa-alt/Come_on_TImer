@@ -182,11 +182,13 @@ function CashDisplayInner() {
       {/* ═══ Desktop: Absolute Section Layout ═══ */}
       <div className="absolute inset-0 z-10 hidden md:block">
         {/* Cash Name */}
-        <AbsoluteSection pos={layout.cashName}>
-          <div className="h-full flex items-center justify-center">
-            <span className="font-black text-white/70 tracking-wide truncate" style={{ fontSize: '2em' }}>{cashGame.name}</span>
-          </div>
-        </AbsoluteSection>
+        {dt.showCashName !== false && (
+          <AbsoluteSection pos={layout.cashName}>
+            <div className="h-full flex items-center justify-center">
+              <span className="font-black text-white/70 tracking-wide truncate" style={{ fontSize: '2em' }}>{cashGame.name}</span>
+            </div>
+          </AbsoluteSection>
+        )}
 
         {/* Rate */}
         {dt.showCashRate && (
@@ -318,6 +320,21 @@ function CashDisplayInner() {
         <div className="absolute inset-0 z-40 flex items-center justify-center g-overlay-pause">
           <div className="g-card px-12 py-8 md:px-16 md:py-10">
             <div className="text-3xl md:text-5xl font-black text-white/50 tracking-widest animate-pulse">PAUSED</div>
+          </div>
+        </div>
+      )}
+      {cashGame.status === 'running' && preLevelMs > 0 && (
+        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center g-overlay-idle fade-in-up">
+          {dt.tickerText && (
+            <div className="absolute top-14 left-0 right-0 overflow-hidden">
+              <div className="ticker-container">
+                <span className="ticker-scroll text-sm font-semibold text-white/35 px-4" style={{ animationDuration: `${tickerSpeed}s` }}>{dt.tickerText}</span>
+              </div>
+            </div>
+          )}
+          <div className="text-5xl md:text-7xl font-black timer-font text-blue-400 leading-none">{formatTimerHMS(preLevelMs)}</div>
+          <div className="w-2/3 mt-4 h-2 rounded-full bg-white/10 overflow-hidden">
+            <div className="h-full rounded-full bg-blue-400/60 transition-all duration-500" style={{ width: `${cashGame.preLevelDuration ? Math.max(0, 100 - (preLevelMs / (cashGame.preLevelDuration * 1000)) * 100) : 0}%` }} />
           </div>
         </div>
       )}

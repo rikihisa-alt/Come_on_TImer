@@ -74,14 +74,14 @@ export const DEFAULT_SECTION_LAYOUT: SectionLayout = {
 };
 
 export const DEFAULT_CASH_SECTION_LAYOUT: CashSectionLayout = {
-  cashName: { x: 20, y: 2,  w: 60, h: 8 },
-  rate:     { x: 10, y: 12, w: 80, h: 30 },
-  memo:     { x: 20, y: 44, w: 60, h: 8 },
-  timer:    { x: 20, y: 54, w: 60, h: 22 },
-  sbCard:   { x: 5,  y: 80, w: 28, h: 14 },
-  bbCard:   { x: 36, y: 80, w: 28, h: 14 },
-  anteCard: { x: 67, y: 80, w: 28, h: 14 },
-  ticker:   { x: 1,  y: 93, w: 98, h: 6 },
+  cashName: { x: 25,  y: 0.5,  w: 50,   h: 7 },
+  rate:     { x: 14.5, y: 8.5,  w: 71,   h: 45 },
+  memo:     { x: 86.7, y: 8.5,  w: 12.5, h: 18 },
+  timer:    { x: 14.5, y: 55,   w: 71,   h: 25 },
+  sbCard:   { x: 0.8,  y: 8.5,  w: 12.5, h: 25 },
+  bbCard:   { x: 0.8,  y: 35,   w: 12.5, h: 25 },
+  anteCard: { x: 0.8,  y: 62,   w: 12.5, h: 25 },
+  ticker:   { x: 0.8,  y: 91,   w: 98.4, h: 7.5 },
 };
 
 export const FONT_OPTIONS = [
@@ -189,6 +189,6 @@ export const DEFAULT_DISPLAY_TOGGLES: DisplayToggles = {
   showTournamentName: true, showLevelInfo: true, showBlinds: true, showTimer: true,
   showProgressBar: true, showNextLevel: true, showTimeToBreak: true, showTimeToEnd: true,
   showPrizeStructure: true, showEntryCount: true, showChipInfo: true, showFooter: true,
-  showCashRate: true, showCashMemo: true, showCashTimer: true,
+  showCashName: true, showCashRate: true, showCashMemo: true, showCashTimer: true,
   tickerText: '', tickerSpeed: 25, backgroundImageUrl: '',
 };

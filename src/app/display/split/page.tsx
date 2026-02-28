@@ -248,11 +248,15 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
 
       {/* ═══ Overlays ═══ */}
       {isPreLevel && (
-        <div className="absolute inset-0 z-40 flex items-center justify-center g-overlay-idle rounded-lg">
-          <div className="g-card p-5 text-center fade-in-up">
-            <div className="text-base lg:text-xl font-black text-white/50 tracking-wide mb-2">{tournament.name}</div>
-            <div className="text-[10px] text-white/25 uppercase tracking-[0.3em] font-semibold mb-2">Starting In</div>
-            <div className="text-3xl lg:text-5xl font-black timer-font text-blue-400 leading-none">{formatTimerHMS(displayMs)}</div>
+        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center g-overlay-idle rounded-lg fade-in-up">
+          {dt.tickerText && (
+            <div className="absolute top-2 left-0 right-0 overflow-hidden">
+              <div className="ticker-container"><span className="ticker-scroll text-xs font-semibold text-white/35 px-2" style={{ animationDuration: `${tickerSpeed}s` }}>{dt.tickerText}</span></div>
+            </div>
+          )}
+          <div className="text-3xl lg:text-5xl font-black timer-font text-blue-400 leading-none">{formatTimerHMS(displayMs)}</div>
+          <div className="w-2/3 mt-3 h-1.5 rounded-full bg-white/10 overflow-hidden">
+            <div className="h-full rounded-full bg-blue-400/60 transition-all duration-500" style={{ width: `${tournament.preLevelDuration ? Math.max(0, 100 - (displayMs / (tournament.preLevelDuration * 1000)) * 100) : 0}%` }} />
           </div>
         </div>
       )}
@@ -310,11 +314,13 @@ function CashPanel({ cashGame, theme, displayToggles: dt }: {
   return (
     <div className="flex-1 relative overflow-hidden">
       {/* Cash Name */}
-      <AbsoluteSection pos={layout.cashName}>
-        <div className="h-full flex items-center justify-center">
-          <span className="font-black text-white/60 tracking-wide truncate" style={{ fontSize: '1.5em' }}>{cashGame.name}</span>
-        </div>
-      </AbsoluteSection>
+      {dt.showCashName !== false && (
+        <AbsoluteSection pos={layout.cashName}>
+          <div className="h-full flex items-center justify-center">
+            <span className="font-black text-white/60 tracking-wide truncate" style={{ fontSize: '1.5em' }}>{cashGame.name}</span>
+          </div>
+        </AbsoluteSection>
+      )}
 
       {/* Rate */}
       {dt.showCashRate && (
@@ -391,11 +397,15 @@ function CashPanel({ cashGame, theme, displayToggles: dt }: {
 
       {/* ═══ Overlays ═══ */}
       {cashGame.status === 'running' && preLevelMs > 0 && (
-        <div className="absolute inset-0 z-40 flex items-center justify-center g-overlay-idle rounded-lg">
-          <div className="g-card p-5 text-center fade-in-up">
-            <div className="text-base lg:text-xl font-black text-white/50 tracking-wide mb-2">{cashGame.name}</div>
-            <div className="text-[10px] text-white/25 uppercase tracking-[0.3em] font-semibold mb-2">Starting In</div>
-            <div className="text-3xl lg:text-5xl font-black timer-font text-blue-400 leading-none">{formatTimerHMS(preLevelMs)}</div>
+        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center g-overlay-idle rounded-lg fade-in-up">
+          {dt.tickerText && (
+            <div className="absolute top-2 left-0 right-0 overflow-hidden">
+              <div className="ticker-container"><span className="ticker-scroll text-xs font-semibold text-white/35 px-2" style={{ animationDuration: `${tickerSpeed}s` }}>{dt.tickerText}</span></div>
+            </div>
+          )}
+          <div className="text-3xl lg:text-5xl font-black timer-font text-blue-400 leading-none">{formatTimerHMS(preLevelMs)}</div>
+          <div className="w-2/3 mt-3 h-1.5 rounded-full bg-white/10 overflow-hidden">
+            <div className="h-full rounded-full bg-blue-400/60 transition-all duration-500" style={{ width: `${cashGame.preLevelDuration ? Math.max(0, 100 - (preLevelMs / (cashGame.preLevelDuration * 1000)) * 100) : 0}%` }} />
           </div>
         </div>
       )}

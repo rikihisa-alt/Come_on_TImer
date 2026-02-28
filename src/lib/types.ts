@@ -215,6 +215,7 @@ export type DisplayToggles = {
   showEntryCount: boolean;
   showChipInfo: boolean;
   showFooter: boolean;
+  showCashName: boolean;
   showCashRate: boolean;
   showCashMemo: boolean;
   showCashTimer: boolean;

@@ -563,8 +563,9 @@ function TogglesPanel({ timerId, timerType }: { timerId: string; timerType: 'tou
     { key: 'showChipInfo', label: 'Chip Info' }, { key: 'showFooter', label: 'Footer' },
   ];
   const cashItems: { key: keyof DisplayToggles; label: string }[] = [
-    { key: 'showCashRate', label: 'Rate' }, { key: 'showCashMemo', label: 'Memo' },
-    { key: 'showCashTimer', label: 'Timer' },
+    { key: 'showCashName', label: 'Game Name' }, { key: 'showCashRate', label: 'Rate' },
+    { key: 'showCashMemo', label: 'Memo' }, { key: 'showCashTimer', label: 'Timer' },
+    { key: 'showProgressBar', label: 'Progress Bar' }, { key: 'showFooter', label: 'Footer' },
   ];
   const items = timerType === 'tournament' ? tournamentItems : cashItems;
 
@@ -1010,7 +1011,7 @@ function isSectionVisible(id: TournamentSectionId, dt: DisplayToggles): boolean 
 
 function isCashSectionVisible(id: CashSectionId, dt: DisplayToggles): boolean {
   switch (id) {
-    case 'cashName': return true;
+    case 'cashName': return dt.showCashName !== false;
     case 'rate': return dt.showCashRate;
     case 'memo': return dt.showCashMemo;
     case 'timer': return dt.showCashTimer;
@@ -1329,11 +1330,14 @@ function InlinePreview({ timerId, timerType, sticky }: { timerId: string; timerT
   const route = timerType === 'tournament' ? 'tournament' : 'cash';
 
   // Layout editor hooks (always called — React rules of hooks)
+  // Safe fallback: when opposite type array is empty, provide a dummy object
+  const dummyTournament = { id: '', name: '', displayToggles: DEFAULT_DISPLAY_TOGGLES } as unknown as Tournament;
+  const dummyCash = { id: '', name: '', displayToggles: DEFAULT_DISPLAY_TOGGLES } as unknown as CashGame;
   const tournamentEditor = useTournamentLayoutEditor(
-    timerType === 'tournament' && timer ? (timer as Tournament) : store.tournaments[0]
+    timerType === 'tournament' && timer ? (timer as Tournament) : (store.tournaments[0] || dummyTournament)
   );
   const cashEditor = useCashLayoutEditor(
-    timerType === 'cash' && timer ? (timer as CashGame) : store.cashGames[0]
+    timerType === 'cash' && timer ? (timer as CashGame) : (store.cashGames[0] || dummyCash)
   );
   const editor = timerType === 'tournament' ? tournamentEditor : cashEditor;
   const layoutMode = timerType === 'tournament' ? tournamentEditor.layoutMode : cashEditor.layoutMode;
@@ -1775,6 +1779,26 @@ function SystemStyleEditor() {
             </div>
           </div>
         )}
+        {/* Theme mini preview */}
+        {(() => {
+          const previewTheme = getSystemTheme(systemStyle.systemThemeId || 'bright-blue', systemStyle.customBgFrom, systemStyle.customBgTo);
+          return (
+            <div className="mt-3 rounded-xl overflow-hidden border" style={{ borderColor: previewTheme.glassBorder }}>
+              <div className="p-3 space-y-2" style={{ background: `linear-gradient(135deg, ${previewTheme.bgFrom}, ${previewTheme.bgTo})` }}>
+                <div className="text-[9px] font-semibold" style={{ color: previewTheme.textMuted }}>テーマプレビュー</div>
+                <div className="rounded-lg p-2 space-y-1.5" style={{ background: previewTheme.glassBg, borderWidth: 1, borderColor: previewTheme.glassBorder }}>
+                  <div className="text-[10px] font-bold" style={{ color: previewTheme.textPrimary }}>カードサンプル</div>
+                  <div className="rounded-md px-2 py-1" style={{ background: previewTheme.inputBg, borderWidth: 1, borderColor: previewTheme.inputBorder }}>
+                    <span className="text-[9px]" style={{ color: previewTheme.textSecondary }}>入力欄サンプル</span>
+                  </div>
+                  <div className="rounded-md p-1.5" style={{ background: previewTheme.glassInnerBg }}>
+                    <span className="text-[9px]" style={{ color: previewTheme.textMuted }}>カード内カード</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Font Selector */}
@@ -1814,6 +1838,15 @@ function SystemStyleEditor() {
           )}
         </div>
         <p className="text-[10px] text-white/15 mt-1">空欄でテーマデフォルトの文字色を使用します</p>
+        {/* Text color preview */}
+        <div className="g-card-inner p-2.5 mt-2 space-y-1">
+          <div className="text-[10px] font-bold" style={{ color: systemStyle.customTextColor || getSystemTheme(systemStyle.systemThemeId || 'bright-blue', systemStyle.customBgFrom, systemStyle.customBgTo).textPrimary }}>
+            見出しテキスト — Heading Text
+          </div>
+          <div className="text-[9px]" style={{ color: systemStyle.customTextColor ? `${systemStyle.customTextColor}99` : getSystemTheme(systemStyle.systemThemeId || 'bright-blue', systemStyle.customBgFrom, systemStyle.customBgTo).textSecondary }}>
+            説明テキスト — Description sample text
+          </div>
+        </div>
       </div>
 
       {/* UI Accent Color — Slider */}
@@ -1856,6 +1889,18 @@ function SystemStyleEditor() {
             onChange={e => setHsl(hsl.h, hsl.s, +e.target.value)}
             className="w-full h-6 rounded-full cursor-pointer appearance-none"
             style={{ background: `linear-gradient(to right, hsl(${hsl.h},${hsl.s}%,15%), hsl(${hsl.h},${hsl.s}%,50%), hsl(${hsl.h},${hsl.s}%,85%))` }} />
+        </div>
+        {/* Accent color preview */}
+        <div className="g-card-inner p-2.5 flex items-center gap-2">
+          <div className="text-[9px]" style={{ color: 'var(--sys-text-muted)' }}>プレビュー</div>
+          <button className="px-3 py-1 rounded-lg text-[10px] font-bold text-white" style={{ background: systemStyle.uiAccentColor }}>ボタン</button>
+          <span className="text-[10px] font-semibold" style={{ color: systemStyle.uiAccentColor }}>リンクテキスト</span>
+          <div className="w-4 h-4 rounded border-2 flex items-center justify-center" style={{ borderColor: systemStyle.uiAccentColor }}>
+            <svg className="w-2.5 h-2.5" style={{ color: systemStyle.uiAccentColor }} fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+          </div>
+          <div className="flex-1 h-1.5 rounded-full bg-white/10 overflow-hidden">
+            <div className="h-full rounded-full w-2/3" style={{ background: systemStyle.uiAccentColor }} />
+          </div>
         </div>
       </div>
 
