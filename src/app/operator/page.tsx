@@ -172,6 +172,28 @@ function TournamentEditor({ id }: { id: string }) {
   );
 }
 
+function hasPresetChanges(t: Tournament, preset: TournamentPreset): boolean {
+  return JSON.stringify(t.levels) !== JSON.stringify(preset.levels)
+    || t.startingChips !== preset.startingChips
+    || t.buyInAmount !== preset.buyInAmount
+    || t.reEntryAmount !== preset.reEntryAmount
+    || t.rebuyAmount !== preset.rebuyAmount
+    || t.addonAmount !== preset.addonAmount
+    || t.reEntryChips !== preset.reEntryChips
+    || t.rebuyChips !== preset.rebuyChips
+    || t.addonChips !== preset.addonChips
+    || t.earlyBirdBonus !== preset.earlyBirdBonus
+    || t.regCloseLevel !== preset.regCloseLevel
+    || t.preLevelDuration !== preset.preLevelDuration
+    || t.preLevelNote !== preset.preLevelNote
+    || (t.name || '') !== (preset.tournamentName || '')
+    || JSON.stringify(t.prizeStructure) !== JSON.stringify(preset.prizeStructure)
+    || JSON.stringify(t.sectionLayout) !== JSON.stringify(preset.sectionLayout)
+    || JSON.stringify(t.splitSectionLayout) !== JSON.stringify(preset.splitSectionLayout)
+    || JSON.stringify(t.displayToggles) !== JSON.stringify(preset.displayToggles)
+    || t.themeId !== preset.themeId;
+}
+
 function TournamentPresetPanel({ tournament: t }: { tournament: Tournament }) {
   const store = useStore();
   const [presetName, setPresetName] = useState('');
@@ -184,22 +206,35 @@ function TournamentPresetPanel({ tournament: t }: { tournament: Tournament }) {
     setShowSave(false);
   };
   const firstPlay = (levels: BlindLevel[]) => levels.find(l => l.type === 'play');
+  const sourcePreset = t.sourcePresetId ? store.tournamentPresets.find(p => p.id === t.sourcePresetId) : null;
+  const hasChanges = sourcePreset ? hasPresetChanges(t, sourcePreset) : false;
   return (
     <div className="space-y-2">
       <button onClick={() => setExpanded(!expanded)} className="w-full flex items-center justify-between">
         <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Tournament Presets</div>
         <svg className={`w-4 h-4 text-white/30 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
       </button>
+      {/* Update Preset button (always visible when changes detected) */}
+      {hasChanges && sourcePreset && (
+        <div className="flex items-center gap-2 px-2 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
+          <span className="text-[10px] text-amber-400/70 flex-1 truncate">Preset &quot;{sourcePreset.name}&quot; に変更あり</span>
+          <button className="btn btn-sm px-3 py-1 bg-amber-500/20 text-amber-400 border border-amber-500/30 hover:bg-amber-500/30 text-[10px] font-semibold"
+            onClick={() => { store.updateTournamentPreset(sourcePreset.id, t); }}>
+            Update Preset
+          </button>
+        </div>
+      )}
       {expanded && (
         <div className="space-y-2 fade-in">
           {store.tournamentPresets.length > 0 && (
             <div className="space-y-1">
               {store.tournamentPresets.map(p => {
                 const fp = firstPlay(p.levels);
+                const isSource = t.sourcePresetId === p.id;
                 return (
-                  <div key={p.id} className="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-white/[0.03] transition-colors">
+                  <div key={p.id} className={`flex items-center gap-2 py-1.5 px-2 rounded-lg transition-colors ${isSource ? 'bg-blue-500/5 border border-blue-500/15' : 'hover:bg-white/[0.03]'}`}>
                     <div className="flex-1 min-w-0">
-                      <div className="text-xs text-white/50 font-medium truncate">{p.name}</div>
+                      <div className="text-xs text-white/50 font-medium truncate">{p.name}{isSource && <span className="ml-1.5 text-[9px] text-blue-400/60">(loaded)</span>}</div>
                       <div className="text-[10px] text-white/20">
                         {p.tournamentName ? `${p.tournamentName} · ` : ''}{(p.startingChips / 1000).toFixed(0)}K · {fp ? `${fp.smallBlind}/${fp.bigBlind}` : '--'} · {p.levels.filter(l => l.type === 'play').length}lvl
                       </div>
@@ -383,15 +418,6 @@ function TournamentStats({ tournament: t }: { tournament: Tournament }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="text-[11px] text-white/25 block mb-1">Pre-Level (開始前)</label>
-          <div className="flex items-center gap-2">
-            <input type="number" className="input input-sm w-20 text-center" value={Math.floor((t.preLevelDuration || 0) / 60)} onChange={e => up({ preLevelDuration: Math.max(0, +e.target.value) * 60 })} min={0} />
-            <span className="text-xs text-white/25">min</span>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
@@ -498,19 +524,48 @@ function DisplaySettingsPanel({ timerId, timerType }: { timerId: string; timerTy
     if (timerType === 'tournament') store.updateTournamentToggles(timerId, partial);
     else store.updateCashToggles(timerId, partial);
   };
+  const [showUrlInput, setShowUrlInput] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { alert('ファイルサイズは2MB以下にしてください'); return; }
+    const reader = new FileReader();
+    reader.onload = () => { if (typeof reader.result === 'string') up({ backgroundImageUrl: reader.result }); };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
   return (
     <div className="space-y-3">
       <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Background Image</div>
-      <div>
-        <label className="text-[11px] text-white/25 block mb-1">Background Image URL (背景画像)</label>
-        <input
-          className="input"
-          value={dt.backgroundImageUrl}
-          onChange={e => up({ backgroundImageUrl: e.target.value })}
-          placeholder="https://example.com/image.jpg"
-        />
-        <p className="text-[10px] text-white/15 mt-1">ディスプレイ画面の背景画像URL</p>
+      {/* Preview */}
+      {dt.backgroundImageUrl && (
+        <div className="relative rounded-xl overflow-hidden border border-white/[0.08]" style={{ height: '80px' }}>
+          <img src={dt.backgroundImageUrl} alt="bg preview" className="w-full h-full object-cover" />
+          <button onClick={() => up({ backgroundImageUrl: '' })}
+            className="absolute top-1 right-1 p-1 rounded-full bg-black/60 text-white/60 hover:text-red-400 transition-colors" title="Clear">
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+      )}
+      {/* Upload button */}
+      <div className="flex gap-2">
+        <button onClick={() => fileInputRef.current?.click()}
+          className="btn btn-ghost btn-sm flex items-center gap-1.5">
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" /></svg>
+          Upload Image
+        </button>
+        <button onClick={() => setShowUrlInput(!showUrlInput)} className="btn btn-ghost btn-sm text-[10px] text-white/20">URLで指定</button>
       </div>
+      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
+      <p className="text-[10px] text-white/15">最大2MB · JPG/PNG/WebP</p>
+      {/* URL input (collapsible) */}
+      {showUrlInput && (
+        <div className="fade-in">
+          <input className="input input-sm" value={dt.backgroundImageUrl.startsWith('data:') ? '' : dt.backgroundImageUrl}
+            onChange={e => up({ backgroundImageUrl: e.target.value })} placeholder="https://example.com/image.jpg" />
+        </div>
+      )}
     </div>
   );
 }
@@ -581,18 +636,43 @@ function PrizeEditor({ tournament: t }: { tournament: Tournament }) {
 
 function BlindEditor({ tournament: t }: { tournament: Tournament }) {
   const store = useStore();
+  const renumberLevels = (levels: BlindLevel[]): BlindLevel[] => {
+    let playNum = 1;
+    return levels.map(l => l.type === 'play' ? { ...l, level: playNum++ } : l);
+  };
+  const up = (p: Partial<Tournament>) => store.updateTournament(t.id, p);
+  const hasPreLevel = (t.preLevelDuration || 0) > 0;
   const addLevel = (type: 'play' | 'break') => {
     const levels = [...t.levels];
     const last = [...levels].reverse().find(l => l.type === 'play');
-    if (type === 'play') levels.push({ level: (last?.level || 0) + 1, type: 'play', smallBlind: (last?.smallBlind || 100) * 2, bigBlind: (last?.bigBlind || 200) * 2, ante: last?.ante || 0, duration: last?.duration || 900 });
+    if (type === 'play') levels.push({ level: 0, type: 'play', smallBlind: (last?.smallBlind || 100) * 2, bigBlind: (last?.bigBlind || 200) * 2, ante: last?.ante || 0, duration: last?.duration || 900 });
     else levels.push({ level: 0, type: 'break', smallBlind: 0, bigBlind: 0, ante: 0, duration: 600 });
-    store.updateTournament(t.id, { levels });
+    store.updateTournament(t.id, { levels: renumberLevels(levels) });
   };
   const upLv = (i: number, p: Partial<BlindLevel>) => { const lvs = t.levels.map((l, j) => j === i ? { ...l, ...p } : l); store.updateTournament(t.id, { levels: lvs }); };
-  const rmLv = (i: number) => store.updateTournament(t.id, { levels: t.levels.filter((_, j) => j !== i) });
+  const rmLv = (i: number) => store.updateTournament(t.id, { levels: renumberLevels(t.levels.filter((_, j) => j !== i)) });
   return (
     <div className="space-y-3">
       <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Blind Structure</div>
+
+      {/* Pre-Level row */}
+      <div className={`p-2 rounded-xl border ${hasPreLevel ? 'bg-amber-500/5 border-amber-500/20' : 'border-white/[0.06] hover:bg-white/[0.02]'}`}>
+        <div className="flex items-center gap-2">
+          <div className={`toggle ${hasPreLevel ? 'on' : ''}`} onClick={() => up({ preLevelDuration: hasPreLevel ? 0 : 300 })} />
+          <span className="text-amber-400 text-xs font-semibold shrink-0">PRE-LEVEL</span>
+          {hasPreLevel && (
+            <>
+              <input type="text" inputMode="numeric" className="input input-sm w-16 text-center" value={Math.floor((t.preLevelDuration || 0) / 60)} onChange={e => { const v = toHalfWidthNumber(e.target.value); up({ preLevelDuration: Math.max(0, Number(v) || 0) * 60 }); }} />
+              <span className="text-[11px] text-white/20">min</span>
+            </>
+          )}
+        </div>
+        {hasPreLevel && (
+          <div className="mt-1 ml-11">
+            <input className="input input-sm text-[10px] w-full" value={t.preLevelNote || ''} onChange={e => up({ preLevelNote: e.target.value })} placeholder="コメント（例: 席についてお待ちください）" />
+          </div>
+        )}
+      </div>
 
       <div className="space-y-1">
         {t.levels.map((lv, i) => (
@@ -1182,7 +1262,6 @@ function CombinedPreview({ route, targetName, themeLabel, path, editMode, setEdi
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.25);
   const [iframeKey, setIframeKey] = useState(0);
-  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const update = () => {
@@ -1193,9 +1272,7 @@ function CombinedPreview({ route, targetName, themeLabel, path, editMode, setEdi
     return () => window.removeEventListener('resize', update);
   }, []);
 
-  const fullUrl = typeof window !== 'undefined' ? `${window.location.origin}${path}` : path;
   const routeLabel = route === 'cash' ? 'Cash Game' : 'Tournament';
-  const handleCopy = () => { navigator.clipboard.writeText(fullUrl); setCopied(true); setTimeout(() => setCopied(false), 2000); };
 
   // Tournament layout mode toggle
   const tEditor = isTournament ? (editor as ReturnType<typeof useTournamentLayoutEditor>) : null;
@@ -1233,18 +1310,6 @@ function CombinedPreview({ route, targetName, themeLabel, path, editMode, setEdi
             </svg>
           </button>
         </div>
-      </div>
-
-      {/* URL bar */}
-      <div className="flex items-center gap-2 px-3 py-1.5 bg-white/[0.02] border-x border-white/[0.08]">
-        <svg className="w-3 h-3 text-white/15 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
-        </svg>
-        <code className="text-[10px] text-blue-400/50 flex-1 truncate select-all">{fullUrl}</code>
-        <button onClick={handleCopy}
-          className={`text-[10px] px-2 py-0.5 rounded-md transition-all ${copied ? 'bg-green-500/20 text-green-400' : 'bg-white/[0.05] text-white/30 hover:text-white/60 hover:bg-white/[0.1]'}`}>
-          {copied ? 'Copied!' : 'Copy'}
-        </button>
       </div>
 
       {/* Edit mode: Single/Split toggle + Reset */}
@@ -1316,7 +1381,6 @@ function DisplayPreview({ route, displayId, targetName, themeLabel, overridePath
   const [scale, setScale] = useState(0.25);
   const [iframeKey, setIframeKey] = useState(0);
   const [expanded, setExpanded] = useState(false);
-  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const update = () => {
@@ -1336,14 +1400,7 @@ function DisplayPreview({ route, displayId, targetName, themeLabel, overridePath
     ? `/display/cash?display=${displayId}`
     : `/display/tournament?display=${displayId}`);
 
-  const fullUrl = typeof window !== 'undefined' ? `${window.location.origin}${path}` : path;
   const routeLabel = route === 'split' ? 'Split View' : route === 'cash' ? 'Cash Game' : 'Tournament';
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(fullUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   const handleOpen = () => {
     window.open(path, '_blank');
@@ -1386,18 +1443,6 @@ function DisplayPreview({ route, displayId, targetName, themeLabel, overridePath
             </svg>
           </button>
         </div>
-      </div>
-
-      {/* URL bar */}
-      <div className="flex items-center gap-2 px-3 py-1.5 bg-white/[0.02] border-x border-white/[0.08]">
-        <svg className="w-3 h-3 text-white/15 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
-        </svg>
-        <code className="text-[10px] text-blue-400/50 flex-1 truncate select-all">{fullUrl}</code>
-        <button onClick={handleCopy}
-          className={`text-[10px] px-2 py-0.5 rounded-md transition-all ${copied ? 'bg-green-500/20 text-green-400' : 'bg-white/[0.05] text-white/30 hover:text-white/60 hover:bg-white/[0.1]'}`}>
-          {copied ? 'Copied!' : 'Copy'}
-        </button>
       </div>
 
       {/* Preview iframe */}

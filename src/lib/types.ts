@@ -38,6 +38,7 @@ export type TournamentPreset = {
   addonChips: number;
   regCloseLevel?: number;
   preLevelDuration?: number;
+  preLevelNote?: string;
   earlyBirdBonus: number;
   prizeStructure: PrizeEntry[];
   displayToggles?: DisplayToggles;
@@ -105,6 +106,8 @@ export type Tournament = {
   createdAt: number;
   regCloseLevel?: number;
   preLevelDuration?: number;
+  preLevelNote?: string;
+  sourcePresetId?: string;
   displayToggles?: DisplayToggles;
   sound?: SoundSettings;
   themeId?: string;

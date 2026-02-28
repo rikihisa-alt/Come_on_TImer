@@ -65,6 +65,7 @@ interface AppState {
   addTournamentPreset: (name: string, tournament: Tournament) => void;
   removeTournamentPreset: (id: string) => void;
   loadTournamentPreset: (tournamentId: string, presetId: string) => void;
+  updateTournamentPreset: (presetId: string, tournament: Tournament) => void;
   broadcastAll: () => void;
 }
 
@@ -358,6 +359,7 @@ export const useStore = create<AppState>()(
           rebuyAmount: tournament.rebuyAmount, addonAmount: tournament.addonAmount,
           reEntryChips: tournament.reEntryChips, rebuyChips: tournament.rebuyChips, addonChips: tournament.addonChips,
           regCloseLevel: tournament.regCloseLevel, preLevelDuration: tournament.preLevelDuration,
+          preLevelNote: tournament.preLevelNote,
           earlyBirdBonus: tournament.earlyBirdBonus,
           prizeStructure: tournament.prizeStructure.map(p => ({ ...p })),
           displayToggles: tournament.displayToggles ? { ...tournament.displayToggles } : undefined,
@@ -382,6 +384,7 @@ export const useStore = create<AppState>()(
           rebuyAmount: preset.rebuyAmount, addonAmount: preset.addonAmount,
           reEntryChips: preset.reEntryChips, rebuyChips: preset.rebuyChips, addonChips: preset.addonChips,
           regCloseLevel: preset.regCloseLevel, preLevelDuration: preset.preLevelDuration,
+          preLevelNote: preset.preLevelNote,
           earlyBirdBonus: preset.earlyBirdBonus ?? t.earlyBirdBonus,
           prizeStructure: preset.prizeStructure ? preset.prizeStructure.map(p => ({ ...p })) : t.prizeStructure,
           displayToggles: preset.displayToggles ? { ...preset.displayToggles } : t.displayToggles,
@@ -389,10 +392,29 @@ export const useStore = create<AppState>()(
           themeId: preset.themeId ?? t.themeId,
           sectionLayout: preset.sectionLayout ? { ...preset.sectionLayout } : t.sectionLayout,
           splitSectionLayout: preset.splitSectionLayout ? { ...preset.splitSectionLayout } : t.splitSectionLayout,
+          sourcePresetId: presetId,
           currentLevelIndex: 0, remainingMs: preset.levels[0]?.duration ? preset.levels[0].duration * 1000 : 900000,
           status: 'idle' as const, timerStartedAt: null,
         } : t) }));
         get().broadcastAll();
+      },
+      updateTournamentPreset: (presetId, tournament) => {
+        set(s => ({ tournamentPresets: s.tournamentPresets.map(p => p.id === presetId ? {
+          ...p, tournamentName: tournament.name,
+          levels: [...tournament.levels], startingChips: tournament.startingChips,
+          buyInAmount: tournament.buyInAmount, reEntryAmount: tournament.reEntryAmount,
+          rebuyAmount: tournament.rebuyAmount, addonAmount: tournament.addonAmount,
+          reEntryChips: tournament.reEntryChips, rebuyChips: tournament.rebuyChips, addonChips: tournament.addonChips,
+          regCloseLevel: tournament.regCloseLevel, preLevelDuration: tournament.preLevelDuration,
+          preLevelNote: tournament.preLevelNote,
+          earlyBirdBonus: tournament.earlyBirdBonus,
+          prizeStructure: tournament.prizeStructure.map(pe => ({ ...pe })),
+          displayToggles: tournament.displayToggles ? { ...tournament.displayToggles } : undefined,
+          sound: tournament.sound ? { ...tournament.sound } : undefined,
+          themeId: tournament.themeId,
+          sectionLayout: tournament.sectionLayout ? { ...tournament.sectionLayout } : undefined,
+          splitSectionLayout: tournament.splitSectionLayout ? { ...tournament.splitSectionLayout } : undefined,
+        } : p) }));
       },
       broadcastAll: () => {
         const s = get();
@@ -401,7 +423,7 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'come-on-timer-v3',
-      version: 16,
+      version: 17,
       migrate: (persisted: unknown, version: number) => {
         const state = persisted as Record<string, unknown>;
         if (version < 4) {
@@ -552,6 +574,19 @@ export const useStore = create<AppState>()(
           const ss = (state.systemStyle as any) || {};
           ss.systemThemeId = ss.systemThemeId || 'dark-navy';
           state.systemStyle = ss;
+        }
+        if (version < 17) {
+          // preLevelNote, sourcePresetId are optional — no migration needed
+          // renumber blind levels for existing tournaments
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const tours = (state.tournaments as any[]) || [];
+          state.tournaments = tours.map((t) => {
+            let playNum = 1;
+            const levels = (t.levels || []).map((l: { type: string; level: number }) =>
+              l.type === 'play' ? { ...l, level: playNum++ } : l
+            );
+            return { ...t, levels };
+          });
         }
         return state as unknown as AppState;
       },

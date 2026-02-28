@@ -496,6 +496,9 @@ function Inner() {
             <div className="text-5xl md:text-8xl lg:text-[10vw] font-black timer-font text-blue-400 leading-none">
               {formatTimerHMS(displayMs)}
             </div>
+            {tournament.preLevelNote && (
+              <div className="text-sm md:text-lg text-white/30 font-medium mt-4 md:mt-6">{tournament.preLevelNote}</div>
+            )}
           </div>
         </div>
       )}
