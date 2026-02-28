@@ -136,6 +136,27 @@ export type CashGame = {
   sound?: SoundSettings;
   themeId?: string;
   sectionLayout?: CashSectionLayout;
+  splitSectionLayout?: CashSectionLayout;
+  sourcePresetId?: string;
+};
+
+export type CashGamePreset = {
+  id: string;
+  name: string;
+  cashName: string;
+  smallBlind: number;
+  bigBlind: number;
+  ante: number;
+  memo: string;
+  countdownMode: boolean;
+  countdownTotalMs: number;
+  preLevelDuration?: number;
+  displayToggles?: DisplayToggles;
+  sound?: SoundSettings;
+  themeId?: string;
+  sectionLayout?: CashSectionLayout;
+  splitSectionLayout?: CashSectionLayout;
+  createdAt: number;
 };
 
 export type DisplayAssignment = {

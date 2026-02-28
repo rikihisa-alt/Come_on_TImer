@@ -146,7 +146,10 @@ function CashDisplayInner() {
 
   const primaryColor = theme?.primaryColor || '#60a5fa';
   const isCountdownWarning = cashGame.countdownMode && countdown < 300000 && countdown > 0 && cashGame.status === 'running';
-  const layout = cashGame.sectionLayout || DEFAULT_CASH_SECTION_LAYOUT;
+  const layoutParam = params.get('layout');
+  const layout = layoutParam === 'split'
+    ? (cashGame.splitSectionLayout || cashGame.sectionLayout || DEFAULT_CASH_SECTION_LAYOUT)
+    : (cashGame.sectionLayout || DEFAULT_CASH_SECTION_LAYOUT);
 
   return (
     <DisplayWrapper bgStyle={bgStyle} className="flex flex-col select-none relative">

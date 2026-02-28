@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Tournament, CashGame, DisplayAssignment, ThemeConfig, SoundSettings, DisplayToggles, BlindLevel, SectionLayout, TournamentSectionId, SectionPosition, CashSectionId, CashSectionLayout, SystemStyle, BlindTemplate, TournamentPreset } from '@/lib/types';
+import { Tournament, CashGame, DisplayAssignment, ThemeConfig, SoundSettings, DisplayToggles, BlindLevel, SectionLayout, TournamentSectionId, SectionPosition, CashSectionId, CashSectionLayout, SystemStyle, BlindTemplate, TournamentPreset, CashGamePreset } from '@/lib/types';
 import { uid } from '@/lib/utils';
 import { broadcast } from '@/lib/sync';
 import { DEFAULT_THEMES, STANDARD_PRESET, DEFAULT_TTS_MESSAGES, DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND, DEFAULT_SECTION_LAYOUT, DEFAULT_CASH_SECTION_LAYOUT, DEFAULT_SYSTEM_STYLE } from '@/lib/presets';
@@ -16,6 +16,7 @@ interface AppState {
   systemStyle: SystemStyle;
   blindTemplates: BlindTemplate[];
   tournamentPresets: TournamentPreset[];
+  cashPresets: CashGamePreset[];
   updateSystemStyle: (partial: Partial<SystemStyle>) => void;
   addTournament: (name?: string, levels?: BlindLevel[]) => string;
   removeTournament: (id: string) => void;
@@ -66,6 +67,12 @@ interface AppState {
   removeTournamentPreset: (id: string) => void;
   loadTournamentPreset: (tournamentId: string, presetId: string) => void;
   updateTournamentPreset: (presetId: string, tournament: Tournament) => void;
+  addCashPreset: (name: string, cashGame: CashGame) => void;
+  removeCashPreset: (id: string) => void;
+  loadCashPreset: (cashId: string, presetId: string) => void;
+  updateCashPreset: (presetId: string, cashGame: CashGame) => void;
+  updateCashSplitSectionPosition: (id: string, sectionId: CashSectionId, pos: SectionPosition) => void;
+  resetCashSplitSectionLayout: (id: string) => void;
   broadcastAll: () => void;
 }
 
@@ -116,6 +123,7 @@ export const useStore = create<AppState>()(
       systemStyle: { ...DEFAULT_SYSTEM_STYLE },
       blindTemplates: [],
       tournamentPresets: [],
+      cashPresets: [],
 
       updateSystemStyle: (partial) => { set(s => ({ systemStyle: { ...s.systemStyle, ...partial } })); get().broadcastAll(); },
       addTournament: (name, levels) => {
@@ -350,6 +358,18 @@ export const useStore = create<AppState>()(
         set(s => ({ tournaments: s.tournaments.map(t => t.id === id ? { ...t, splitSectionLayout: undefined } : t) }));
         get().broadcastAll();
       },
+      updateCashSplitSectionPosition: (id, sectionId, pos) => {
+        set(s => ({ cashGames: s.cashGames.map(c => {
+          if (c.id !== id) return c;
+          const current = c.splitSectionLayout || { ...DEFAULT_CASH_SECTION_LAYOUT };
+          return { ...c, splitSectionLayout: { ...current, [sectionId]: pos } };
+        }) }));
+        get().broadcastAll();
+      },
+      resetCashSplitSectionLayout: (id) => {
+        set(s => ({ cashGames: s.cashGames.map(c => c.id === id ? { ...c, splitSectionLayout: undefined } : c) }));
+        get().broadcastAll();
+      },
       addTournamentPreset: (name, tournament) => {
         const preset: TournamentPreset = {
           id: uid(), name, tournamentName: tournament.name,
@@ -416,14 +436,63 @@ export const useStore = create<AppState>()(
           splitSectionLayout: tournament.splitSectionLayout ? { ...tournament.splitSectionLayout } : undefined,
         } : p) }));
       },
+      addCashPreset: (name, cashGame) => {
+        const preset: CashGamePreset = {
+          id: uid(), name, cashName: cashGame.name,
+          smallBlind: cashGame.smallBlind, bigBlind: cashGame.bigBlind, ante: cashGame.ante,
+          memo: cashGame.memo, countdownMode: cashGame.countdownMode, countdownTotalMs: cashGame.countdownTotalMs,
+          preLevelDuration: cashGame.preLevelDuration,
+          displayToggles: cashGame.displayToggles ? { ...cashGame.displayToggles } : undefined,
+          sound: cashGame.sound ? { ...cashGame.sound } : undefined,
+          themeId: cashGame.themeId,
+          sectionLayout: cashGame.sectionLayout ? { ...cashGame.sectionLayout } : undefined,
+          splitSectionLayout: cashGame.splitSectionLayout ? { ...cashGame.splitSectionLayout } : undefined,
+          createdAt: Date.now(),
+        };
+        set(s => ({ cashPresets: [...s.cashPresets, preset] }));
+      },
+      removeCashPreset: (id) => {
+        set(s => ({ cashPresets: s.cashPresets.filter(p => p.id !== id) }));
+      },
+      loadCashPreset: (cashId, presetId) => {
+        const preset = get().cashPresets.find(p => p.id === presetId);
+        if (!preset) return;
+        set(s => ({ cashGames: s.cashGames.map(c => c.id === cashId ? {
+          ...c, name: preset.cashName || c.name,
+          smallBlind: preset.smallBlind, bigBlind: preset.bigBlind, ante: preset.ante,
+          memo: preset.memo, countdownMode: preset.countdownMode, countdownTotalMs: preset.countdownTotalMs,
+          countdownRemainingMs: preset.countdownTotalMs, preLevelDuration: preset.preLevelDuration,
+          displayToggles: preset.displayToggles ? { ...preset.displayToggles } : c.displayToggles,
+          sound: preset.sound ? { ...preset.sound } : c.sound,
+          themeId: preset.themeId ?? c.themeId,
+          sectionLayout: preset.sectionLayout ? { ...preset.sectionLayout } : c.sectionLayout,
+          splitSectionLayout: preset.splitSectionLayout ? { ...preset.splitSectionLayout } : c.splitSectionLayout,
+          sourcePresetId: presetId,
+          status: 'idle' as const, timerStartedAt: null, elapsedMs: 0, preLevelRemainingMs: 0,
+        } : c) }));
+        get().broadcastAll();
+      },
+      updateCashPreset: (presetId, cashGame) => {
+        set(s => ({ cashPresets: s.cashPresets.map(p => p.id === presetId ? {
+          ...p, cashName: cashGame.name,
+          smallBlind: cashGame.smallBlind, bigBlind: cashGame.bigBlind, ante: cashGame.ante,
+          memo: cashGame.memo, countdownMode: cashGame.countdownMode, countdownTotalMs: cashGame.countdownTotalMs,
+          preLevelDuration: cashGame.preLevelDuration,
+          displayToggles: cashGame.displayToggles ? { ...cashGame.displayToggles } : undefined,
+          sound: cashGame.sound ? { ...cashGame.sound } : undefined,
+          themeId: cashGame.themeId,
+          sectionLayout: cashGame.sectionLayout ? { ...cashGame.sectionLayout } : undefined,
+          splitSectionLayout: cashGame.splitSectionLayout ? { ...cashGame.splitSectionLayout } : undefined,
+        } : p) }));
+      },
       broadcastAll: () => {
         const s = get();
-        broadcast('FULL_SYNC', { tournaments: s.tournaments, cashGames: s.cashGames, displays: s.displays, themes: s.themes, sound: s.sound, displayToggles: s.displayToggles, defaultThemeId: s.defaultThemeId, systemStyle: s.systemStyle, blindTemplates: s.blindTemplates, tournamentPresets: s.tournamentPresets });
+        broadcast('FULL_SYNC', { tournaments: s.tournaments, cashGames: s.cashGames, displays: s.displays, themes: s.themes, sound: s.sound, displayToggles: s.displayToggles, defaultThemeId: s.defaultThemeId, systemStyle: s.systemStyle, blindTemplates: s.blindTemplates, tournamentPresets: s.tournamentPresets, cashPresets: s.cashPresets });
       },
     }),
     {
       name: 'come-on-timer-v3',
-      version: 17,
+      version: 18,
       migrate: (persisted: unknown, version: number) => {
         const state = persisted as Record<string, unknown>;
         if (version < 4) {
@@ -588,9 +657,12 @@ export const useStore = create<AppState>()(
             return { ...t, levels };
           });
         }
+        if (version < 18) {
+          state.cashPresets = (state.cashPresets as unknown[]) || [];
+        }
         return state as unknown as AppState;
       },
-      partialize: (s) => ({ tournaments: s.tournaments, cashGames: s.cashGames, displays: s.displays, themes: s.themes, sound: s.sound, displayToggles: s.displayToggles, defaultThemeId: s.defaultThemeId, systemStyle: s.systemStyle, blindTemplates: s.blindTemplates, tournamentPresets: s.tournamentPresets }),
+      partialize: (s) => ({ tournaments: s.tournaments, cashGames: s.cashGames, displays: s.displays, themes: s.themes, sound: s.sound, displayToggles: s.displayToggles, defaultThemeId: s.defaultThemeId, systemStyle: s.systemStyle, blindTemplates: s.blindTemplates, tournamentPresets: s.tournamentPresets, cashPresets: s.cashPresets }),
     }
   )
 );

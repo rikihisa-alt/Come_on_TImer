@@ -302,7 +302,7 @@ function CashPanel({ cashGame, theme, displayToggles: dt }: {
     return () => clearInterval(iv);
   }, [cashGame]);
 
-  const layout = cashGame.sectionLayout || DEFAULT_CASH_SECTION_LAYOUT;
+  const layout = cashGame.splitSectionLayout || cashGame.sectionLayout || DEFAULT_CASH_SECTION_LAYOUT;
   const pc = theme?.primaryColor || '#60a5fa';
   const isWarn = cashGame.countdownMode && countdown < 300000 && countdown > 0 && cashGame.status === 'running';
   const tickerSpeed = dt.tickerSpeed || 25;

@@ -6,7 +6,7 @@ import { useStore } from '@/stores/useStore';
 import { formatTimer, formatTimerHMS, formatChips, uid, toHalfWidthNumber } from '@/lib/utils';
 import { DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND, DEFAULT_SECTION_LAYOUT, DEFAULT_CASH_SECTION_LAYOUT, FONT_OPTIONS, DEFAULT_SYSTEM_STYLE, ASPECT_RATIO_OPTIONS, SYSTEM_THEMES, getSystemTheme } from '@/lib/presets';
 import { playSound, playTestSound, playWarningBeep, speakTTS, fillTTSTemplate, PRESET_LABELS } from '@/lib/audio';
-import { BlindLevel, Tournament, CashGame, SoundPreset, PrizeEntry, SoundSettings, DisplayToggles, ThemeConfig, TournamentSectionId, SectionPosition, SectionLayout, CashSectionId, CashSectionLayout, AspectRatioMode, TournamentPreset, SystemThemeId } from '@/lib/types';
+import { BlindLevel, Tournament, CashGame, SoundPreset, PrizeEntry, SoundSettings, DisplayToggles, ThemeConfig, TournamentSectionId, SectionPosition, SectionLayout, CashSectionId, CashSectionLayout, AspectRatioMode, TournamentPreset, CashGamePreset, SystemThemeId } from '@/lib/types';
 import { RoomSync } from '@/components/RoomSync';
 
 const TAB_ORDER = ['tournaments', 'cash', 'split', 'settings'] as const;
@@ -246,6 +246,85 @@ function TournamentPresetPanel({ tournament: t }: { tournament: Tournament }) {
                     </div>
                     <button className="btn btn-ghost btn-sm text-[10px]" onClick={() => store.loadTournamentPreset(t.id, p.id)}>Load</button>
                     <button className="text-white/15 hover:text-red-400 text-xs transition-colors" onClick={() => store.removeTournamentPreset(p.id)}>x</button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {showSave ? (
+            <div className="flex items-center gap-2">
+              <input className="input input-sm flex-1" value={presetName} onChange={e => setPresetName(e.target.value)} placeholder="プリセット名" onKeyDown={e => e.key === 'Enter' && savePreset()} autoFocus />
+              <button className="btn btn-primary btn-sm" onClick={savePreset}>Save</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => setShowSave(false)}>Cancel</button>
+            </div>
+          ) : (
+            <button className="btn btn-ghost btn-sm text-[10px]" onClick={() => setShowSave(true)}>Save Current as Preset</button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function hasCashPresetChanges(c: CashGame, preset: CashGamePreset): boolean {
+  return (c.name || '') !== (preset.cashName || '')
+    || c.smallBlind !== preset.smallBlind
+    || c.bigBlind !== preset.bigBlind
+    || c.ante !== preset.ante
+    || (c.memo || '') !== (preset.memo || '')
+    || c.countdownMode !== preset.countdownMode
+    || c.countdownTotalMs !== preset.countdownTotalMs
+    || c.preLevelDuration !== preset.preLevelDuration
+    || JSON.stringify(c.sectionLayout) !== JSON.stringify(preset.sectionLayout)
+    || JSON.stringify(c.splitSectionLayout) !== JSON.stringify(preset.splitSectionLayout)
+    || JSON.stringify(c.displayToggles) !== JSON.stringify(preset.displayToggles)
+    || c.themeId !== preset.themeId;
+}
+
+function CashPresetPanel({ cashGame: c }: { cashGame: CashGame }) {
+  const store = useStore();
+  const [presetName, setPresetName] = useState('');
+  const [showSave, setShowSave] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const savePreset = () => {
+    if (!presetName.trim()) return;
+    store.addCashPreset(presetName.trim(), c);
+    setPresetName('');
+    setShowSave(false);
+  };
+  const sourcePreset = c.sourcePresetId ? store.cashPresets.find(p => p.id === c.sourcePresetId) : null;
+  const hasChanges = sourcePreset ? hasCashPresetChanges(c, sourcePreset) : false;
+  return (
+    <div className="space-y-2">
+      <button onClick={() => setExpanded(!expanded)} className="w-full flex items-center justify-between">
+        <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Ring Game Presets</div>
+        <svg className={`w-4 h-4 text-white/30 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+      </button>
+      {hasChanges && sourcePreset && (
+        <div className="flex items-center gap-2 px-2 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
+          <span className="text-[10px] text-amber-400/70 flex-1 truncate">Preset &quot;{sourcePreset.name}&quot; に変更あり</span>
+          <button className="btn btn-sm px-3 py-1 bg-amber-500/20 text-amber-400 border border-amber-500/30 hover:bg-amber-500/30 text-[10px] font-semibold"
+            onClick={() => { store.updateCashPreset(sourcePreset.id, c); }}>
+            Update Preset
+          </button>
+        </div>
+      )}
+      {expanded && (
+        <div className="space-y-2 fade-in">
+          {store.cashPresets.length > 0 && (
+            <div className="space-y-1">
+              {store.cashPresets.map(p => {
+                const isSource = c.sourcePresetId === p.id;
+                return (
+                  <div key={p.id} className={`flex items-center gap-2 py-1.5 px-2 rounded-lg transition-colors ${isSource ? 'bg-green-500/5 border border-green-500/15' : 'hover:bg-white/[0.03]'}`}>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs text-white/50 font-medium truncate">{p.name}{isSource && <span className="ml-1.5 text-[9px] text-green-400/60">(loaded)</span>}</div>
+                      <div className="text-[10px] text-white/20">
+                        {p.cashName ? `${p.cashName} · ` : ''}{p.smallBlind}/{p.bigBlind}{p.ante > 0 ? ` (${p.ante})` : ''}{p.memo ? ` · ${p.memo}` : ''}
+                      </div>
+                    </div>
+                    <button className="btn btn-ghost btn-sm text-[10px]" onClick={() => store.loadCashPreset(c.id, p.id)}>Load</button>
+                    <button className="text-white/15 hover:text-red-400 text-xs transition-colors" onClick={() => store.removeCashPreset(p.id)}>x</button>
                   </div>
                 );
               })}
@@ -880,6 +959,7 @@ function CashEditor({ id, onDelete }: { id: string; onDelete: (id: string) => vo
       {/* Mobile: stacked */}
       <div className="lg:hidden space-y-4 fade-in">
         <InlinePreview timerId={id} timerType="cash" sticky />
+        <div className="g-card p-4"><CashPresetPanel cashGame={c} /></div>
         {cashSettings}
         {cashDisplaySettings}
       </div>
@@ -889,6 +969,7 @@ function CashEditor({ id, onDelete }: { id: string; onDelete: (id: string) => vo
           <InlinePreview timerId={id} timerType="cash" sticky />
         </div>
         <div className="flex-1 overflow-y-auto min-h-0 space-y-4 min-w-0 pr-1 custom-scrollbar">
+          <div className="g-card p-4"><CashPresetPanel cashGame={c} /></div>
           {cashSettings}
           {cashDisplaySettings}
         </div>
@@ -1165,19 +1246,23 @@ function useTournamentLayoutEditor(t: Tournament) {
   return { ...editor, layoutMode, setLayoutMode };
 }
 
-/* Hook for cash layout editor */
+/* Hook for cash layout editor — supports Single/Split toggle */
 function useCashLayoutEditor(c: CashGame) {
   const store = useStore();
-  const layout = c.sectionLayout || DEFAULT_CASH_SECTION_LAYOUT;
+  const [layoutMode, setLayoutMode] = useState<'single' | 'split'>('single');
+  const layout = layoutMode === 'split'
+    ? (c.splitSectionLayout || DEFAULT_CASH_SECTION_LAYOUT)
+    : (c.sectionLayout || DEFAULT_CASH_SECTION_LAYOUT);
   const dt = c.displayToggles || DEFAULT_DISPLAY_TOGGLES;
   const visibleIds = (Object.keys(DEFAULT_CASH_SECTION_LAYOUT) as CashSectionId[]).filter(id => isCashSectionVisible(id, dt));
-  return GenericLayoutEditor<CashSectionId>({
+  const editor = GenericLayoutEditor<CashSectionId>({
     layout, defaultLayout: DEFAULT_CASH_SECTION_LAYOUT, labels: CASH_SECTION_LABELS,
     timerName: c.name, visibleIds,
-    onUpdatePosition: (sid, pos) => store.updateCashSectionPosition(c.id, sid, pos),
-    onReset: () => store.resetCashSectionLayout(c.id),
+    onUpdatePosition: (sid, pos) => layoutMode === 'split' ? store.updateCashSplitSectionPosition(c.id, sid, pos) : store.updateCashSectionPosition(c.id, sid, pos),
+    onReset: () => { layoutMode === 'split' ? store.resetCashSplitSectionLayout(c.id) : store.resetCashSectionLayout(c.id); },
     onBroadcast: () => store.broadcastAll(),
   });
+  return { ...editor, layoutMode, setLayoutMode };
 }
 
 /* ── Theme Selector (per-timer) ── */
@@ -1251,6 +1336,8 @@ function InlinePreview({ timerId, timerType, sticky }: { timerId: string; timerT
     timerType === 'cash' && timer ? (timer as CashGame) : store.cashGames[0]
   );
   const editor = timerType === 'tournament' ? tournamentEditor : cashEditor;
+  const layoutMode = timerType === 'tournament' ? tournamentEditor.layoutMode : cashEditor.layoutMode;
+  const layoutSuffix = layoutMode === 'split' ? '&layout=split' : '';
 
   return (
     <div>
@@ -1270,7 +1357,7 @@ function InlinePreview({ timerId, timerType, sticky }: { timerId: string; timerT
           route={route}
           targetName={timer.name}
           themeLabel={themeName}
-          path={`/display/${route}?timer=${timerId}&theme=${themeId}&preview=1`}
+          path={`/display/${route}?timer=${timerId}&theme=${themeId}&preview=1${layoutSuffix}`}
           editMode={editMode}
           setEditMode={setEditMode}
           editor={editor}
@@ -1303,8 +1390,8 @@ function CombinedPreview({ route, targetName, themeLabel, path, editMode, setEdi
 
   const routeLabel = route === 'cash' ? 'Ring Game' : 'Tournament';
 
-  // Tournament layout mode toggle
-  const tEditor = isTournament ? (editor as ReturnType<typeof useTournamentLayoutEditor>) : null;
+  // Layout mode toggle (both tournament and cash editors now support it)
+  const editorWithMode = editor as { layoutMode: 'single' | 'split'; setLayoutMode: (m: 'single' | 'split') => void };
 
   return (
     <div className="mt-2 space-y-0">
@@ -1344,14 +1431,14 @@ function CombinedPreview({ route, targetName, themeLabel, path, editMode, setEdi
       {/* Edit mode: Single/Split toggle + Reset */}
       {editMode && (
         <div className="flex items-center gap-2 px-3 py-1.5 bg-white/[0.02] border-x border-white/[0.08]">
-          {tEditor && (
+          {'layoutMode' in editorWithMode && (
             <div className="flex gap-1">
-              <button onClick={() => tEditor.setLayoutMode('single')}
-                className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all ${tEditor.layoutMode === 'single' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'text-white/25 border border-white/[0.06]'}`}>
+              <button onClick={() => editorWithMode.setLayoutMode('single')}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all ${editorWithMode.layoutMode === 'single' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'text-white/25 border border-white/[0.06]'}`}>
                 Single
               </button>
-              <button onClick={() => tEditor.setLayoutMode('split')}
-                className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all ${tEditor.layoutMode === 'split' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' : 'text-white/25 border border-white/[0.06]'}`}>
+              <button onClick={() => editorWithMode.setLayoutMode('split')}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all ${editorWithMode.layoutMode === 'split' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' : 'text-white/25 border border-white/[0.06]'}`}>
                 Split
               </button>
             </div>
