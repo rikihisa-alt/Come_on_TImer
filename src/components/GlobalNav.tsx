@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 const NAV_ITEMS = [
@@ -14,6 +14,8 @@ const NAV_ITEMS = [
 
 export function GlobalNav() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const isPreview = searchParams.get('preview') === '1';
   const [isFs, setIsFs] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -44,7 +46,7 @@ export function GlobalNav() {
   // Close menu on route change
   useEffect(() => { setMenuOpen(false); }, [pathname]);
 
-  if (isFs) return null;
+  if (isFs || isPreview) return null;
 
   return (
     <nav className="g-topbar flex items-center justify-between px-3 md:px-5 py-2 md:py-3 border-b border-white/[0.06] sticky top-0 z-50">

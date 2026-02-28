@@ -136,7 +136,9 @@ function CashDisplayInner() {
   const dt = cashGame.displayToggles || globalToggles;
   const tickerSpeed = dt.tickerSpeed || 25;
 
-  const bgStyle = theme?.type === 'gradient'
+  const bgStyle = dt.backgroundImageUrl
+    ? { backgroundImage: `url(${dt.backgroundImageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+    : theme?.type === 'gradient'
     ? { background: `linear-gradient(160deg, ${theme.gradientFrom || '#0e1c36'}, ${theme.gradientTo || '#1c3d6e'})` }
     : theme?.type === 'image' && theme.imageUrl
     ? { backgroundImage: `url(${theme.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
@@ -151,7 +153,7 @@ function CashDisplayInner() {
       {theme && theme.overlayOpacity > 0 && (
         <div className="absolute inset-0 bg-black pointer-events-none" style={{ opacity: theme.overlayOpacity / 100 }} />
       )}
-      {(theme?.type === 'image' && theme.imageUrl) && (
+      {(dt.backgroundImageUrl || (theme?.type === 'image' && theme.imageUrl)) && (
         <div className="absolute inset-0 bg-black/50 pointer-events-none z-[1]" />
       )}
 

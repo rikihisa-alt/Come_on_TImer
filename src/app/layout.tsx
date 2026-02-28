@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { Suspense } from 'react';
 import './globals.css';
 import { GlobalNav } from '@/components/GlobalNav';
 import { SystemStyleProvider } from '@/components/SystemStyleProvider';
@@ -21,7 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="ja">
       <body className="antialiased">
         <SystemStyleProvider />
-        <GlobalNav />
+        <Suspense><GlobalNav /></Suspense>
         {children}
         <script
           dangerouslySetInnerHTML={{

@@ -530,9 +530,33 @@ function DisplaySettingsPanel({ timerId, timerType }: { timerId: string; timerTy
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 2 * 1024 * 1024) { alert('ファイルサイズは2MB以下にしてください'); return; }
-    const reader = new FileReader();
-    reader.onload = () => { if (typeof reader.result === 'string') up({ backgroundImageUrl: reader.result }); };
-    reader.readAsDataURL(file);
+    // Compress image via canvas to avoid localStorage quota issues
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      try {
+        const MAX_DIM = 1280;
+        let w = img.width, h = img.height;
+        if (w > MAX_DIM || h > MAX_DIM) {
+          const ratio = Math.min(MAX_DIM / w, MAX_DIM / h);
+          w = Math.round(w * ratio); h = Math.round(h * ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        ctx.drawImage(img, 0, 0, w, h);
+        const compressed = canvas.toDataURL('image/jpeg', 0.7);
+        up({ backgroundImageUrl: compressed });
+      } catch (err) {
+        alert('画像の処理に失敗しました');
+        console.error(err);
+      } finally {
+        URL.revokeObjectURL(objectUrl);
+      }
+    };
+    img.onerror = () => { alert('画像の読み込みに失敗しました'); URL.revokeObjectURL(objectUrl); };
+    img.src = objectUrl;
     e.target.value = '';
   };
   return (
