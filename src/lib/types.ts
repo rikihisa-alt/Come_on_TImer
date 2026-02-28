@@ -72,7 +72,8 @@ export type SectionLayout = Record<TournamentSectionId, SectionPosition>;
 
 export type CashSectionId =
   | 'cashName' | 'rate' | 'memo'
-  | 'timer' | 'sbCard' | 'bbCard' | 'anteCard' | 'ticker';
+  | 'timer' | 'sbCard' | 'bbCard' | 'anteCard' | 'ticker'
+  | 'players' | 'reEntry' | 'rebuy' | 'addon' | 'avgStack';
 
 export type CashSectionLayout = Record<CashSectionId, SectionPosition>;
 
@@ -131,6 +132,19 @@ export type CashGame = {
   countdownRemainingMs: number;
   preLevelDuration?: number;
   preLevelRemainingMs: number;
+  // プレイヤー管理
+  startingChips: number;
+  initialEntries: number;
+  reEntryCount: number;
+  reEntryChips: number;
+  rebuyCount: number;
+  rebuyChips: number;
+  addonCount: number;
+  addonChips: number;
+  buyInAmount: number;
+  reEntryAmount: number;
+  rebuyAmount: number;
+  addonAmount: number;
   createdAt: number;
   displayToggles?: DisplayToggles;
   sound?: SoundSettings;
@@ -151,6 +165,14 @@ export type CashGamePreset = {
   countdownMode: boolean;
   countdownTotalMs: number;
   preLevelDuration?: number;
+  startingChips: number;
+  reEntryChips: number;
+  rebuyChips: number;
+  addonChips: number;
+  buyInAmount: number;
+  reEntryAmount: number;
+  rebuyAmount: number;
+  addonAmount: number;
   displayToggles?: DisplayToggles;
   sound?: SoundSettings;
   themeId?: string;
@@ -219,6 +241,8 @@ export type DisplayToggles = {
   showCashRate: boolean;
   showCashMemo: boolean;
   showCashTimer: boolean;
+  showCashPlayers: boolean;
+  showCashChipInfo: boolean;
   tickerText: string;
   tickerSpeed: number;
   backgroundImageUrl: string;

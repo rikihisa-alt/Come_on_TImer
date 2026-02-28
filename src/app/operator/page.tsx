@@ -506,6 +506,59 @@ function TournamentStats({ tournament: t }: { tournament: Tournament }) {
   );
 }
 
+function CashStats({ cashGame: c }: { cashGame: CashGame }) {
+  const up = (p: Partial<CashGame>) => useStore.getState().updateCashGame(c.id, p);
+  const activePlayers = c.initialEntries + c.reEntryCount;
+  const totalChips = c.initialEntries * c.startingChips
+    + c.reEntryCount * c.reEntryChips
+    + c.rebuyCount * c.rebuyChips
+    + c.addonCount * c.addonChips;
+  const avg = activePlayers > 0 ? Math.round(totalChips / activePlayers) : 0;
+
+  const CountRow = ({ label, count, countKey, chips, chipsKey }: { label: string; count: number; countKey: keyof CashGame; chips?: number; chipsKey?: keyof CashGame }) => (
+    <div className="flex items-center gap-1">
+      <span className="text-[10px] text-white/30 w-16 shrink-0">{label}</span>
+      <div className="flex gap-0.5 items-center shrink-0">
+        <button className="btn btn-ghost btn-sm px-1" onClick={() => up({ [countKey]: Math.max(0, count - 1) } as Partial<CashGame>)}>-</button>
+        <input type="number" className="input input-sm w-12 text-center" value={count} onChange={e => up({ [countKey]: Math.max(0, +e.target.value) } as Partial<CashGame>)} />
+        <button className="btn btn-ghost btn-sm px-1" onClick={() => up({ [countKey]: count + 1 } as Partial<CashGame>)}>+</button>
+      </div>
+      {chipsKey && (
+        <div className="flex items-center gap-0.5 shrink-0">
+          <input type="number" className="input input-sm w-16 text-center" value={chips || 0} onChange={e => up({ [chipsKey]: Math.max(0, +e.target.value) } as Partial<CashGame>)} />
+          <span className="text-[9px] text-white/20">chips</span>
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="space-y-3">
+      <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Player Info</div>
+      <div>
+        <label className="text-[11px] text-white/25 block mb-1">Starting Chips</label>
+        <input type="number" className="input input-sm" value={c.startingChips} onChange={e => up({ startingChips: +e.target.value })} />
+      </div>
+
+      <div className="border-t border-white/[0.06] pt-3 space-y-2">
+        <CountRow label="Entry" count={c.initialEntries} countKey="initialEntries" />
+        <CountRow label="Re-Entry" count={c.reEntryCount} countKey="reEntryCount" chips={c.reEntryChips} chipsKey="reEntryChips" />
+        <CountRow label="Rebuy" count={c.rebuyCount} countKey="rebuyCount" chips={c.rebuyChips} chipsKey="rebuyChips" />
+        <CountRow label="Add-on" count={c.addonCount} countKey="addonCount" chips={c.addonChips} chipsKey="addonChips" />
+      </div>
+
+      <div className="border-t border-white/[0.06] pt-3">
+        <div className="text-[11px] text-white/25 font-semibold mb-2">Chip Summary</div>
+        <div className="grid grid-cols-2 gap-1 text-[11px]">
+          <span className="text-white/30">Players</span><span className="text-white/50 font-bold text-right">{activePlayers}</span>
+          <span className="text-white/30">Total Chips</span><span className="text-white/50 font-bold text-right">{totalChips.toLocaleString()}</span>
+          <span className="text-white/30">Avg Stack</span><span className="text-white/50 font-bold text-right">{avg > 0 ? formatChips(avg) : '--'}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Per-Timer Panels (shared by Tournament & Cash editors) ── */
 
 function TickerPanel({ timerId, timerType }: { timerId: string; timerType: 'tournament' | 'cash' }) {
@@ -565,6 +618,7 @@ function TogglesPanel({ timerId, timerType }: { timerId: string; timerType: 'tou
   const cashItems: { key: keyof DisplayToggles; label: string }[] = [
     { key: 'showCashName', label: 'Game Name' }, { key: 'showCashRate', label: 'Rate' },
     { key: 'showCashMemo', label: 'Memo' }, { key: 'showCashTimer', label: 'Timer' },
+    { key: 'showCashPlayers', label: 'Player Count' }, { key: 'showCashChipInfo', label: 'Avg Stack' },
     { key: 'showProgressBar', label: 'Progress Bar' }, { key: 'showFooter', label: 'Footer' },
   ];
   const items = timerType === 'tournament' ? tournamentItems : cashItems;
@@ -962,6 +1016,7 @@ function CashEditor({ id, onDelete }: { id: string; onDelete: (id: string) => vo
         <InlinePreview timerId={id} timerType="cash" sticky />
         <div className="g-card p-4"><CashPresetPanel cashGame={c} /></div>
         {cashSettings}
+        <div className="g-card p-4"><CashStats cashGame={c} /></div>
         {cashDisplaySettings}
       </div>
       {/* Desktop: two independent scroll columns */}
@@ -972,6 +1027,7 @@ function CashEditor({ id, onDelete }: { id: string; onDelete: (id: string) => vo
         <div className="flex-1 overflow-y-auto min-h-0 space-y-4 min-w-0 pr-1 custom-scrollbar">
           <div className="g-card p-4"><CashPresetPanel cashGame={c} /></div>
           {cashSettings}
+          <div className="g-card p-4"><CashStats cashGame={c} /></div>
           {cashDisplaySettings}
         </div>
       </div>
@@ -992,6 +1048,8 @@ const CASH_SECTION_LABELS: Record<CashSectionId, string> = {
   cashName: 'Name', rate: 'Rate', memo: 'Memo',
   timer: 'Timer', sbCard: 'SB', bbCard: 'BB',
   anteCard: 'Ante', ticker: 'Ticker',
+  players: 'Players', reEntry: 'Re-Entry', rebuy: 'Rebuy',
+  addon: 'Add-on', avgStack: 'Avg Stack',
 };
 
 function isSectionVisible(id: TournamentSectionId, dt: DisplayToggles): boolean {
@@ -1017,6 +1075,8 @@ function isCashSectionVisible(id: CashSectionId, dt: DisplayToggles): boolean {
     case 'timer': return dt.showCashTimer;
     case 'sbCard': case 'bbCard': case 'anteCard': return dt.showCashRate;
     case 'ticker': return !!dt.tickerText;
+    case 'players': case 'reEntry': case 'rebuy': case 'addon': return dt.showCashPlayers;
+    case 'avgStack': return dt.showCashChipInfo;
   }
 }
 

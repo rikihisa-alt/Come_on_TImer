@@ -5,12 +5,21 @@ import { useSearchParams } from 'next/navigation';
 import { useStore } from '@/stores/useStore';
 import { onSync } from '@/lib/sync';
 import { unlockAudio } from '@/lib/audio';
-import { formatTimerHMS } from '@/lib/utils';
+import { formatTimerHMS, formatChips } from '@/lib/utils';
 import { CashGame, ThemeConfig, DisplayToggles, CashSectionLayout } from '@/lib/types';
 import { DEFAULT_DISPLAY_TOGGLES, DEFAULT_CASH_SECTION_LAYOUT } from '@/lib/presets';
 import { FullscreenButton } from '@/components/FullscreenButton';
 import { AbsoluteSection } from '@/components/AbsoluteSection';
 import { DisplayWrapper } from '@/components/DisplayWrapper';
+
+function GlassStat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+  return (
+    <div className="g-card-inner p-3 lg:p-4 h-full flex flex-col items-center justify-center text-center">
+      <div className="text-[9px] lg:text-[11px] text-white/35 uppercase tracking-wider font-semibold mb-1.5">{label}</div>
+      <div className={`text-base lg:text-xl xl:text-2xl font-bold timer-font leading-tight ${accent ? 'text-blue-400' : 'text-white/75'}`}>{value}</div>
+    </div>
+  );
+}
 
 /* ── Timer Selector dropdown ── */
 function TimerSelector({ selectedId, onSelect, cashGames }: {
@@ -151,6 +160,13 @@ function CashDisplayInner() {
     ? (cashGame.splitSectionLayout || cashGame.sectionLayout || DEFAULT_CASH_SECTION_LAYOUT)
     : (cashGame.sectionLayout || DEFAULT_CASH_SECTION_LAYOUT);
 
+  const activePlayers = cashGame.initialEntries + cashGame.reEntryCount;
+  const totalChips = cashGame.initialEntries * cashGame.startingChips
+    + cashGame.reEntryCount * cashGame.reEntryChips
+    + cashGame.rebuyCount * cashGame.rebuyChips
+    + cashGame.addonCount * cashGame.addonChips;
+  const avgStack = activePlayers > 0 ? Math.round(totalChips / activePlayers) : 0;
+
   return (
     <DisplayWrapper bgStyle={bgStyle} className="flex flex-col select-none relative">
       {theme && theme.overlayOpacity > 0 && (
@@ -254,6 +270,29 @@ function CashDisplayInner() {
           </>
         )}
 
+        {/* Player / Re-Entry / Rebuy / Add-on / Avg Stack */}
+        {dt.showCashPlayers && (
+          <>
+            <AbsoluteSection pos={layout.players}>
+              <GlassStat label="Players" value={`${activePlayers}`} accent />
+            </AbsoluteSection>
+            <AbsoluteSection pos={layout.reEntry}>
+              <GlassStat label="Re-Entry" value={String(cashGame.reEntryCount)} />
+            </AbsoluteSection>
+            <AbsoluteSection pos={layout.rebuy}>
+              <GlassStat label="Rebuy" value={String(cashGame.rebuyCount)} />
+            </AbsoluteSection>
+            <AbsoluteSection pos={layout.addon}>
+              <GlassStat label="Add-on" value={String(cashGame.addonCount)} />
+            </AbsoluteSection>
+          </>
+        )}
+        {dt.showCashChipInfo && (
+          <AbsoluteSection pos={layout.avgStack}>
+            <GlassStat label="Avg Stack" value={avgStack > 0 ? formatChips(avgStack) : '--'} />
+          </AbsoluteSection>
+        )}
+
         {/* Ticker */}
         {dt.tickerText && (
           <AbsoluteSection pos={layout.ticker}>
@@ -304,6 +343,28 @@ function CashDisplayInner() {
             </div>
           )}
         </div>
+        {dt.showCashPlayers && (
+          <div className="flex gap-2.5 w-full">
+            <div className="g-card-inner flex-1 p-3 text-center">
+              <div className="text-[9px] text-white/30 uppercase tracking-wider font-semibold mb-1">Players</div>
+              <div className="text-lg font-bold text-blue-400 timer-font">{activePlayers}</div>
+            </div>
+            <div className="g-card-inner flex-1 p-3 text-center">
+              <div className="text-[9px] text-white/30 uppercase tracking-wider font-semibold mb-1">Re-Entry</div>
+              <div className="text-lg font-bold text-white/70 timer-font">{cashGame.reEntryCount}</div>
+            </div>
+            <div className="g-card-inner flex-1 p-3 text-center">
+              <div className="text-[9px] text-white/30 uppercase tracking-wider font-semibold mb-1">Rebuy</div>
+              <div className="text-lg font-bold text-white/70 timer-font">{cashGame.rebuyCount}</div>
+            </div>
+          </div>
+        )}
+        {dt.showCashChipInfo && (
+          <div className="g-card-inner px-5 py-3 text-center">
+            <div className="text-[9px] text-white/30 uppercase tracking-wider font-semibold mb-1">Avg Stack</div>
+            <div className="text-lg font-bold text-white/70 timer-font">{avgStack > 0 ? formatChips(avgStack) : '--'}</div>
+          </div>
+        )}
       </main>
 
       {/* ═══ Overlays ═══ */}

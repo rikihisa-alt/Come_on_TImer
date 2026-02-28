@@ -310,6 +310,12 @@ function CashPanel({ cashGame, theme, displayToggles: dt }: {
   const pc = theme?.primaryColor || '#60a5fa';
   const isWarn = cashGame.countdownMode && countdown < 300000 && countdown > 0 && cashGame.status === 'running';
   const tickerSpeed = dt.tickerSpeed || 25;
+  const activePlayers = cashGame.initialEntries + cashGame.reEntryCount;
+  const totalChips = cashGame.initialEntries * cashGame.startingChips
+    + cashGame.reEntryCount * cashGame.reEntryChips
+    + cashGame.rebuyCount * cashGame.rebuyChips
+    + cashGame.addonCount * cashGame.addonChips;
+  const avgStack = activePlayers > 0 ? Math.round(totalChips / activePlayers) : 0;
 
   return (
     <div className="flex-1 relative overflow-hidden">
@@ -382,6 +388,44 @@ function CashPanel({ cashGame, theme, displayToggles: dt }: {
             </AbsoluteSection>
           )}
         </>
+      )}
+
+      {/* Player / Re-Entry / Rebuy / Add-on / Avg Stack */}
+      {dt.showCashPlayers && (
+        <>
+          <AbsoluteSection pos={layout.players}>
+            <div className="g-card-inner h-full flex flex-col items-center justify-center p-1">
+              <div className="text-[7px] lg:text-[9px] text-white/30 uppercase tracking-wider font-semibold">Players</div>
+              <div className="text-xs lg:text-base font-bold text-white/65 timer-font">{activePlayers}</div>
+            </div>
+          </AbsoluteSection>
+          <AbsoluteSection pos={layout.reEntry}>
+            <div className="g-card-inner h-full flex flex-col items-center justify-center p-1">
+              <div className="text-[7px] lg:text-[9px] text-white/30 uppercase tracking-wider font-semibold">Re-Entry</div>
+              <div className="text-xs lg:text-base font-bold text-white/65 timer-font">{cashGame.reEntryCount}</div>
+            </div>
+          </AbsoluteSection>
+          <AbsoluteSection pos={layout.rebuy}>
+            <div className="g-card-inner h-full flex flex-col items-center justify-center p-1">
+              <div className="text-[7px] lg:text-[9px] text-white/30 uppercase tracking-wider font-semibold">Rebuy</div>
+              <div className="text-xs lg:text-base font-bold text-white/65 timer-font">{cashGame.rebuyCount}</div>
+            </div>
+          </AbsoluteSection>
+          <AbsoluteSection pos={layout.addon}>
+            <div className="g-card-inner h-full flex flex-col items-center justify-center p-1">
+              <div className="text-[7px] lg:text-[9px] text-white/30 uppercase tracking-wider font-semibold">Add-on</div>
+              <div className="text-xs lg:text-base font-bold text-white/65 timer-font">{cashGame.addonCount}</div>
+            </div>
+          </AbsoluteSection>
+        </>
+      )}
+      {dt.showCashChipInfo && (
+        <AbsoluteSection pos={layout.avgStack}>
+          <div className="g-card-inner h-full flex flex-col items-center justify-center p-1">
+            <div className="text-[7px] lg:text-[9px] text-white/30 uppercase tracking-wider font-semibold">Avg Stack</div>
+            <div className="text-xs lg:text-base font-bold text-white/65 timer-font">{avgStack > 0 ? formatChips(avgStack) : '--'}</div>
+          </div>
+        </AbsoluteSection>
       )}
 
       {/* Ticker */}

@@ -99,6 +99,11 @@ function mkCash(name?: string): CashGame {
     memo: '', status: 'idle', timerStartedAt: null, elapsedMs: 0,
     countdownMode: false, countdownTotalMs: 3600000, countdownRemainingMs: 3600000,
     preLevelRemainingMs: 0,
+    startingChips: 10000, initialEntries: 0,
+    reEntryCount: 0, reEntryChips: 10000,
+    rebuyCount: 0, rebuyChips: 10000,
+    addonCount: 0, addonChips: 10000,
+    buyInAmount: 0, reEntryAmount: 0, rebuyAmount: 0, addonAmount: 0,
     createdAt: Date.now(),
     displayToggles: { ...DEFAULT_DISPLAY_TOGGLES },
     sound: { ...DEFAULT_SOUND },
@@ -442,6 +447,10 @@ export const useStore = create<AppState>()(
           smallBlind: cashGame.smallBlind, bigBlind: cashGame.bigBlind, ante: cashGame.ante,
           memo: cashGame.memo, countdownMode: cashGame.countdownMode, countdownTotalMs: cashGame.countdownTotalMs,
           preLevelDuration: cashGame.preLevelDuration,
+          startingChips: cashGame.startingChips, reEntryChips: cashGame.reEntryChips,
+          rebuyChips: cashGame.rebuyChips, addonChips: cashGame.addonChips,
+          buyInAmount: cashGame.buyInAmount, reEntryAmount: cashGame.reEntryAmount,
+          rebuyAmount: cashGame.rebuyAmount, addonAmount: cashGame.addonAmount,
           displayToggles: cashGame.displayToggles ? { ...cashGame.displayToggles } : undefined,
           sound: cashGame.sound ? { ...cashGame.sound } : undefined,
           themeId: cashGame.themeId,
@@ -462,6 +471,11 @@ export const useStore = create<AppState>()(
           smallBlind: preset.smallBlind, bigBlind: preset.bigBlind, ante: preset.ante,
           memo: preset.memo, countdownMode: preset.countdownMode, countdownTotalMs: preset.countdownTotalMs,
           countdownRemainingMs: preset.countdownTotalMs, preLevelDuration: preset.preLevelDuration,
+          startingChips: preset.startingChips, reEntryChips: preset.reEntryChips,
+          rebuyChips: preset.rebuyChips, addonChips: preset.addonChips,
+          buyInAmount: preset.buyInAmount, reEntryAmount: preset.reEntryAmount,
+          rebuyAmount: preset.rebuyAmount, addonAmount: preset.addonAmount,
+          initialEntries: 0, reEntryCount: 0, rebuyCount: 0, addonCount: 0,
           displayToggles: preset.displayToggles ? { ...preset.displayToggles } : c.displayToggles,
           sound: preset.sound ? { ...preset.sound } : c.sound,
           themeId: preset.themeId ?? c.themeId,
@@ -478,6 +492,10 @@ export const useStore = create<AppState>()(
           smallBlind: cashGame.smallBlind, bigBlind: cashGame.bigBlind, ante: cashGame.ante,
           memo: cashGame.memo, countdownMode: cashGame.countdownMode, countdownTotalMs: cashGame.countdownTotalMs,
           preLevelDuration: cashGame.preLevelDuration,
+          startingChips: cashGame.startingChips, reEntryChips: cashGame.reEntryChips,
+          rebuyChips: cashGame.rebuyChips, addonChips: cashGame.addonChips,
+          buyInAmount: cashGame.buyInAmount, reEntryAmount: cashGame.reEntryAmount,
+          rebuyAmount: cashGame.rebuyAmount, addonAmount: cashGame.addonAmount,
           displayToggles: cashGame.displayToggles ? { ...cashGame.displayToggles } : undefined,
           sound: cashGame.sound ? { ...cashGame.sound } : undefined,
           themeId: cashGame.themeId,
@@ -492,7 +510,7 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'come-on-timer-v3',
-      version: 18,
+      version: 19,
       migrate: (persisted: unknown, version: number) => {
         const state = persisted as Record<string, unknown>;
         if (version < 4) {
@@ -659,6 +677,88 @@ export const useStore = create<AppState>()(
         }
         if (version < 18) {
           state.cashPresets = (state.cashPresets as unknown[]) || [];
+        }
+        if (version < 19) {
+          // Add player/chip management fields to cash games
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const cashes = (state.cashGames as any[]) || [];
+          state.cashGames = cashes.map((c) => ({
+            ...c,
+            startingChips: (c.startingChips as number) ?? 10000,
+            initialEntries: (c.initialEntries as number) ?? 0,
+            reEntryCount: (c.reEntryCount as number) ?? 0,
+            reEntryChips: (c.reEntryChips as number) ?? 10000,
+            rebuyCount: (c.rebuyCount as number) ?? 0,
+            rebuyChips: (c.rebuyChips as number) ?? 10000,
+            addonCount: (c.addonCount as number) ?? 0,
+            addonChips: (c.addonChips as number) ?? 10000,
+            buyInAmount: (c.buyInAmount as number) ?? 0,
+            reEntryAmount: (c.reEntryAmount as number) ?? 0,
+            rebuyAmount: (c.rebuyAmount as number) ?? 0,
+            addonAmount: (c.addonAmount as number) ?? 0,
+            sectionLayout: c.sectionLayout ? {
+              ...c.sectionLayout,
+              players: c.sectionLayout.players ?? { x: 86.7, y: 28, w: 12.5, h: 12 },
+              reEntry: c.sectionLayout.reEntry ?? { x: 86.7, y: 41, w: 12.5, h: 12 },
+              rebuy: c.sectionLayout.rebuy ?? { x: 86.7, y: 54, w: 12.5, h: 12 },
+              addon: c.sectionLayout.addon ?? { x: 86.7, y: 67, w: 12.5, h: 12 },
+              avgStack: c.sectionLayout.avgStack ?? { x: 86.7, y: 80, w: 12.5, h: 8 },
+            } : c.sectionLayout,
+            splitSectionLayout: c.splitSectionLayout ? {
+              ...c.splitSectionLayout,
+              players: c.splitSectionLayout.players ?? { x: 86.7, y: 28, w: 12.5, h: 12 },
+              reEntry: c.splitSectionLayout.reEntry ?? { x: 86.7, y: 41, w: 12.5, h: 12 },
+              rebuy: c.splitSectionLayout.rebuy ?? { x: 86.7, y: 54, w: 12.5, h: 12 },
+              addon: c.splitSectionLayout.addon ?? { x: 86.7, y: 67, w: 12.5, h: 12 },
+              avgStack: c.splitSectionLayout.avgStack ?? { x: 86.7, y: 80, w: 12.5, h: 8 },
+            } : c.splitSectionLayout,
+          }));
+          // Add player/chip fields to cash presets
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const cashPresets = (state.cashPresets as any[]) || [];
+          state.cashPresets = cashPresets.map((p) => ({
+            ...p,
+            startingChips: (p.startingChips as number) ?? 10000,
+            reEntryChips: (p.reEntryChips as number) ?? 10000,
+            rebuyChips: (p.rebuyChips as number) ?? 10000,
+            addonChips: (p.addonChips as number) ?? 10000,
+            buyInAmount: (p.buyInAmount as number) ?? 0,
+            reEntryAmount: (p.reEntryAmount as number) ?? 0,
+            rebuyAmount: (p.rebuyAmount as number) ?? 0,
+            addonAmount: (p.addonAmount as number) ?? 0,
+            sectionLayout: p.sectionLayout ? {
+              ...p.sectionLayout,
+              players: p.sectionLayout.players ?? { x: 86.7, y: 28, w: 12.5, h: 12 },
+              reEntry: p.sectionLayout.reEntry ?? { x: 86.7, y: 41, w: 12.5, h: 12 },
+              rebuy: p.sectionLayout.rebuy ?? { x: 86.7, y: 54, w: 12.5, h: 12 },
+              addon: p.sectionLayout.addon ?? { x: 86.7, y: 67, w: 12.5, h: 12 },
+              avgStack: p.sectionLayout.avgStack ?? { x: 86.7, y: 80, w: 12.5, h: 8 },
+            } : p.sectionLayout,
+            splitSectionLayout: p.splitSectionLayout ? {
+              ...p.splitSectionLayout,
+              players: p.splitSectionLayout.players ?? { x: 86.7, y: 28, w: 12.5, h: 12 },
+              reEntry: p.splitSectionLayout.reEntry ?? { x: 86.7, y: 41, w: 12.5, h: 12 },
+              rebuy: p.splitSectionLayout.rebuy ?? { x: 86.7, y: 54, w: 12.5, h: 12 },
+              addon: p.splitSectionLayout.addon ?? { x: 86.7, y: 67, w: 12.5, h: 12 },
+              avgStack: p.splitSectionLayout.avgStack ?? { x: 86.7, y: 80, w: 12.5, h: 8 },
+            } : p.splitSectionLayout,
+          }));
+          // Add showCashPlayers/showCashChipInfo to display toggles
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const dt = (state.displayToggles as any) || {};
+          dt.showCashPlayers = dt.showCashPlayers ?? false;
+          dt.showCashChipInfo = dt.showCashChipInfo ?? false;
+          state.displayToggles = dt;
+          // Also update per-game/preset toggles
+          state.cashGames = (state.cashGames as Record<string, unknown>[]).map((c) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const cdt = (c.displayToggles as any);
+            if (cdt) {
+              cdt.showCashPlayers = cdt.showCashPlayers ?? false;
+              cdt.showCashChipInfo = cdt.showCashChipInfo ?? false;
+            }
+            return c;
+          });
         }
         return state as unknown as AppState;
       },
