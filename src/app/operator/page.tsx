@@ -10,7 +10,7 @@ import { BlindLevel, Tournament, CashGame, SoundPreset, PrizeEntry, SoundSetting
 import { RoomSync } from '@/components/RoomSync';
 
 const TAB_ORDER = ['tournaments', 'cash', 'split', 'settings'] as const;
-const TAB_LABELS: Record<string, string> = { tournaments: 'Tournaments', cash: 'Cash Games', split: 'Split', settings: 'Settings' };
+const TAB_LABELS: Record<string, string> = { tournaments: 'Tournaments', cash: 'Ring Games', split: 'Split', settings: 'Settings' };
 
 function MobileBottomTabs({ tab, switchTab }: { tab: string; switchTab: (t: typeof TAB_ORDER[number]) => void }) {
   const [mounted, setMounted] = useState(false);
@@ -21,7 +21,7 @@ function MobileBottomTabs({ tab, switchTab }: { tab: string; switchTab: (t: type
       style={{ background: 'var(--sys-bg-from)', paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
       {TAB_ORDER.map(t => (
         <button key={t} onClick={() => switchTab(t)}
-          className={`flex-1 shrink-0 py-2 rounded-xl text-xs font-semibold transition-all duration-200 whitespace-nowrap ${tab === t ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'hover:bg-white/[0.04] border border-transparent'}`}
+          className={`flex-1 shrink-0 py-2 rounded-xl text-sm font-semibold transition-all duration-200 whitespace-nowrap ${tab === t ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'hover:bg-white/[0.04] border border-transparent'}`}
           style={tab !== t ? { color: 'var(--sys-text-muted)' } : undefined}>
           {TAB_LABELS[t]}
         </button>
@@ -55,9 +55,9 @@ export default function OperatorPage() {
       <nav className="hidden md:flex px-3 py-2 gap-1.5 border-b border-white/[0.06] overflow-x-auto">
         {TAB_ORDER.map(t => (
           <button key={t} onClick={() => switchTab(t)}
-            className={`flex-1 shrink-0 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 whitespace-nowrap ${tab === t ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'hover:bg-white/[0.04] border border-transparent'}`}
+            className={`flex-1 shrink-0 py-2.5 rounded-xl text-base font-semibold transition-all duration-200 whitespace-nowrap ${tab === t ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'hover:bg-white/[0.04] border border-transparent'}`}
             style={tab !== t ? { color: 'var(--sys-text-muted)' } : undefined}>
-            {t === 'tournaments' ? 'Tournaments' : t === 'cash' ? 'Cash Games' : t === 'split' ? 'Split' : 'Settings'}
+            {t === 'tournaments' ? 'Tournaments' : t === 'cash' ? 'Ring Games' : t === 'split' ? 'Split' : 'Settings'}
           </button>
         ))}
       </nav>
@@ -740,12 +740,12 @@ function CashTab() {
             {c.name}{c.status === 'running' && <span className="ml-2 text-xs text-green-400">LIVE</span>}
           </button>
         ))}
-        <button onClick={() => { const id = addCashGame(`Cash ${cashGames.length + 1}`); setSelectedId(id); }} className="btn btn-ghost btn-sm">+ Add</button>
+        <button onClick={() => { const id = addCashGame(`Ring ${cashGames.length + 1}`); setSelectedId(id); }} className="btn btn-ghost btn-sm">+ Add</button>
       </div>
       {selectedId && <CashEditor id={selectedId} onDelete={handleDelete} />}
       {cashGames.length === 0 && (
         <div className="g-card p-8 text-center text-white/20">
-          <p className="text-sm">No cash games. Click &quot;+ Add&quot; to create one.</p>
+          <p className="text-sm">No ring games. Click &quot;+ Add&quot; to create one.</p>
         </div>
       )}
     </div>
@@ -787,7 +787,7 @@ function CashEditor({ id, onDelete }: { id: string; onDelete: (id: string) => vo
   const cashSettings = (
     <div className="g-card p-4 space-y-4">
       <div className="flex items-center gap-3">
-        <input className="input flex-1" value={c.name} onChange={e => store.updateCashGame(id, { name: e.target.value })} placeholder="Cash game name" />
+        <input className="input flex-1" value={c.name} onChange={e => store.updateCashGame(id, { name: e.target.value })} placeholder="Ring game name" />
         <button onClick={() => onDelete(id)} className="btn btn-danger btn-sm">Delete</button>
       </div>
       <div className="grid grid-cols-3 gap-3">
@@ -1272,7 +1272,7 @@ function CombinedPreview({ route, targetName, themeLabel, path, editMode, setEdi
     return () => window.removeEventListener('resize', update);
   }, []);
 
-  const routeLabel = route === 'cash' ? 'Cash Game' : 'Tournament';
+  const routeLabel = route === 'cash' ? 'Ring Game' : 'Tournament';
 
   // Tournament layout mode toggle
   const tEditor = isTournament ? (editor as ReturnType<typeof useTournamentLayoutEditor>) : null;
@@ -1400,7 +1400,7 @@ function DisplayPreview({ route, displayId, targetName, themeLabel, overridePath
     ? `/display/cash?display=${displayId}`
     : `/display/tournament?display=${displayId}`);
 
-  const routeLabel = route === 'split' ? 'Split View' : route === 'cash' ? 'Cash Game' : 'Tournament';
+  const routeLabel = route === 'split' ? 'Split View' : route === 'cash' ? 'Ring Game' : 'Tournament';
 
   const handleOpen = () => {
     window.open(path, '_blank');
@@ -1498,8 +1498,8 @@ function SplitTab() {
     return (
       <div className="space-y-4 fade-in">
         <div className="g-card p-8 text-center text-white/20">
-          <p className="text-sm">Split View には最低2つのタイマー（トーナメントまたはキャッシュ）が必要です。</p>
-          <p className="text-xs mt-2 text-white/15">先にTournamentsまたはCash Gamesタブでタイマーを作成してください。</p>
+          <p className="text-sm">Split View には最低2つのタイマー（トーナメントまたはリングゲーム）が必要です。</p>
+          <p className="text-xs mt-2 text-white/15">先にTournamentsまたはRing Gamesタブでタイマーを作成してください。</p>
         </div>
       </div>
     );
@@ -1516,7 +1516,7 @@ function SplitTab() {
             <select className="input" value={leftId} onChange={e => setLeftId(e.target.value)}>
               {allTimers.map(t => (
                 <option key={t.id} value={t.id}>
-                  [{t.kind === 'T' ? 'Tournament' : 'Cash'}] {t.name} {t.status === 'running' ? '(LIVE)' : t.status === 'paused' ? '(PAUSED)' : ''}
+                  [{t.kind === 'T' ? 'Tournament' : 'Ring'}] {t.name} {t.status === 'running' ? '(LIVE)' : t.status === 'paused' ? '(PAUSED)' : ''}
                 </option>
               ))}
             </select>
@@ -1531,7 +1531,7 @@ function SplitTab() {
             <select className="input" value={rightId} onChange={e => setRightId(e.target.value)}>
               {allTimers.map(t => (
                 <option key={t.id} value={t.id}>
-                  [{t.kind === 'T' ? 'Tournament' : 'Cash'}] {t.name} {t.status === 'running' ? '(LIVE)' : t.status === 'paused' ? '(PAUSED)' : ''}
+                  [{t.kind === 'T' ? 'Tournament' : 'Ring'}] {t.name} {t.status === 'running' ? '(LIVE)' : t.status === 'paused' ? '(PAUSED)' : ''}
                 </option>
               ))}
             </select>

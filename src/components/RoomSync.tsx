@@ -160,7 +160,7 @@ export function RoomSync() {
       <button
         onClick={handleCreate}
         disabled={status === 'connecting'}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 hover:border-blue-500/30 transition-all text-xs text-blue-400 font-medium disabled:opacity-50"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 hover:border-blue-500/30 transition-all text-sm text-blue-400 font-medium disabled:opacity-50"
       >
         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m9.07-9.07a4.5 4.5 0 00-6.364 0l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg>
         {status === 'connecting' ? 'Connecting...' : 'Create Room'}
@@ -171,12 +171,12 @@ export function RoomSync() {
           value={joinInput}
           onChange={(e) => setJoinInput(e.target.value.toUpperCase().slice(0, 4))}
           placeholder="Code"
-          className="w-16 px-2 py-1.5 rounded-lg bg-white/[0.06] border border-white/[0.1] text-xs text-white/70 text-center placeholder:text-white/20 font-mono tracking-wider focus:outline-none focus:border-blue-500/40"
+          className="w-18 px-2 py-1.5 rounded-lg bg-white/[0.06] border border-white/[0.1] text-sm text-white/70 text-center placeholder:text-white/20 font-mono tracking-wider focus:outline-none focus:border-blue-500/40"
         />
         <button
           onClick={handleJoin}
           disabled={joinInput.length !== 4 || status === 'connecting'}
-          className="px-2.5 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.1] text-xs text-white/50 font-medium transition-all disabled:opacity-30"
+          className="px-2.5 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.1] text-sm text-white/50 font-medium transition-all disabled:opacity-30"
         >
           Join
         </button>

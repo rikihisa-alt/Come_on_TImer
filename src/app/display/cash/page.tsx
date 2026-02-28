@@ -35,7 +35,7 @@ function TimerSelector({ selectedId, onSelect, cashGames }: {
     <div ref={ref} className="relative">
       <button onClick={() => setOpen(!open)}
         className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.1] hover:border-white/[0.2] transition-all duration-200 cursor-pointer min-w-[140px]">
-        <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-md bg-green-500/20 text-green-400">C</span>
+        <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-md bg-green-500/20 text-green-400">R</span>
         <span className="text-[10px] lg:text-xs text-white/60 font-medium truncate max-w-[160px]">{current?.name || '選択'}</span>
         <svg className={`w-2.5 h-2.5 text-white/30 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
       </button>
@@ -125,7 +125,7 @@ function CashDisplayInner() {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(160deg, #0e1c36, #152d52, #1c3d6e)' }}>
         <div className="g-card p-8 text-center text-white/40">
-          <p className="text-xl font-bold">No Cash Game</p>
+          <p className="text-xl font-bold">No Ring Game</p>
           <p className="text-sm mt-2 text-white/25">Operator画面からディスプレイ設定を行ってください</p>
         </div>
       </div>
@@ -164,7 +164,7 @@ function CashDisplayInner() {
           <TimerSelector selectedId={activeId} onSelect={setSelectedId} cashGames={cashGames} />
         </div>
         <div className="flex items-center gap-2 shrink-0 ml-2">
-          <div className="text-xs md:text-sm text-white/30 font-medium uppercase tracking-wider">Cash Game</div>
+          <div className="text-xs md:text-sm text-white/30 font-medium uppercase tracking-wider">Ring Game</div>
         </div>
       </div>
 
@@ -316,7 +316,7 @@ function CashDisplayInner() {
         <div className="absolute inset-0 z-40 flex items-center justify-center g-overlay-idle">
           <div className="g-card p-8 md:p-12 text-center fade-in-up">
             <div className="text-3xl md:text-5xl font-black text-blue-400">COME ON Timer</div>
-            <div className="text-base md:text-lg text-white/25 font-medium mt-3">Cash Game Ready</div>
+            <div className="text-base md:text-lg text-white/25 font-medium mt-3">Ring Game Ready</div>
           </div>
         </div>
       )}

@@ -88,7 +88,7 @@ function mkTournament(name?: string, levels?: BlindLevel[]): Tournament {
 
 function mkCash(name?: string): CashGame {
   return {
-    id: uid(), name: name || 'Cash Game 1', smallBlind: 100, bigBlind: 200, ante: 0,
+    id: uid(), name: name || 'Ring Game 1', smallBlind: 100, bigBlind: 200, ante: 0,
     memo: '', status: 'idle', timerStartedAt: null, elapsedMs: 0,
     countdownMode: false, countdownTotalMs: 3600000, countdownRemainingMs: 3600000,
     preLevelRemainingMs: 0,
