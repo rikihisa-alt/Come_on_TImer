@@ -800,6 +800,8 @@ function PrizeEditor({ tournament: t }: { tournament: Tournament }) {
 
 function BlindEditor({ tournament: t }: { tournament: Tournament }) {
   const store = useStore();
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
   const renumberLevels = (levels: BlindLevel[]): BlindLevel[] => {
     let playNum = 1;
     return levels.map(l => l.type === 'play' ? { ...l, level: playNum++ } : l);
@@ -815,6 +817,17 @@ function BlindEditor({ tournament: t }: { tournament: Tournament }) {
   };
   const upLv = (i: number, p: Partial<BlindLevel>) => { const lvs = t.levels.map((l, j) => j === i ? { ...l, ...p } : l); store.updateTournament(t.id, { levels: lvs }); };
   const rmLv = (i: number) => store.updateTournament(t.id, { levels: renumberLevels(t.levels.filter((_, j) => j !== i)) });
+  const onDragStart = (i: number) => { setDragIdx(i); };
+  const onDragOver = (e: React.DragEvent, i: number) => { e.preventDefault(); setDragOverIdx(i); };
+  const onDrop = (i: number) => {
+    if (dragIdx === null || dragIdx === i) { setDragIdx(null); setDragOverIdx(null); return; }
+    const levels = [...t.levels];
+    const [moved] = levels.splice(dragIdx, 1);
+    levels.splice(i, 0, moved);
+    store.updateTournament(t.id, { levels: renumberLevels(levels) });
+    setDragIdx(null); setDragOverIdx(null);
+  };
+  const onDragEnd = () => { setDragIdx(null); setDragOverIdx(null); };
   return (
     <div className="space-y-3">
       <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Blind Structure</div>
@@ -840,8 +853,15 @@ function BlindEditor({ tournament: t }: { tournament: Tournament }) {
 
       <div className="space-y-1">
         {t.levels.map((lv, i) => (
-          <div key={i} className={`p-2 rounded-xl transition-colors ${i === t.currentLevelIndex ? 'bg-blue-500/10 border border-blue-500/20' : 'hover:bg-white/[0.02]'}`}>
+          <div key={i}
+            draggable
+            onDragStart={() => onDragStart(i)}
+            onDragOver={e => onDragOver(e, i)}
+            onDrop={() => onDrop(i)}
+            onDragEnd={onDragEnd}
+            className={`p-2 rounded-xl transition-colors ${dragOverIdx === i && dragIdx !== i ? 'border-t-2 border-blue-400/50' : ''} ${dragIdx === i ? 'opacity-40' : ''} ${i === t.currentLevelIndex ? 'bg-blue-500/10 border border-blue-500/20' : 'hover:bg-white/[0.02]'}`}>
             <div className="flex items-center gap-2">
+              <span className="text-white/15 cursor-grab active:cursor-grabbing select-none shrink-0 text-[10px] leading-none" style={{ letterSpacing: '0px' }}>&#9776;</span>
               <button onClick={() => store.tJumpLevel(t.id, i)} className="text-[11px] text-white/20 hover:text-blue-400 w-5 text-center cursor-pointer transition-colors shrink-0">{i === t.currentLevelIndex ? '\u25B8' : (i + 1)}</button>
               {lv.type === 'break' ? (
                 <><span className="text-green-400 text-xs font-semibold flex-1">BREAK</span><input type="text" inputMode="numeric" className="input input-sm w-16 text-center" value={Math.floor(lv.duration / 60)} onChange={e => { const v = toHalfWidthNumber(e.target.value); upLv(i, { duration: (Number(v) || 1) * 60 }); }} /><span className="text-[11px] text-white/20">min</span></>

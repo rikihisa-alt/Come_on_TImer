@@ -210,13 +210,12 @@ function CashDisplayInner() {
         {dt.showCashRate && (
           <AbsoluteSection pos={layout.rate}>
             <div className="g-card h-full flex flex-col items-center justify-center p-4">
-              <div className="text-white/25 text-xs font-semibold tracking-[0.3em] uppercase mb-2">Rate</div>
               <div className="text-5xl lg:text-7xl font-black leading-none tracking-tight" style={{ color: primaryColor }}>
                 {cashGame.smallBlind.toLocaleString()}/{cashGame.bigBlind.toLocaleString()}
+                {cashGame.ante > 0 && (
+                  <span className="text-2xl lg:text-4xl text-white/40 ml-1">(Ante {cashGame.ante.toLocaleString()})</span>
+                )}
               </div>
-              {cashGame.ante > 0 && (
-                <div className="text-lg text-white/30 font-semibold mt-2">Ante {cashGame.ante.toLocaleString()}</div>
-              )}
             </div>
           </AbsoluteSection>
         )}
@@ -322,13 +321,10 @@ function CashDisplayInner() {
       <main className="relative z-10 flex-1 flex md:hidden flex-col items-center justify-center p-3 gap-3">
         {dt.showCashRate && (
           <div className="g-card w-full p-5 text-center">
-            <div className="text-white/25 text-xs font-semibold tracking-[0.3em] uppercase mb-2">Rate</div>
             <div className="text-5xl font-black leading-none tracking-tight" style={{ color: primaryColor }}>
               {cashGame.smallBlind.toLocaleString()}/{cashGame.bigBlind.toLocaleString()}
+              {cashGame.ante > 0 && <span className="text-2xl text-white/40 ml-1">(Ante {cashGame.ante.toLocaleString()})</span>}
             </div>
-            {cashGame.ante > 0 && (
-              <div className="text-lg text-white/30 font-semibold mt-2">Ante {cashGame.ante.toLocaleString()}</div>
-            )}
           </div>
         )}
         {dt.showCashNextBlinds && (cashGame.nextSmallBlind > 0 || cashGame.nextBigBlind > 0) && (
