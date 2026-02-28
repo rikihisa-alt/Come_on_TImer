@@ -332,12 +332,13 @@ function CashPanel({ cashGame, theme, displayToggles: dt }: {
       {dt.showCashRate && (
         <AbsoluteSection pos={layout.rate}>
           <div className="g-card h-full flex flex-col items-center justify-center p-2">
+            <div className="text-[8px] lg:text-[10px] text-white/25 uppercase tracking-widest font-semibold mb-1">Rate</div>
             <div className="text-2xl lg:text-4xl font-black leading-none tracking-tight" style={{ color: pc }}>
               {cashGame.smallBlind.toLocaleString()}/{cashGame.bigBlind.toLocaleString()}
-              {cashGame.ante > 0 && (
-                <span className="text-sm lg:text-xl text-white/35 ml-1">(Ante {cashGame.ante.toLocaleString()})</span>
-              )}
             </div>
+            {cashGame.ante > 0 && (
+              <div className="text-[10px] lg:text-sm text-white/30 font-semibold mt-1">Ante {cashGame.ante.toLocaleString()}</div>
+            )}
           </div>
         </AbsoluteSection>
       )}
