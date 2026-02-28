@@ -299,19 +299,6 @@ function CashDisplayInner() {
       </main>
 
       {/* ═══ Overlays ═══ */}
-      {/* Pre-level countdown */}
-      {cashGame.status === 'running' && preLevelMs > 0 && (
-        <div className="absolute inset-0 z-40 flex items-center justify-center g-overlay-idle">
-          <div className="g-card p-8 md:p-14 text-center fade-in-up">
-            <div className="text-xl md:text-3xl lg:text-4xl font-black text-white/50 tracking-wide mb-4 md:mb-6">{cashGame.name}</div>
-            <div className="text-sm md:text-lg text-white/25 uppercase tracking-[0.3em] font-semibold mb-3 md:mb-5">Starting In</div>
-            <div className="text-5xl md:text-8xl lg:text-[10vw] font-black timer-font text-blue-400 leading-none">
-              {formatTimerHMS(preLevelMs)}
-            </div>
-          </div>
-        </div>
-      )}
-
       {cashGame.status === 'idle' && (
         <div className="absolute inset-0 z-40 flex items-center justify-center g-overlay-idle">
           <div className="g-card p-8 md:p-12 text-center fade-in-up">

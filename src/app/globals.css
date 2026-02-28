@@ -237,9 +237,7 @@ select.input {
   border-radius: 14px;
 }
 .g-overlay-idle {
-  background: rgba(10, 15, 30, 0.75);
-  backdrop-filter: blur(30px);
-  -webkit-backdrop-filter: blur(30px);
+  background: rgb(10, 15, 30);
 }
 .g-overlay-pause {
   background: rgba(10, 15, 30, 0.55);
