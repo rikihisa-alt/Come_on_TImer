@@ -859,29 +859,33 @@ function GenericLayoutEditor<T extends string>({
   const [dragging, setDragging] = useState<T | null>(null);
   const [resizing, setResizing] = useState<{ sectionId: T; handle: ResizeHandle } | null>(null);
   const [localPositions, setLocalPositions] = useState<Record<T, SectionPosition>>(layout);
-  const dragStartRef = useRef<{ mx: number; my: number; ox: number; oy: number } | null>(null);
+  const dragStartRef = useRef<{ mx: number; my: number; ox: number; oy: number; w: number; h: number } | null>(null);
   const resizeStartRef = useRef<{ mx: number; my: number; orig: SectionPosition } | null>(null);
+  const cachedRectRef = useRef<DOMRect | null>(null);
+  const latestPosRef = useRef<Record<T, SectionPosition>>(layout);
 
-  useEffect(() => { setLocalPositions(layout); }, [layout]);
+  useEffect(() => { setLocalPositions(layout); latestPosRef.current = layout; }, [layout]);
 
   const handlePointerDown = (e: React.PointerEvent, sectionId: T) => {
     e.preventDefault(); e.stopPropagation();
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    const pos = localPositions[sectionId];
-    dragStartRef.current = { mx: e.clientX, my: e.clientY, ox: pos.x, oy: pos.y };
+    cachedRectRef.current = canvasRef.current?.getBoundingClientRect() || null;
+    const pos = latestPosRef.current[sectionId];
+    dragStartRef.current = { mx: e.clientX, my: e.clientY, ox: pos.x, oy: pos.y, w: pos.w, h: pos.h };
     setDragging(sectionId); setSelected(sectionId);
   };
 
   const handleResizeDown = (e: React.PointerEvent, sectionId: T, handle: ResizeHandle) => {
     e.preventDefault(); e.stopPropagation();
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    resizeStartRef.current = { mx: e.clientX, my: e.clientY, orig: { ...localPositions[sectionId] } };
+    cachedRectRef.current = canvasRef.current?.getBoundingClientRect() || null;
+    resizeStartRef.current = { mx: e.clientX, my: e.clientY, orig: { ...latestPosRef.current[sectionId] } };
     setResizing({ sectionId, handle }); setSelected(sectionId);
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
-    if (!canvasRef.current) return;
-    const rect = canvasRef.current.getBoundingClientRect();
+    const rect = cachedRectRef.current;
+    if (!rect) return;
     if (resizing && resizeStartRef.current) {
       const dx = ((e.clientX - resizeStartRef.current.mx) / rect.width) * 100;
       const dy = ((e.clientY - resizeStartRef.current.my) / rect.height) * 100;
@@ -893,22 +897,31 @@ function GenericLayoutEditor<T extends string>({
       if (hd.includes('s')) h = Math.max(3, Math.min(100 - y, o.h + dy));
       if (hd.includes('n')) { const ny = Math.max(0, o.y + dy); h = Math.max(3, o.h - (ny - o.y)); y = ny; }
       const r = (v: number) => Math.round(v * 10) / 10;
-      setLocalPositions(prev => ({ ...prev, [resizing.sectionId]: { ...prev[resizing.sectionId], x: r(x), y: r(y), w: r(w), h: r(h) } }));
+      setLocalPositions(prev => {
+        const next = { ...prev, [resizing.sectionId]: { ...prev[resizing.sectionId], x: r(x), y: r(y), w: r(w), h: r(h) } };
+        latestPosRef.current = next;
+        return next;
+      });
       return;
     }
     if (dragging && dragStartRef.current) {
       const dx = ((e.clientX - dragStartRef.current.mx) / rect.width) * 100;
       const dy = ((e.clientY - dragStartRef.current.my) / rect.height) * 100;
-      const pos = localPositions[dragging];
-      const nx = Math.max(0, Math.min(100 - pos.w, dragStartRef.current.ox + dx));
-      const ny = Math.max(0, Math.min(100 - pos.h, dragStartRef.current.oy + dy));
-      setLocalPositions(prev => ({ ...prev, [dragging as T]: { ...prev[dragging as T], x: Math.round(nx * 10) / 10, y: Math.round(ny * 10) / 10 } }));
+      const { ox, oy, w: dw, h: dh } = dragStartRef.current;
+      const nx = Math.max(0, Math.min(100 - dw, ox + dx));
+      const ny = Math.max(0, Math.min(100 - dh, oy + dy));
+      setLocalPositions(prev => {
+        const next = { ...prev, [dragging as T]: { ...prev[dragging as T], x: Math.round(nx * 10) / 10, y: Math.round(ny * 10) / 10 } };
+        latestPosRef.current = next;
+        return next;
+      });
     }
   };
 
   const handlePointerUp = () => {
-    if (resizing) { onUpdatePosition(resizing.sectionId, localPositions[resizing.sectionId]); setResizing(null); resizeStartRef.current = null; onBroadcast(); return; }
-    if (dragging) { onUpdatePosition(dragging, localPositions[dragging]); onBroadcast(); }
+    cachedRectRef.current = null;
+    if (resizing) { onUpdatePosition(resizing.sectionId, latestPosRef.current[resizing.sectionId]); setResizing(null); resizeStartRef.current = null; onBroadcast(); return; }
+    if (dragging) { onUpdatePosition(dragging, latestPosRef.current[dragging]); onBroadcast(); }
     setDragging(null); dragStartRef.current = null;
   };
 
@@ -956,12 +969,12 @@ function GenericLayoutEditor<T extends string>({
           const isDrag = dragging === sectionId;
           return (
             <div key={sectionId}
-              className={`absolute rounded-lg transition-all cursor-grab flex flex-col items-center justify-center
+              className={`absolute rounded-lg cursor-grab flex flex-col items-center justify-center
                 ${isDrag ? 'cursor-grabbing z-30' : 'z-20'}
                 ${isSel ? 'border-2 border-blue-400 shadow-[0_0_12px_rgba(96,165,250,0.4)]' : 'border border-dashed border-white/20 hover:border-white/40'}`}
               style={{ left: `${pos.x}%`, top: `${pos.y}%`, width: `${pos.w}%`, height: `${pos.h}%`,
                 background: isSel ? 'rgba(96,165,250,0.08)' : isDrag ? 'rgba(96,165,250,0.12)' : 'rgba(255,255,255,0.03)',
-                touchAction: 'none' }}
+                touchAction: 'none', willChange: isDrag ? 'left,top' : undefined }}
               onPointerDown={e => handlePointerDown(e, sectionId)}
               onClick={e => { e.stopPropagation(); setSelected(sectionId); }}
             >

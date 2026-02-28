@@ -248,7 +248,7 @@ function Inner() {
       </div>
 
       {/* ═══ Desktop: Absolute Section Layout ═══ */}
-      <div className="relative z-10 flex-1 hidden md:block min-h-0">
+      <div className="absolute inset-0 z-10 hidden md:block">
         {/* Tournament Name section */}
         {dt.showTournamentName && (
           <AbsoluteSection pos={layout.tournamentName}>

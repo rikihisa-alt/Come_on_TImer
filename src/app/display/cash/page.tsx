@@ -174,7 +174,7 @@ function CashDisplayInner() {
       </div>
 
       {/* ═══ Desktop: Absolute Section Layout ═══ */}
-      <div className="relative z-10 flex-1 hidden md:block min-h-0">
+      <div className="absolute inset-0 z-10 hidden md:block">
         {/* Cash Name */}
         <AbsoluteSection pos={layout.cashName}>
           <div className="h-full flex items-center justify-center">
