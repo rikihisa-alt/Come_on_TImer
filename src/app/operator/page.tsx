@@ -618,6 +618,7 @@ function TogglesPanel({ timerId, timerType }: { timerId: string; timerType: 'tou
   const cashItems: { key: keyof DisplayToggles; label: string }[] = [
     { key: 'showCashName', label: 'Game Name' }, { key: 'showCashRate', label: 'Rate' },
     { key: 'showCashMemo', label: 'Memo' }, { key: 'showCashTimer', label: 'Timer' },
+    { key: 'showCashNextBlinds', label: 'Next Blind' },
     { key: 'showCashPlayers', label: 'Player Count' }, { key: 'showCashChipInfo', label: 'Avg Stack' },
     { key: 'showProgressBar', label: 'Progress Bar' }, { key: 'showFooter', label: 'Footer' },
   ];
@@ -958,6 +959,12 @@ function CashEditor({ id, onDelete }: { id: string; onDelete: (id: string) => vo
         <div><label className="text-[11px] text-white/25 block mb-1">BB</label><input type="number" className="input input-sm" value={c.bigBlind} onChange={e => store.updateCashGame(id, { bigBlind: +e.target.value })} /></div>
         <div><label className="text-[11px] text-white/25 block mb-1">Ante</label><input type="number" className="input input-sm" value={c.ante} onChange={e => store.updateCashGame(id, { ante: +e.target.value })} /></div>
       </div>
+      <div className="text-[11px] text-white/25 font-semibold mt-1">NEXT Blind</div>
+      <div className="grid grid-cols-3 gap-3">
+        <div><label className="text-[11px] text-white/25 block mb-1">Next SB</label><input type="number" className="input input-sm" value={c.nextSmallBlind} onChange={e => store.updateCashGame(id, { nextSmallBlind: +e.target.value })} /></div>
+        <div><label className="text-[11px] text-white/25 block mb-1">Next BB</label><input type="number" className="input input-sm" value={c.nextBigBlind} onChange={e => store.updateCashGame(id, { nextBigBlind: +e.target.value })} /></div>
+        <div><label className="text-[11px] text-white/25 block mb-1">Next Ante</label><input type="number" className="input input-sm" value={c.nextAnte} onChange={e => store.updateCashGame(id, { nextAnte: +e.target.value })} /></div>
+      </div>
       <div><label className="text-[11px] text-white/25 block mb-1">Memo</label><input className="input" value={c.memo} onChange={e => store.updateCashGame(id, { memo: e.target.value })} placeholder="Table info" /></div>
       <div>
         <label className="text-[11px] text-white/25 block mb-1">Pre-Level (開始前カウントダウン)</label>
@@ -1047,7 +1054,7 @@ const SECTION_LABELS: Record<TournamentSectionId, string> = {
 const CASH_SECTION_LABELS: Record<CashSectionId, string> = {
   cashName: 'Name', rate: 'Rate', memo: 'Memo',
   timer: 'Timer', sbCard: 'SB', bbCard: 'BB',
-  anteCard: 'Ante', ticker: 'Ticker',
+  anteCard: 'Ante', nextBlinds: 'Next Blind', ticker: 'Ticker',
   players: 'Players', reEntry: 'Re-Entry', rebuy: 'Rebuy',
   addon: 'Add-on', avgStack: 'Avg Stack',
 };
@@ -1074,6 +1081,7 @@ function isCashSectionVisible(id: CashSectionId, dt: DisplayToggles): boolean {
     case 'memo': return dt.showCashMemo;
     case 'timer': return dt.showCashTimer;
     case 'sbCard': case 'bbCard': case 'anteCard': return dt.showCashRate;
+    case 'nextBlinds': return dt.showCashNextBlinds;
     case 'ticker': return !!dt.tickerText;
     case 'players': case 'reEntry': case 'rebuy': case 'addon': return dt.showCashPlayers;
     case 'avgStack': return dt.showCashChipInfo;

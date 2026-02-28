@@ -96,6 +96,7 @@ function mkTournament(name?: string, levels?: BlindLevel[]): Tournament {
 function mkCash(name?: string): CashGame {
   return {
     id: uid(), name: name || 'Ring Game 1', smallBlind: 100, bigBlind: 200, ante: 0,
+    nextSmallBlind: 200, nextBigBlind: 400, nextAnte: 0,
     memo: '', status: 'idle', timerStartedAt: null, elapsedMs: 0,
     countdownMode: false, countdownTotalMs: 3600000, countdownRemainingMs: 3600000,
     preLevelRemainingMs: 0,
@@ -445,6 +446,7 @@ export const useStore = create<AppState>()(
         const preset: CashGamePreset = {
           id: uid(), name, cashName: cashGame.name,
           smallBlind: cashGame.smallBlind, bigBlind: cashGame.bigBlind, ante: cashGame.ante,
+          nextSmallBlind: cashGame.nextSmallBlind, nextBigBlind: cashGame.nextBigBlind, nextAnte: cashGame.nextAnte,
           memo: cashGame.memo, countdownMode: cashGame.countdownMode, countdownTotalMs: cashGame.countdownTotalMs,
           preLevelDuration: cashGame.preLevelDuration,
           startingChips: cashGame.startingChips, reEntryChips: cashGame.reEntryChips,
@@ -469,6 +471,7 @@ export const useStore = create<AppState>()(
         set(s => ({ cashGames: s.cashGames.map(c => c.id === cashId ? {
           ...c, name: preset.cashName || c.name,
           smallBlind: preset.smallBlind, bigBlind: preset.bigBlind, ante: preset.ante,
+          nextSmallBlind: preset.nextSmallBlind, nextBigBlind: preset.nextBigBlind, nextAnte: preset.nextAnte,
           memo: preset.memo, countdownMode: preset.countdownMode, countdownTotalMs: preset.countdownTotalMs,
           countdownRemainingMs: preset.countdownTotalMs, preLevelDuration: preset.preLevelDuration,
           startingChips: preset.startingChips, reEntryChips: preset.reEntryChips,
@@ -490,6 +493,7 @@ export const useStore = create<AppState>()(
         set(s => ({ cashPresets: s.cashPresets.map(p => p.id === presetId ? {
           ...p, cashName: cashGame.name,
           smallBlind: cashGame.smallBlind, bigBlind: cashGame.bigBlind, ante: cashGame.ante,
+          nextSmallBlind: cashGame.nextSmallBlind, nextBigBlind: cashGame.nextBigBlind, nextAnte: cashGame.nextAnte,
           memo: cashGame.memo, countdownMode: cashGame.countdownMode, countdownTotalMs: cashGame.countdownTotalMs,
           preLevelDuration: cashGame.preLevelDuration,
           startingChips: cashGame.startingChips, reEntryChips: cashGame.reEntryChips,
@@ -510,7 +514,7 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'come-on-timer-v3',
-      version: 19,
+      version: 20,
       migrate: (persisted: unknown, version: number) => {
         const state = persisted as Record<string, unknown>;
         if (version < 4) {
@@ -757,6 +761,54 @@ export const useStore = create<AppState>()(
               cdt.showCashPlayers = cdt.showCashPlayers ?? false;
               cdt.showCashChipInfo = cdt.showCashChipInfo ?? false;
             }
+            return c;
+          });
+        }
+        if (version < 20) {
+          // Add next blind fields to cash games
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const cashes20 = (state.cashGames as any[]) || [];
+          state.cashGames = cashes20.map((c) => ({
+            ...c,
+            nextSmallBlind: (c.nextSmallBlind as number) ?? ((c.smallBlind as number) ?? 100) * 2,
+            nextBigBlind: (c.nextBigBlind as number) ?? ((c.bigBlind as number) ?? 200) * 2,
+            nextAnte: (c.nextAnte as number) ?? 0,
+            sectionLayout: c.sectionLayout ? {
+              ...c.sectionLayout,
+              nextBlinds: c.sectionLayout.nextBlinds ?? { x: 14.5, y: 82, w: 71, h: 8 },
+            } : c.sectionLayout,
+            splitSectionLayout: c.splitSectionLayout ? {
+              ...c.splitSectionLayout,
+              nextBlinds: c.splitSectionLayout.nextBlinds ?? { x: 14.5, y: 82, w: 71, h: 8 },
+            } : c.splitSectionLayout,
+          }));
+          // Add next blind fields to cash presets
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const cashPresets20 = (state.cashPresets as any[]) || [];
+          state.cashPresets = cashPresets20.map((p) => ({
+            ...p,
+            nextSmallBlind: (p.nextSmallBlind as number) ?? ((p.smallBlind as number) ?? 100) * 2,
+            nextBigBlind: (p.nextBigBlind as number) ?? ((p.bigBlind as number) ?? 200) * 2,
+            nextAnte: (p.nextAnte as number) ?? 0,
+            sectionLayout: p.sectionLayout ? {
+              ...p.sectionLayout,
+              nextBlinds: p.sectionLayout.nextBlinds ?? { x: 14.5, y: 82, w: 71, h: 8 },
+            } : p.sectionLayout,
+            splitSectionLayout: p.splitSectionLayout ? {
+              ...p.splitSectionLayout,
+              nextBlinds: p.splitSectionLayout.nextBlinds ?? { x: 14.5, y: 82, w: 71, h: 8 },
+            } : p.splitSectionLayout,
+          }));
+          // Add showCashNextBlinds to display toggles
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const dt20 = (state.displayToggles as any) || {};
+          dt20.showCashNextBlinds = dt20.showCashNextBlinds ?? true;
+          state.displayToggles = dt20;
+          // Update per-game toggles
+          state.cashGames = (state.cashGames as Record<string, unknown>[]).map((c) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const cdt = (c.displayToggles as any);
+            if (cdt) { cdt.showCashNextBlinds = cdt.showCashNextBlinds ?? true; }
             return c;
           });
         }

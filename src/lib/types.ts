@@ -73,6 +73,7 @@ export type SectionLayout = Record<TournamentSectionId, SectionPosition>;
 export type CashSectionId =
   | 'cashName' | 'rate' | 'memo'
   | 'timer' | 'sbCard' | 'bbCard' | 'anteCard' | 'ticker'
+  | 'nextBlinds'
   | 'players' | 'reEntry' | 'rebuy' | 'addon' | 'avgStack';
 
 export type CashSectionLayout = Record<CashSectionId, SectionPosition>;
@@ -123,6 +124,9 @@ export type CashGame = {
   smallBlind: number;
   bigBlind: number;
   ante: number;
+  nextSmallBlind: number;
+  nextBigBlind: number;
+  nextAnte: number;
   memo: string;
   status: CashGameStatus;
   timerStartedAt: number | null;
@@ -161,6 +165,9 @@ export type CashGamePreset = {
   smallBlind: number;
   bigBlind: number;
   ante: number;
+  nextSmallBlind: number;
+  nextBigBlind: number;
+  nextAnte: number;
   memo: string;
   countdownMode: boolean;
   countdownTotalMs: number;
@@ -243,6 +250,7 @@ export type DisplayToggles = {
   showCashTimer: boolean;
   showCashPlayers: boolean;
   showCashChipInfo: boolean;
+  showCashNextBlinds: boolean;
   tickerText: string;
   tickerSpeed: number;
   backgroundImageUrl: string;

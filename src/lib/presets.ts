@@ -81,6 +81,7 @@ export const DEFAULT_CASH_SECTION_LAYOUT: CashSectionLayout = {
   sbCard:   { x: 0.8,  y: 8.5,  w: 12.5, h: 25 },
   bbCard:   { x: 0.8,  y: 35,   w: 12.5, h: 25 },
   anteCard: { x: 0.8,  y: 62,   w: 12.5, h: 25 },
+  nextBlinds: { x: 14.5, y: 82, w: 71,   h: 8 },
   players:  { x: 86.7, y: 28,   w: 12.5, h: 12 },
   reEntry:  { x: 86.7, y: 41,   w: 12.5, h: 12 },
   rebuy:    { x: 86.7, y: 54,   w: 12.5, h: 12 },
@@ -195,6 +196,6 @@ export const DEFAULT_DISPLAY_TOGGLES: DisplayToggles = {
   showProgressBar: true, showNextLevel: true, showTimeToBreak: true, showTimeToEnd: true,
   showPrizeStructure: true, showEntryCount: true, showChipInfo: true, showFooter: true,
   showCashName: true, showCashRate: true, showCashMemo: true, showCashTimer: true,
-  showCashPlayers: false, showCashChipInfo: false,
+  showCashPlayers: false, showCashChipInfo: false, showCashNextBlinds: true,
   tickerText: '', tickerSpeed: 25, backgroundImageUrl: '',
 };
