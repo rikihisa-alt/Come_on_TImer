@@ -215,6 +215,9 @@ export type SystemStyle = {
   customBgFrom?: string;
   customBgTo?: string;
   customTextColor?: string;
+  tabBgColor?: string;
+  tabActiveColor?: string;
+  tabTextColor?: string;
 };
 
 export type SyncMessageType = 'FULL_SYNC' | 'TIMER_TICK' | 'LEVEL_CHANGE';

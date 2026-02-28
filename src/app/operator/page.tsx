@@ -18,11 +18,13 @@ function MobileBottomTabs({ tab, switchTab }: { tab: string; switchTab: (t: type
   if (!mounted) return null;
   return createPortal(
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex px-3 py-2 gap-1.5 border-t border-white/[0.06] overflow-x-auto"
-      style={{ background: 'var(--sys-bg-from)', paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
+      style={{ background: 'var(--tab-bg, var(--sys-bg-from))', paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
       {TAB_ORDER.map(t => (
         <button key={t} onClick={() => switchTab(t)}
-          className={`flex-1 shrink-0 py-2 rounded-xl text-sm font-semibold transition-all duration-200 whitespace-nowrap ${tab === t ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'hover:bg-white/[0.04] border border-transparent'}`}
-          style={tab !== t ? { color: 'var(--sys-text-muted)' } : undefined}>
+          className={`flex-1 shrink-0 py-2 rounded-xl text-sm font-semibold transition-all duration-200 whitespace-nowrap ${tab === t ? 'border' : 'hover:bg-white/[0.04] border border-transparent'}`}
+          style={tab === t
+            ? { background: 'rgba(var(--tab-active-rgb), 0.2)', color: 'var(--tab-active)', borderColor: 'rgba(var(--tab-active-rgb), 0.3)' }
+            : { color: 'var(--tab-text, var(--sys-text-muted))' }}>
           {TAB_LABELS[t]}
         </button>
       ))}
@@ -52,11 +54,14 @@ export default function OperatorPage() {
         <RoomSync />
       </div>
       {/* Glass Tab Nav — desktop: top inline */}
-      <nav className="hidden md:flex px-3 py-2 gap-1.5 border-b border-white/[0.06] overflow-x-auto">
+      <nav className="hidden md:flex px-3 py-2 gap-1.5 border-b border-white/[0.06] overflow-x-auto"
+        style={{ background: 'var(--tab-bg, transparent)' }}>
         {TAB_ORDER.map(t => (
           <button key={t} onClick={() => switchTab(t)}
-            className={`flex-1 shrink-0 py-2.5 rounded-xl text-base font-semibold transition-all duration-200 whitespace-nowrap ${tab === t ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'hover:bg-white/[0.04] border border-transparent'}`}
-            style={tab !== t ? { color: 'var(--sys-text-muted)' } : undefined}>
+            className={`flex-1 shrink-0 py-2.5 rounded-xl text-base font-semibold transition-all duration-200 whitespace-nowrap ${tab === t ? 'border' : 'hover:bg-white/[0.04] border border-transparent'}`}
+            style={tab === t
+              ? { background: 'rgba(var(--tab-active-rgb), 0.2)', color: 'var(--tab-active)', borderColor: 'rgba(var(--tab-active-rgb), 0.3)' }
+              : { color: 'var(--tab-text, var(--sys-text-muted))' }}>
             {t === 'tournaments' ? 'Tournaments' : t === 'cash' ? 'Ring Games' : t === 'split' ? 'Split' : 'Settings'}
           </button>
         ))}
@@ -1764,6 +1769,58 @@ function SystemStyleEditor() {
             onChange={e => setHsl(hsl.h, hsl.s, +e.target.value)}
             className="w-full h-6 rounded-full cursor-pointer appearance-none"
             style={{ background: `linear-gradient(to right, hsl(${hsl.h},${hsl.s}%,15%), hsl(${hsl.h},${hsl.s}%,50%), hsl(${hsl.h},${hsl.s}%,85%))` }} />
+        </div>
+      </div>
+
+      {/* Tab Bar Colors */}
+      <div className="space-y-3 border-t border-white/[0.06] pt-5">
+        <label className="text-[11px] text-white/25 block">Tab Bar Colors (タブバーカラー)</label>
+        {/* Tab BG */}
+        <div>
+          <label className="text-[10px] block mb-1" style={{ color: 'var(--sys-text-muted)' }}>タブバー背景色</label>
+          <div className="flex items-center gap-2">
+            <input type="color" value={systemStyle.tabBgColor || '#0e1c36'} className="w-8 h-8 rounded cursor-pointer border-0 p-0 shrink-0"
+              onChange={e => updateSystemStyle({ tabBgColor: e.target.value })} />
+            <input className="input input-sm flex-1 font-mono text-xs" value={systemStyle.tabBgColor || ''}
+              placeholder="transparent"
+              onChange={e => { const v = e.target.value; if (v === '') updateSystemStyle({ tabBgColor: undefined }); else if (/^#[0-9a-fA-F]{6}$/.test(v)) updateSystemStyle({ tabBgColor: v }); }} />
+            {systemStyle.tabBgColor && <button className="btn btn-sm btn-ghost text-[10px] shrink-0" onClick={() => updateSystemStyle({ tabBgColor: undefined })}>リセット</button>}
+          </div>
+        </div>
+        {/* Active Tab Color */}
+        <div>
+          <label className="text-[10px] block mb-1" style={{ color: 'var(--sys-text-muted)' }}>アクティブタブ色</label>
+          <div className="flex items-center gap-2">
+            <input type="color" value={systemStyle.tabActiveColor || systemStyle.uiAccentColor || '#3b82f6'} className="w-8 h-8 rounded cursor-pointer border-0 p-0 shrink-0"
+              onChange={e => updateSystemStyle({ tabActiveColor: e.target.value })} />
+            <input className="input input-sm flex-1 font-mono text-xs" value={systemStyle.tabActiveColor || ''}
+              placeholder={systemStyle.uiAccentColor || '#3b82f6'}
+              onChange={e => { const v = e.target.value; if (v === '') updateSystemStyle({ tabActiveColor: undefined }); else if (/^#[0-9a-fA-F]{6}$/.test(v)) updateSystemStyle({ tabActiveColor: v }); }} />
+            {systemStyle.tabActiveColor && <button className="btn btn-sm btn-ghost text-[10px] shrink-0" onClick={() => updateSystemStyle({ tabActiveColor: undefined })}>リセット</button>}
+          </div>
+        </div>
+        {/* Tab Text Color */}
+        <div>
+          <label className="text-[10px] block mb-1" style={{ color: 'var(--sys-text-muted)' }}>タブ文字色</label>
+          <div className="flex items-center gap-2">
+            <input type="color" value={systemStyle.tabTextColor || '#999999'} className="w-8 h-8 rounded cursor-pointer border-0 p-0 shrink-0"
+              onChange={e => updateSystemStyle({ tabTextColor: e.target.value })} />
+            <input className="input input-sm flex-1 font-mono text-xs" value={systemStyle.tabTextColor || ''}
+              placeholder="テーマデフォルト"
+              onChange={e => { const v = e.target.value; if (v === '') updateSystemStyle({ tabTextColor: undefined }); else if (/^#[0-9a-fA-F]{6}$/.test(v)) updateSystemStyle({ tabTextColor: v }); }} />
+            {systemStyle.tabTextColor && <button className="btn btn-sm btn-ghost text-[10px] shrink-0" onClick={() => updateSystemStyle({ tabTextColor: undefined })}>リセット</button>}
+          </div>
+        </div>
+        {/* Mini preview */}
+        <div className="rounded-xl p-2 flex gap-1" style={{ background: systemStyle.tabBgColor || 'var(--sys-glass-inner-bg)' }}>
+          {['Tournaments', 'Ring Games', 'Split', 'Settings'].map((label, i) => (
+            <div key={label} className="flex-1 py-1.5 rounded-lg text-[9px] font-semibold text-center border transition-all"
+              style={i === 0
+                ? { background: `rgba(var(--tab-active-rgb), 0.2)`, color: 'var(--tab-active)', borderColor: `rgba(var(--tab-active-rgb), 0.3)` }
+                : { color: 'var(--tab-text, var(--sys-text-muted))', borderColor: 'transparent' }}>
+              {label}
+            </div>
+          ))}
         </div>
       </div>
 

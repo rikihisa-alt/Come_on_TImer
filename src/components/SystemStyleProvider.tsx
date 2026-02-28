@@ -58,6 +58,17 @@ export function SystemStyleProvider() {
     el.style.setProperty('--sys-input-bg', theme.inputBg);
     el.style.setProperty('--sys-input-border', theme.inputBorder);
 
+    // Tab bar color variables
+    el.style.setProperty('--tab-bg', systemStyle.tabBgColor || 'transparent');
+    el.style.setProperty('--tab-active', systemStyle.tabActiveColor || accent);
+    // Parse tab-active to RGB for rgba() usage
+    const ta = systemStyle.tabActiveColor || accent;
+    const tar = parseInt(ta.slice(1, 3), 16) || 0;
+    const tag = parseInt(ta.slice(3, 5), 16) || 0;
+    const tab2 = parseInt(ta.slice(5, 7), 16) || 0;
+    el.style.setProperty('--tab-active-rgb', `${tar}, ${tag}, ${tab2}`);
+    el.style.setProperty('--tab-text', systemStyle.tabTextColor || theme.textMuted);
+
     // Set theme mode attribute for light-mode CSS overrides
     el.setAttribute('data-theme-mode', theme.mode);
   }, [systemStyle]);
