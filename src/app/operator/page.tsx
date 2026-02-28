@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useStore } from '@/stores/useStore';
 import { formatTimer, formatTimerHMS, formatChips, uid, toHalfWidthNumber } from '@/lib/utils';
 import { DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND, DEFAULT_SECTION_LAYOUT, DEFAULT_CASH_SECTION_LAYOUT, FONT_OPTIONS, DEFAULT_SYSTEM_STYLE, ASPECT_RATIO_OPTIONS, SYSTEM_THEMES, getSystemTheme } from '@/lib/presets';
@@ -9,6 +10,26 @@ import { BlindLevel, Tournament, CashGame, SoundPreset, PrizeEntry, SoundSetting
 import { RoomSync } from '@/components/RoomSync';
 
 const TAB_ORDER = ['tournaments', 'cash', 'split', 'settings'] as const;
+const TAB_LABELS: Record<string, string> = { tournaments: 'Tournaments', cash: 'Cash Games', split: 'Split', settings: 'Settings' };
+
+function MobileBottomTabs({ tab, switchTab }: { tab: string; switchTab: (t: typeof TAB_ORDER[number]) => void }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  if (!mounted) return null;
+  return createPortal(
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex px-3 py-2 gap-1.5 border-t border-white/[0.06] overflow-x-auto"
+      style={{ background: 'var(--sys-bg-from)', paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
+      {TAB_ORDER.map(t => (
+        <button key={t} onClick={() => switchTab(t)}
+          className={`flex-1 shrink-0 py-2 rounded-xl text-xs font-semibold transition-all duration-200 whitespace-nowrap ${tab === t ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'hover:bg-white/[0.04] border border-transparent'}`}
+          style={tab !== t ? { color: 'var(--sys-text-muted)' } : undefined}>
+          {TAB_LABELS[t]}
+        </button>
+      ))}
+    </nav>,
+    document.body,
+  );
+}
 
 export default function OperatorPage() {
   const [tab, setTab] = useState<'tournaments' | 'cash' | 'split' | 'settings'>('tournaments');
@@ -30,17 +51,19 @@ export default function OperatorPage() {
       <div className="flex items-center justify-end px-4 py-2 border-b border-white/[0.04]">
         <RoomSync />
       </div>
-      {/* Glass Tab Nav */}
-      <nav className="flex px-3 py-2 gap-1.5 border-b border-white/[0.06] overflow-x-auto">
+      {/* Glass Tab Nav — desktop: top inline */}
+      <nav className="hidden md:flex px-3 py-2 gap-1.5 border-b border-white/[0.06] overflow-x-auto">
         {TAB_ORDER.map(t => (
           <button key={t} onClick={() => switchTab(t)}
-            className={`flex-1 shrink-0 py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all duration-200 whitespace-nowrap ${tab === t ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'hover:bg-white/[0.04] border border-transparent'}`}
+            className={`flex-1 shrink-0 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 whitespace-nowrap ${tab === t ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'hover:bg-white/[0.04] border border-transparent'}`}
             style={tab !== t ? { color: 'var(--sys-text-muted)' } : undefined}>
             {t === 'tournaments' ? 'Tournaments' : t === 'cash' ? 'Cash Games' : t === 'split' ? 'Split' : 'Settings'}
           </button>
         ))}
       </nav>
-      <div className="p-4 max-w-7xl mx-auto">
+      {/* Glass Tab Nav — mobile: fixed bottom (portal to body to avoid backdrop-filter containment) */}
+      <MobileBottomTabs tab={tab} switchTab={switchTab} />
+      <div className="p-4 pb-20 md:pb-4 max-w-7xl mx-auto">
         <div key={animKey} className={slideClass} style={{ overflow: 'visible' }}>
           {tab === 'tournaments' && <TournamentsTab />}
           {tab === 'cash' && <CashTab />}
