@@ -51,12 +51,43 @@ export function SystemStyleProvider() {
       el.style.setProperty('--sys-text-secondary', theme.textSecondary);
       el.style.setProperty('--sys-text-muted', theme.textMuted);
     }
-    el.style.setProperty('--sys-glass-bg', theme.glassBg);
-    el.style.setProperty('--sys-glass-border', theme.glassBorder);
-    el.style.setProperty('--sys-glass-inner-bg', theme.glassInnerBg);
+    // Card/glass colors (custom override or theme default)
+    if (systemStyle.cardBgColor) {
+      const cr = parseInt(systemStyle.cardBgColor.slice(1, 3), 16);
+      const cg = parseInt(systemStyle.cardBgColor.slice(3, 5), 16);
+      const cb = parseInt(systemStyle.cardBgColor.slice(5, 7), 16);
+      el.style.setProperty('--sys-glass-bg', `rgba(${cr},${cg},${cb},0.25)`);
+      el.style.setProperty('--sys-glass-inner-bg', `rgba(${cr},${cg},${cb},0.15)`);
+    } else {
+      el.style.setProperty('--sys-glass-bg', theme.glassBg);
+      el.style.setProperty('--sys-glass-inner-bg', theme.glassInnerBg);
+    }
+    if (systemStyle.cardBorderColor) {
+      const br = parseInt(systemStyle.cardBorderColor.slice(1, 3), 16);
+      const bg2 = parseInt(systemStyle.cardBorderColor.slice(3, 5), 16);
+      const bb = parseInt(systemStyle.cardBorderColor.slice(5, 7), 16);
+      el.style.setProperty('--sys-glass-border', `rgba(${br},${bg2},${bb},0.3)`);
+    } else {
+      el.style.setProperty('--sys-glass-border', theme.glassBorder);
+    }
     el.style.setProperty('--sys-nav-bg', theme.navBg);
-    el.style.setProperty('--sys-input-bg', theme.inputBg);
-    el.style.setProperty('--sys-input-border', theme.inputBorder);
+    // Input colors (custom override or theme default)
+    if (systemStyle.inputBgColor) {
+      const ir = parseInt(systemStyle.inputBgColor.slice(1, 3), 16);
+      const ig = parseInt(systemStyle.inputBgColor.slice(3, 5), 16);
+      const ib = parseInt(systemStyle.inputBgColor.slice(5, 7), 16);
+      el.style.setProperty('--sys-input-bg', `rgba(${ir},${ig},${ib},0.2)`);
+    } else {
+      el.style.setProperty('--sys-input-bg', theme.inputBg);
+    }
+    if (systemStyle.inputBorderColor) {
+      const ibr = parseInt(systemStyle.inputBorderColor.slice(1, 3), 16);
+      const ibg = parseInt(systemStyle.inputBorderColor.slice(3, 5), 16);
+      const ibb = parseInt(systemStyle.inputBorderColor.slice(5, 7), 16);
+      el.style.setProperty('--sys-input-border', `rgba(${ibr},${ibg},${ibb},0.25)`);
+    } else {
+      el.style.setProperty('--sys-input-border', theme.inputBorder);
+    }
 
     // Tab bar color variables
     el.style.setProperty('--tab-bg', systemStyle.tabBgColor || 'transparent');

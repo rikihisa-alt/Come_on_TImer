@@ -1911,6 +1911,65 @@ function SystemStyleEditor() {
         </div>
       </div>
 
+      {/* UI Colors */}
+      <div className="space-y-3 border-t border-white/[0.06] pt-5">
+        <label className="text-[11px] text-white/25 block">UI Colors (UIカラー)</label>
+        {/* Card BG */}
+        <div>
+          <label className="text-[10px] block mb-1" style={{ color: 'var(--sys-text-muted)' }}>カード背景色</label>
+          <div className="flex items-center gap-2">
+            <input type="color" value={systemStyle.cardBgColor || '#ffffff'} className="w-8 h-8 rounded cursor-pointer border-0 p-0 shrink-0"
+              onChange={e => updateSystemStyle({ cardBgColor: e.target.value })} />
+            <input className="input input-sm flex-1 font-mono text-xs" value={systemStyle.cardBgColor || ''}
+              placeholder="テーマデフォルト"
+              onChange={e => { const v = e.target.value; if (v === '') updateSystemStyle({ cardBgColor: undefined }); else if (/^#[0-9a-fA-F]{6}$/.test(v)) updateSystemStyle({ cardBgColor: v }); }} />
+            {systemStyle.cardBgColor && <button className="btn btn-sm btn-ghost text-[10px] shrink-0" onClick={() => updateSystemStyle({ cardBgColor: undefined })}>リセット</button>}
+          </div>
+        </div>
+        {/* Card Border */}
+        <div>
+          <label className="text-[10px] block mb-1" style={{ color: 'var(--sys-text-muted)' }}>カードボーダー色</label>
+          <div className="flex items-center gap-2">
+            <input type="color" value={systemStyle.cardBorderColor || '#ffffff'} className="w-8 h-8 rounded cursor-pointer border-0 p-0 shrink-0"
+              onChange={e => updateSystemStyle({ cardBorderColor: e.target.value })} />
+            <input className="input input-sm flex-1 font-mono text-xs" value={systemStyle.cardBorderColor || ''}
+              placeholder="テーマデフォルト"
+              onChange={e => { const v = e.target.value; if (v === '') updateSystemStyle({ cardBorderColor: undefined }); else if (/^#[0-9a-fA-F]{6}$/.test(v)) updateSystemStyle({ cardBorderColor: v }); }} />
+            {systemStyle.cardBorderColor && <button className="btn btn-sm btn-ghost text-[10px] shrink-0" onClick={() => updateSystemStyle({ cardBorderColor: undefined })}>リセット</button>}
+          </div>
+        </div>
+        {/* Input BG */}
+        <div>
+          <label className="text-[10px] block mb-1" style={{ color: 'var(--sys-text-muted)' }}>入力欄背景色</label>
+          <div className="flex items-center gap-2">
+            <input type="color" value={systemStyle.inputBgColor || '#ffffff'} className="w-8 h-8 rounded cursor-pointer border-0 p-0 shrink-0"
+              onChange={e => updateSystemStyle({ inputBgColor: e.target.value })} />
+            <input className="input input-sm flex-1 font-mono text-xs" value={systemStyle.inputBgColor || ''}
+              placeholder="テーマデフォルト"
+              onChange={e => { const v = e.target.value; if (v === '') updateSystemStyle({ inputBgColor: undefined }); else if (/^#[0-9a-fA-F]{6}$/.test(v)) updateSystemStyle({ inputBgColor: v }); }} />
+            {systemStyle.inputBgColor && <button className="btn btn-sm btn-ghost text-[10px] shrink-0" onClick={() => updateSystemStyle({ inputBgColor: undefined })}>リセット</button>}
+          </div>
+        </div>
+        {/* Input Border */}
+        <div>
+          <label className="text-[10px] block mb-1" style={{ color: 'var(--sys-text-muted)' }}>入力欄ボーダー色</label>
+          <div className="flex items-center gap-2">
+            <input type="color" value={systemStyle.inputBorderColor || '#ffffff'} className="w-8 h-8 rounded cursor-pointer border-0 p-0 shrink-0"
+              onChange={e => updateSystemStyle({ inputBorderColor: e.target.value })} />
+            <input className="input input-sm flex-1 font-mono text-xs" value={systemStyle.inputBorderColor || ''}
+              placeholder="テーマデフォルト"
+              onChange={e => { const v = e.target.value; if (v === '') updateSystemStyle({ inputBorderColor: undefined }); else if (/^#[0-9a-fA-F]{6}$/.test(v)) updateSystemStyle({ inputBorderColor: v }); }} />
+            {systemStyle.inputBorderColor && <button className="btn btn-sm btn-ghost text-[10px] shrink-0" onClick={() => updateSystemStyle({ inputBorderColor: undefined })}>リセット</button>}
+          </div>
+        </div>
+        {/* Mini preview */}
+        <div className="g-card p-3 space-y-2">
+          <div className="text-[10px]" style={{ color: 'var(--sys-text-muted)' }}>プレビュー</div>
+          <input className="input input-sm text-xs" value="入力サンプル" readOnly />
+          <div className="g-card-inner p-2 text-[10px]" style={{ color: 'var(--sys-text-secondary)' }}>カード内カード</div>
+        </div>
+      </div>
+
       {/* Display Aspect Ratio */}
       <div>
         <label className="text-[11px] text-white/25 block mb-2">Display Aspect Ratio (ディスプレイ比率)</label>

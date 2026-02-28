@@ -239,6 +239,10 @@ export type SystemStyle = {
   tabBgColor?: string;
   tabActiveColor?: string;
   tabTextColor?: string;
+  cardBgColor?: string;
+  cardBorderColor?: string;
+  inputBgColor?: string;
+  inputBorderColor?: string;
 };
 
 export type SyncMessageType = 'FULL_SYNC' | 'TIMER_TICK' | 'LEVEL_CHANGE';
