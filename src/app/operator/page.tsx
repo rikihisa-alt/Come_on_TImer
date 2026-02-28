@@ -1241,7 +1241,7 @@ function InlinePreview({ timerId, timerType, sticky }: { timerId: string; timerT
           route={route}
           targetName={timer.name}
           themeLabel={themeName}
-          path={`/display/${route}?timer=${timerId}&theme=${themeId}`}
+          path={`/display/${route}?timer=${timerId}&theme=${themeId}&preview=1`}
           editMode={editMode}
           setEditMode={setEditMode}
           editor={editor}

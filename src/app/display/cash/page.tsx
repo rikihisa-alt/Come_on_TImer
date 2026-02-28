@@ -61,6 +61,7 @@ function CashDisplayInner() {
   const displayId = params.get('display') || '';
   const targetIdParam = params.get('id') || params.get('timer') || '';
   const themeParam = params.get('theme') || '';
+  const isPreview = params.get('preview') === '1';
 
   const { cashGames, displays, themes, displayToggles: globalToggles, defaultThemeId } = useStore();
 
@@ -299,7 +300,7 @@ function CashDisplayInner() {
       </main>
 
       {/* ═══ Overlays ═══ */}
-      {cashGame.status === 'idle' && (
+      {cashGame.status === 'idle' && !isPreview && (
         <div className="absolute inset-0 z-40 flex items-center justify-center g-overlay-idle">
           <div className="g-card p-8 md:p-12 text-center fade-in-up">
             <div className="text-3xl md:text-5xl font-black text-blue-400">COME ON Timer</div>
