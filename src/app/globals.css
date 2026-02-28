@@ -172,6 +172,9 @@ select.input {
   padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: 500;
   color: var(--sys-text-muted); text-decoration: none; transition: all 0.2s;
 }
+@media (max-width: 767px) {
+  .nav-link { padding: 4px 8px; font-size: 11px; }
+}
 .nav-link:hover { color: var(--sys-text); background: var(--sys-glass-inner-bg); }
 .nav-link.active { color: var(--ui-accent); background: rgba(var(--ui-accent-rgb), 0.1); }
 

@@ -31,10 +31,10 @@ export default function OperatorPage() {
         <RoomSync />
       </div>
       {/* Glass Tab Nav */}
-      <nav className="flex px-3 py-2 gap-1.5 border-b border-white/[0.06]">
+      <nav className="flex px-3 py-2 gap-1.5 border-b border-white/[0.06] overflow-x-auto">
         {TAB_ORDER.map(t => (
           <button key={t} onClick={() => switchTab(t)}
-            className={`flex-1 py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all duration-200 ${tab === t ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'hover:bg-white/[0.04] border border-transparent'}`}
+            className={`flex-1 shrink-0 py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all duration-200 whitespace-nowrap ${tab === t ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'hover:bg-white/[0.04] border border-transparent'}`}
             style={tab !== t ? { color: 'var(--sys-text-muted)' } : undefined}>
             {t === 'tournaments' ? 'Tournaments' : t === 'cash' ? 'Cash Games' : t === 'split' ? 'Split' : 'Settings'}
           </button>
@@ -579,7 +579,16 @@ function BlindEditor({ tournament: t }: { tournament: Tournament }) {
               {lv.type === 'break' ? (
                 <><span className="text-green-400 text-xs font-semibold flex-1">BREAK</span><input type="text" inputMode="numeric" className="input input-sm w-16 text-center" value={Math.floor(lv.duration / 60)} onChange={e => { const v = toHalfWidthNumber(e.target.value); upLv(i, { duration: (Number(v) || 1) * 60 }); }} /><span className="text-[11px] text-white/20">min</span></>
               ) : (
-                <><span className="text-[11px] text-white/30 w-6 shrink-0">Lv{lv.level}</span><input type="text" inputMode="numeric" className="input input-sm w-16" value={lv.smallBlind} onChange={e => { const v = Number(toHalfWidthNumber(e.target.value)) || 0; upLv(i, { smallBlind: v, bigBlind: v * 2, ante: v * 2 }); }} /><span className="text-white/15">/</span><input type="text" inputMode="numeric" className="input input-sm w-16" value={lv.bigBlind} onChange={e => { const v = toHalfWidthNumber(e.target.value); upLv(i, { bigBlind: Number(v) || 0 }); }} /><span className="text-[11px] text-white/20 ml-1">A:</span><input type="text" inputMode="numeric" className="input input-sm w-14" value={lv.ante} onChange={e => { const v = toHalfWidthNumber(e.target.value); upLv(i, { ante: Number(v) || 0 }); }} /><input type="text" inputMode="numeric" className="input input-sm w-14 text-center" value={Math.floor(lv.duration / 60)} onChange={e => { const v = toHalfWidthNumber(e.target.value); upLv(i, { duration: (Number(v) || 1) * 60 }); }} /><span className="text-[11px] text-white/20">m</span></>
+                <div className="flex flex-wrap items-center gap-1 sm:gap-2 flex-1 min-w-0">
+                  <span className="text-[11px] text-white/30 w-6 shrink-0">Lv{lv.level}</span>
+                  <input type="text" inputMode="numeric" className="input input-sm shrink-0" style={{ width: '4.5rem' }} value={lv.smallBlind} onChange={e => { const v = Number(toHalfWidthNumber(e.target.value)) || 0; upLv(i, { smallBlind: v, bigBlind: v * 2, ante: v * 2 }); }} />
+                  <span className="text-white/15">/</span>
+                  <input type="text" inputMode="numeric" className="input input-sm shrink-0" style={{ width: '4.5rem' }} value={lv.bigBlind} onChange={e => { const v = toHalfWidthNumber(e.target.value); upLv(i, { bigBlind: Number(v) || 0 }); }} />
+                  <span className="text-[11px] text-white/20 ml-1">A:</span>
+                  <input type="text" inputMode="numeric" className="input input-sm shrink-0" style={{ width: '3.5rem' }} value={lv.ante} onChange={e => { const v = toHalfWidthNumber(e.target.value); upLv(i, { ante: Number(v) || 0 }); }} />
+                  <input type="text" inputMode="numeric" className="input input-sm text-center shrink-0" style={{ width: '3.5rem' }} value={Math.floor(lv.duration / 60)} onChange={e => { const v = toHalfWidthNumber(e.target.value); upLv(i, { duration: (Number(v) || 1) * 60 }); }} />
+                  <span className="text-[11px] text-white/20">m</span>
+                </div>
               )}
               <button onClick={() => rmLv(i)} className="text-white/15 hover:text-red-400 text-xs ml-1 transition-colors shrink-0">x</button>
             </div>
@@ -1158,12 +1167,12 @@ function CombinedPreview({ route, targetName, themeLabel, path, editMode, setEdi
   return (
     <div className="mt-2 space-y-0">
       {/* Toolbar */}
-      <div className="flex items-center gap-2 px-3 py-2 bg-white/[0.03] rounded-t-xl border border-white/[0.08] border-b-0">
-        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md shrink-0 ${
+      <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-2 bg-white/[0.03] rounded-t-xl border border-white/[0.08] border-b-0">
+        <span className={`text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-md shrink-0 ${
           route === 'tournament' ? 'bg-blue-500/20 text-blue-400' : 'bg-green-500/20 text-green-400'
         }`}>{routeLabel}</span>
-        <span className="text-[11px] text-white/40 truncate">{targetName}</span>
-        <span className="text-[10px] text-white/20 shrink-0">{themeLabel}</span>
+        <span className="text-[11px] text-white/40 truncate min-w-0">{targetName}</span>
+        <span className="text-[10px] text-white/20 shrink-0 hidden sm:inline">{themeLabel}</span>
         <div className="ml-auto flex items-center gap-1">
           {/* Edit mode toggle */}
           <button onClick={() => setEditMode(!editMode)}
