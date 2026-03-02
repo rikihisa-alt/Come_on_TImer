@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useStore } from '@/stores/useStore';
 import { formatTimer, formatTimerHMS, formatChips, uid, toHalfWidthNumber } from '@/lib/utils';
-import { DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND, DEFAULT_SECTION_LAYOUT, DEFAULT_CASH_SECTION_LAYOUT, FONT_OPTIONS, DEFAULT_SYSTEM_STYLE, ASPECT_RATIO_OPTIONS, SYSTEM_THEMES, getSystemTheme } from '@/lib/presets';
+import { DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND, DEFAULT_SECTION_LAYOUT, DEFAULT_CASH_SECTION_LAYOUT, FONT_OPTIONS, DEFAULT_SYSTEM_STYLE, ASPECT_RATIO_OPTIONS, SYSTEM_THEMES, getSystemTheme, UNIFIED_PRESETS } from '@/lib/presets';
 import { playSound, playTestSound, playWarningBeep, speakTTS, fillTTSTemplate, PRESET_LABELS } from '@/lib/audio';
 import { BlindLevel, Tournament, CashGame, SoundPreset, PrizeEntry, SoundSettings, DisplayToggles, ThemeConfig, TournamentSectionId, SectionPosition, SectionLayout, CashSectionId, CashSectionLayout, AspectRatioMode, TournamentPreset, CashGamePreset, SystemThemeId } from '@/lib/types';
 import { RoomSync } from '@/components/RoomSync';
@@ -1797,6 +1797,8 @@ function hslToHex(h: number, s: number, l: number): string {
 function SystemStyleEditor() {
   const systemStyle = useStore(s => s.systemStyle) || DEFAULT_SYSTEM_STYLE;
   const updateSystemStyle = useStore(s => s.updateSystemStyle);
+  const applyUnifiedPreset = useStore(s => s.applyUnifiedPreset);
+  const [showCustom, setShowCustom] = useState(!systemStyle.unifiedPresetId);
   const currentFont = FONT_OPTIONS.find(f => f.id === systemStyle.fontFamily) || FONT_OPTIONS[0];
   const hsl = hexToHsl(systemStyle.uiAccentColor || '#3b82f6');
 
@@ -1804,12 +1806,77 @@ function SystemStyleEditor() {
     updateSystemStyle({ uiAccentColor: hslToHex(h, s, l) });
   };
 
+  const activePreset = UNIFIED_PRESETS.find(p => p.id === systemStyle.unifiedPresetId);
+
   return (
     <div className="g-card p-4 space-y-5">
       <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">
         System Style (システムスタイル)
       </div>
-      <p className="text-xs" style={{ color: 'var(--sys-text-muted)' }}>アプリ全体のテーマ、フォント、アクセントカラー、ディスプレイ設定を変更できます。</p>
+
+      {/* ========== Unified Theme Presets ========== */}
+      <div>
+        <label className="text-xs block mb-2" style={{ color: 'var(--sys-text-muted)' }}>Theme Presets (テーマプリセット)</label>
+        <p className="text-xs mb-3" style={{ color: 'var(--sys-text-muted)' }}>ワンタップで全カラーを一括設定。選択後カスタム編集も可能です。</p>
+        <div className="grid grid-cols-2 gap-2">
+          {UNIFIED_PRESETS.map(p => (
+            <button key={p.id}
+              onClick={() => { applyUnifiedPreset(p.id); setShowCustom(false); }}
+              className={`p-2 rounded-xl border transition-all text-left ${
+                systemStyle.unifiedPresetId === p.id
+                  ? 'border-[var(--ui-accent)] ring-2 ring-[var(--ui-accent)]/30'
+                  : 'border-[var(--sys-input-border)] hover:border-[var(--sys-glass-border)]'
+              }`}>
+              <div className="w-full h-6 rounded-lg mb-1.5 relative overflow-hidden"
+                style={{ background: `linear-gradient(135deg, ${p.tokens['timer.background']}, ${p.tokens['timer.backgroundTo']})` }}>
+                <span className="absolute right-1.5 top-0.5 text-[10px] font-bold tracking-wider" style={{ color: p.tokens['timer.text'] }}>12:34</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded-full shrink-0" style={{ background: p.tokens['theme.primary'] }} />
+                <div className="min-w-0 flex-1">
+                  <div className="text-[10px] font-semibold truncate" style={{ color: 'var(--sys-text)' }}>{p.name}</div>
+                  <div className="text-[9px] truncate" style={{ color: 'var(--sys-text-muted)' }}>{p.description}</div>
+                </div>
+                {systemStyle.unifiedPresetId === p.id && <span className="text-[10px]">✓</span>}
+              </div>
+            </button>
+          ))}
+        </div>
+        {/* Mini timer preview for selected preset */}
+        {activePreset && (
+          <div className="mt-3 rounded-xl overflow-hidden border" style={{ borderColor: activePreset.tokens['ui.border'] }}>
+            <div className="p-3" style={{ background: `linear-gradient(135deg, ${activePreset.tokens['timer.background']}, ${activePreset.tokens['timer.backgroundTo']})` }}>
+              <div className="text-[9px] font-semibold mb-1" style={{ color: activePreset.tokens['text.secondary'] }}>Timer Preview — {activePreset.name}</div>
+              <div className="text-center text-2xl font-bold tracking-wider" style={{ color: activePreset.tokens['timer.text'], fontFamily: 'monospace' }}>12:34</div>
+              <div className="text-center text-xs mt-1" style={{ color: activePreset.tokens['timer.text'] + 'aa' }}>100/200 (Ante 25)</div>
+            </div>
+            <div className="p-2 flex gap-1" style={{ background: activePreset.tokens['tab.background'] }}>
+              {['Tournament', 'Cash', 'Settings'].map((l, i) => (
+                <div key={l} className="flex-1 py-1 rounded text-[8px] font-semibold text-center"
+                  style={i === 0
+                    ? { background: activePreset.tokens['tab.activeBackground'], color: activePreset.tokens['tab.activeText'] }
+                    : { color: activePreset.tokens['tab.inactiveText'] }}>
+                  {l}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Custom toggle */}
+      <div className="border-t border-white/[0.06] pt-4">
+        <button
+          onClick={() => setShowCustom(!showCustom)}
+          className="w-full flex items-center justify-between py-2 text-xs font-semibold"
+          style={{ color: 'var(--sys-text-secondary)' }}>
+          <span>{showCustom ? '▼ カスタム設定' : '▶ カスタム設定（個別編集）'}</span>
+          {activePreset && !showCustom && <span className="text-[9px] px-2 py-0.5 rounded-full" style={{ background: 'var(--sys-glass-bg)', color: 'var(--sys-text-muted)' }}>プリセット適用中</span>}
+        </button>
+      </div>
+
+      {showCustom && <>
+      <p className="text-xs" style={{ color: 'var(--sys-text-muted)' }}>個別にカラーを変更するとプリセット選択が解除されます。</p>
 
       {/* System Theme Picker */}
       <div>
@@ -2104,6 +2171,7 @@ function SystemStyleEditor() {
           <div className="g-card-inner p-2 text-[10px]" style={{ color: 'var(--sys-text-secondary)' }}>カード内カード</div>
         </div>
       </div>
+      </>}
 
       {/* Display Aspect Ratio */}
       <div>

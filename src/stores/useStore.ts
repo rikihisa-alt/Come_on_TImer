@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware';
 import { Tournament, CashGame, DisplayAssignment, ThemeConfig, SoundSettings, DisplayToggles, BlindLevel, SectionLayout, TournamentSectionId, SectionPosition, CashSectionId, CashSectionLayout, SystemStyle, BlindTemplate, TournamentPreset, CashGamePreset } from '@/lib/types';
 import { uid } from '@/lib/utils';
 import { broadcast } from '@/lib/sync';
-import { DEFAULT_THEMES, STANDARD_PRESET, DEFAULT_TTS_MESSAGES, DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND, DEFAULT_SECTION_LAYOUT, DEFAULT_CASH_SECTION_LAYOUT, DEFAULT_SYSTEM_STYLE } from '@/lib/presets';
+import { DEFAULT_THEMES, STANDARD_PRESET, DEFAULT_TTS_MESSAGES, DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND, DEFAULT_SECTION_LAYOUT, DEFAULT_CASH_SECTION_LAYOUT, DEFAULT_SYSTEM_STYLE, UNIFIED_PRESETS } from '@/lib/presets';
 
 interface AppState {
   tournaments: Tournament[];
@@ -73,6 +73,7 @@ interface AppState {
   updateCashPreset: (presetId: string, cashGame: CashGame) => void;
   updateCashSplitSectionPosition: (id: string, sectionId: CashSectionId, pos: SectionPosition) => void;
   resetCashSplitSectionLayout: (id: string) => void;
+  applyUnifiedPreset: (presetId: string) => void;
   broadcastAll: () => void;
 }
 
@@ -131,7 +132,57 @@ export const useStore = create<AppState>()(
       tournamentPresets: [],
       cashPresets: [],
 
-      updateSystemStyle: (partial) => { set(s => ({ systemStyle: { ...s.systemStyle, ...partial } })); get().broadcastAll(); },
+      updateSystemStyle: (partial) => {
+        const clearPreset = !('unifiedPresetId' in partial) ? { unifiedPresetId: undefined } : {};
+        set(s => ({ systemStyle: { ...s.systemStyle, ...partial, ...clearPreset } }));
+        get().broadcastAll();
+      },
+      applyUnifiedPreset: (presetId) => {
+        const preset = UNIFIED_PRESETS.find(p => p.id === presetId);
+        if (!preset) return;
+        const t = preset.tokens;
+        // Update SystemStyle
+        set(s => ({
+          systemStyle: {
+            ...s.systemStyle,
+            systemThemeId: 'custom' as const,
+            customBgFrom: t['ui.background'],
+            customBgTo: t['ui.backgroundTo'],
+            uiAccentColor: t['theme.primary'],
+            customTextColor: t['text.primary'],
+            tabBgColor: t['tab.background'],
+            tabActiveColor: t['tab.activeBackground'],
+            tabTextColor: t['tab.inactiveText'],
+            cardBgColor: t['ui.surface'],
+            cardBorderColor: t['ui.border'],
+            inputBgColor: t['ui.surface'],
+            inputBorderColor: t['ui.border'],
+            unifiedPresetId: presetId,
+          },
+        }));
+        // Create/update display ThemeConfig
+        const themeId = `unified-${presetId}`;
+        const newTheme: ThemeConfig = {
+          id: themeId,
+          name: preset.name,
+          type: 'gradient',
+          gradientFrom: t['timer.background'],
+          gradientTo: t['timer.backgroundTo'],
+          overlayOpacity: 0,
+          primaryColor: t['timer.text'],
+          accentColor: t['theme.primary'],
+        };
+        set(s => {
+          const exists = s.themes.some(th => th.id === themeId);
+          return {
+            themes: exists
+              ? s.themes.map(th => th.id === themeId ? newTheme : th)
+              : [...s.themes, newTheme],
+            defaultThemeId: themeId,
+          };
+        });
+        get().broadcastAll();
+      },
       addTournament: (name, levels) => {
         const t = mkTournament(name, levels);
         set(s => ({ tournaments: [...s.tournaments, t] }));

@@ -1,4 +1,4 @@
-import { BlindLevel, ThemeConfig, TTSMessage, DisplayToggles, SoundSettings, SectionLayout, CashSectionLayout, SystemStyle, AspectRatioMode, SystemThemeId } from './types';
+import { BlindLevel, ThemeConfig, TTSMessage, DisplayToggles, SoundSettings, SectionLayout, CashSectionLayout, SystemStyle, AspectRatioMode, SystemThemeId, UnifiedThemePreset } from './types';
 import { uid } from './utils';
 
 function bl(level: number, sb: number, bb: number, ante: number, dur: number): BlindLevel {
@@ -199,3 +199,149 @@ export const DEFAULT_DISPLAY_TOGGLES: DisplayToggles = {
   showCashPlayers: false, showCashChipInfo: false, showCashNextBlinds: true,
   tickerText: '', tickerSpeed: 25, backgroundImageUrl: '',
 };
+
+// ====================================
+// Unified Theme Presets (10種)
+// ====================================
+export const UNIFIED_PRESETS: UnifiedThemePreset[] = [
+  {
+    id: 'royal-navy', name: 'Royal Navy', description: 'ネイビー×ゴールド',
+    tokens: {
+      'theme.primary': '#d4a853',
+      'ui.background': '#0a1628', 'ui.backgroundTo': '#162a4a',
+      'ui.surface': '#1a2d4d', 'ui.border': '#2a3f66',
+      'text.primary': '#e8dcc8', 'text.secondary': '#9a8e7a',
+      'button.background': '#d4a853', 'button.text': '#0a1628',
+      'tab.background': '#0d1a30', 'tab.inactiveText': '#5a6a82',
+      'tab.activeBackground': '#d4a853', 'tab.activeText': '#0a1628',
+      'timer.background': '#0a1628', 'timer.backgroundTo': '#1a3358',
+      'timer.text': '#d4a853',
+    },
+  },
+  {
+    id: 'midnight-pro', name: 'Midnight Pro', description: 'ブラック×エレクトリックブルー',
+    tokens: {
+      'theme.primary': '#3b9eff',
+      'ui.background': '#06090f', 'ui.backgroundTo': '#0d1a2e',
+      'ui.surface': '#111a2b', 'ui.border': '#1a2840',
+      'text.primary': '#d8e4f0', 'text.secondary': '#6889a8',
+      'button.background': '#3b9eff', 'button.text': '#060a10',
+      'tab.background': '#080d16', 'tab.inactiveText': '#3a5068',
+      'tab.activeBackground': '#3b9eff', 'tab.activeText': '#060a10',
+      'timer.background': '#060a10', 'timer.backgroundTo': '#0e1f38',
+      'timer.text': '#3b9eff',
+    },
+  },
+  {
+    id: 'vegas-red', name: 'Vegas Red', description: 'ダークレッド×ゴールド',
+    tokens: {
+      'theme.primary': '#e8b84a',
+      'ui.background': '#1a0a0a', 'ui.backgroundTo': '#2e1216',
+      'ui.surface': '#2a1418', 'ui.border': '#4a2228',
+      'text.primary': '#f0e0c8', 'text.secondary': '#a08868',
+      'button.background': '#c43030', 'button.text': '#f0e0c8',
+      'tab.background': '#160c0c', 'tab.inactiveText': '#6a4a4a',
+      'tab.activeBackground': '#c43030', 'tab.activeText': '#f0e0c8',
+      'timer.background': '#1a0808', 'timer.backgroundTo': '#381018',
+      'timer.text': '#e8b84a',
+    },
+  },
+  {
+    id: 'emerald-table', name: 'Emerald Table', description: '深緑×アイボリー',
+    tokens: {
+      'theme.primary': '#50c878',
+      'ui.background': '#081a14', 'ui.backgroundTo': '#0f2e22',
+      'ui.surface': '#132e20', 'ui.border': '#1e4432',
+      'text.primary': '#e8f0e8', 'text.secondary': '#7aa088',
+      'button.background': '#50c878', 'button.text': '#081a14',
+      'tab.background': '#0a1810', 'tab.inactiveText': '#4a6858',
+      'tab.activeBackground': '#50c878', 'tab.activeText': '#081a14',
+      'timer.background': '#081a14', 'timer.backgroundTo': '#143828',
+      'timer.text': '#50c878',
+    },
+  },
+  {
+    id: 'cyber-purple', name: 'Cyber Purple', description: 'ダークパープル×ネオンブルー',
+    tokens: {
+      'theme.primary': '#7c5cfc',
+      'ui.background': '#0e0818', 'ui.backgroundTo': '#1a1030',
+      'ui.surface': '#1a1230', 'ui.border': '#2e1e50',
+      'text.primary': '#dcd0f8', 'text.secondary': '#8878b0',
+      'button.background': '#7c5cfc', 'button.text': '#0e0818',
+      'tab.background': '#0c0814', 'tab.inactiveText': '#504878',
+      'tab.activeBackground': '#7c5cfc', 'tab.activeText': '#0e0818',
+      'timer.background': '#0e0818', 'timer.backgroundTo': '#201440',
+      'timer.text': '#7c5cfc',
+    },
+  },
+  {
+    id: 'ice-silver', name: 'Ice Silver', description: 'ダークグレー×シアン',
+    tokens: {
+      'theme.primary': '#4ecdc4',
+      'ui.background': '#101418', 'ui.backgroundTo': '#1a2028',
+      'ui.surface': '#1a2028', 'ui.border': '#283038',
+      'text.primary': '#d8e0e8', 'text.secondary': '#7888a0',
+      'button.background': '#4ecdc4', 'button.text': '#101418',
+      'tab.background': '#0e1218', 'tab.inactiveText': '#485868',
+      'tab.activeBackground': '#4ecdc4', 'tab.activeText': '#101418',
+      'timer.background': '#101418', 'timer.backgroundTo': '#1a2830',
+      'timer.text': '#4ecdc4',
+    },
+  },
+  {
+    id: 'dark-chrome', name: 'Dark Chrome', description: 'ブラック×シルバー',
+    tokens: {
+      'theme.primary': '#b0b8c8',
+      'ui.background': '#0a0a0e', 'ui.backgroundTo': '#161618',
+      'ui.surface': '#18181c', 'ui.border': '#2a2a30',
+      'text.primary': '#d0d0d8', 'text.secondary': '#707078',
+      'button.background': '#b0b8c8', 'button.text': '#0a0a0e',
+      'tab.background': '#0c0c10', 'tab.inactiveText': '#484850',
+      'tab.activeBackground': '#b0b8c8', 'tab.activeText': '#0a0a0e',
+      'timer.background': '#0a0a0e', 'timer.backgroundTo': '#1a1a20',
+      'timer.text': '#d0d8e8',
+    },
+  },
+  {
+    id: 'sunset-pro', name: 'Sunset Pro', description: 'ダークオレンジ×ネイビー',
+    tokens: {
+      'theme.primary': '#e8822a',
+      'ui.background': '#0e1020', 'ui.backgroundTo': '#1a1830',
+      'ui.surface': '#1a1828', 'ui.border': '#2a2840',
+      'text.primary': '#f0e0d0', 'text.secondary': '#a09080',
+      'button.background': '#e8822a', 'button.text': '#0e1020',
+      'tab.background': '#0c0e1a', 'tab.inactiveText': '#585068',
+      'tab.activeBackground': '#e8822a', 'tab.activeText': '#0e1020',
+      'timer.background': '#0e1020', 'timer.backgroundTo': '#201828',
+      'timer.text': '#e8822a',
+    },
+  },
+  {
+    id: 'arctic-blue', name: 'Arctic Blue', description: 'ネイビー×アイスブルー',
+    tokens: {
+      'theme.primary': '#7ec8e3',
+      'ui.background': '#0a1420', 'ui.backgroundTo': '#142838',
+      'ui.surface': '#142838', 'ui.border': '#1e3a50',
+      'text.primary': '#d0e8f8', 'text.secondary': '#6898b8',
+      'button.background': '#7ec8e3', 'button.text': '#0a1420',
+      'tab.background': '#0c1218', 'tab.inactiveText': '#3a5870',
+      'tab.activeBackground': '#7ec8e3', 'tab.activeText': '#0a1420',
+      'timer.background': '#0a1420', 'timer.backgroundTo': '#163040',
+      'timer.text': '#7ec8e3',
+    },
+  },
+  {
+    id: 'mono-pro', name: 'Mono Pro', description: '完全モノトーン高級仕様',
+    tokens: {
+      'theme.primary': '#e0e0e0',
+      'ui.background': '#0c0c0c', 'ui.backgroundTo': '#161616',
+      'ui.surface': '#1a1a1a', 'ui.border': '#2a2a2a',
+      'text.primary': '#e0e0e0', 'text.secondary': '#787878',
+      'button.background': '#e0e0e0', 'button.text': '#0c0c0c',
+      'tab.background': '#0e0e0e', 'tab.inactiveText': '#505050',
+      'tab.activeBackground': '#e0e0e0', 'tab.activeText': '#0c0c0c',
+      'timer.background': '#0c0c0c', 'timer.backgroundTo': '#1a1a1a',
+      'timer.text': '#e0e0e0',
+    },
+  },
+];

@@ -276,6 +276,33 @@ export type SystemStyle = {
   cardBorderColor?: string;
   inputBgColor?: string;
   inputBorderColor?: string;
+  unifiedPresetId?: string;
+};
+
+export type UnifiedThemeTokens = {
+  'theme.primary': string;
+  'ui.background': string;
+  'ui.backgroundTo': string;
+  'ui.surface': string;
+  'ui.border': string;
+  'text.primary': string;
+  'text.secondary': string;
+  'button.background': string;
+  'button.text': string;
+  'tab.background': string;
+  'tab.inactiveText': string;
+  'tab.activeBackground': string;
+  'tab.activeText': string;
+  'timer.background': string;
+  'timer.backgroundTo': string;
+  'timer.text': string;
+};
+
+export type UnifiedThemePreset = {
+  id: string;
+  name: string;
+  description: string;
+  tokens: UnifiedThemeTokens;
 };
 
 export type SyncMessageType = 'FULL_SYNC' | 'TIMER_TICK' | 'LEVEL_CHANGE';
