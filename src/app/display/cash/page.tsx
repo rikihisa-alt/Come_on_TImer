@@ -213,7 +213,7 @@ function CashDisplayInner() {
               <div className="text-5xl lg:text-7xl font-black leading-none tracking-tight" style={{ color: primaryColor }}>
                 {cashGame.smallBlind.toLocaleString()}/{cashGame.bigBlind.toLocaleString()}
                 {cashGame.ante > 0 && (
-                  <span className="text-2xl lg:text-4xl text-white/40 ml-1">(Ante {cashGame.ante.toLocaleString()})</span>
+                  <span className="text-white/40 ml-1">(Ante {cashGame.ante.toLocaleString()})</span>
                 )}
               </div>
             </div>
@@ -227,7 +227,7 @@ function CashDisplayInner() {
               <span className="text-xs text-white/25 uppercase font-bold tracking-wider">Next</span>
               <span className="text-lg lg:text-2xl font-bold text-white/40 timer-font">
                 {cashGame.nextSmallBlind.toLocaleString()}/{cashGame.nextBigBlind.toLocaleString()}
-                {cashGame.nextAnte > 0 && <span className="text-sm lg:text-lg ml-1">(Ante {cashGame.nextAnte.toLocaleString()})</span>}
+                {cashGame.nextAnte > 0 && <span className="ml-1">(Ante {cashGame.nextAnte.toLocaleString()})</span>}
               </span>
             </div>
           </AbsoluteSection>
@@ -323,7 +323,7 @@ function CashDisplayInner() {
           <div className="g-card w-full p-5 text-center">
             <div className="text-5xl font-black leading-none tracking-tight" style={{ color: primaryColor }}>
               {cashGame.smallBlind.toLocaleString()}/{cashGame.bigBlind.toLocaleString()}
-              {cashGame.ante > 0 && <span className="text-2xl text-white/40 ml-1">(Ante {cashGame.ante.toLocaleString()})</span>}
+              {cashGame.ante > 0 && <span className="text-white/40 ml-1">(Ante {cashGame.ante.toLocaleString()})</span>}
             </div>
           </div>
         )}
@@ -332,7 +332,7 @@ function CashDisplayInner() {
             <span className="text-xs text-white/25 uppercase font-bold">Next</span>
             <span className="text-lg font-bold text-white/40 timer-font">
               {cashGame.nextSmallBlind.toLocaleString()}/{cashGame.nextBigBlind.toLocaleString()}
-              {cashGame.nextAnte > 0 && <span className="text-sm ml-1">(Ante {cashGame.nextAnte.toLocaleString()})</span>}
+              {cashGame.nextAnte > 0 && <span className="ml-1">(Ante {cashGame.nextAnte.toLocaleString()})</span>}
             </span>
           </div>
         )}

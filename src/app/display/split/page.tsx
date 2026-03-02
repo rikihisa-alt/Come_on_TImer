@@ -170,7 +170,7 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
               <div className="mt-1 font-black timer-font whitespace-nowrap" style={{ color: pc, fontSize: `${1.8 * bds}vw` }}>
                 {cur.smallBlind.toLocaleString()}/{cur.bigBlind.toLocaleString()}
                 {cur.ante > 0 && (
-                  <span className="text-white/30 ml-0.5" style={{ fontSize: `${1.2 * bds}vw` }}>(Ante {cur.ante.toLocaleString()})</span>
+                  <span className="text-white/30 ml-0.5">(Ante {cur.ante.toLocaleString()})</span>
                 )}
               </div>
             )}
@@ -338,7 +338,7 @@ function CashPanel({ cashGame, theme, displayToggles: dt }: {
             <div className="text-2xl lg:text-4xl font-black leading-none tracking-tight whitespace-nowrap" style={{ color: pc }}>
               {cashGame.smallBlind.toLocaleString()}/{cashGame.bigBlind.toLocaleString()}
               {cashGame.ante > 0 && (
-                <span className="text-xs lg:text-base text-white/35 ml-1">(Ante {cashGame.ante.toLocaleString()})</span>
+                <span className="text-white/35 ml-1">(Ante {cashGame.ante.toLocaleString()})</span>
               )}
             </div>
           </div>

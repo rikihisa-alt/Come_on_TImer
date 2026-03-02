@@ -331,7 +331,7 @@ function Inner() {
                   <div className="font-black timer-font" style={{ color: pc, fontSize: `${3.5 * bds}vw` }}>
                     {cur.smallBlind.toLocaleString()}/{cur.bigBlind.toLocaleString()}
                     {cur.ante > 0 && (
-                      <span className="text-white/30 ml-1" style={{ fontSize: `${2.2 * bds}vw` }}>(Ante {cur.ante.toLocaleString()})</span>
+                      <span className="text-white/30 ml-1">(Ante {cur.ante.toLocaleString()})</span>
                     )}
                   </div>
                 </div>
@@ -347,7 +347,7 @@ function Inner() {
               <span className="text-xs text-white/30 uppercase tracking-wider font-semibold">Next</span>
               <span className="text-lg font-bold text-white/50 timer-font">
                 {nextPlay.smallBlind.toLocaleString()}/{nextPlay.bigBlind.toLocaleString()}
-                {nextPlay.ante > 0 && <span className="text-white/30 text-sm ml-1">(Ante {nextPlay.ante.toLocaleString()})</span>}
+                {nextPlay.ante > 0 && <span className="text-white/30 ml-1">(Ante {nextPlay.ante.toLocaleString()})</span>}
               </span>
             </div>
           </AbsoluteSection>
@@ -428,7 +428,7 @@ function Inner() {
                 <div className="text-2xl font-black timer-font" style={{ color: pc }}>
                   {cur.smallBlind.toLocaleString()}/{cur.bigBlind.toLocaleString()}
                   {cur.ante > 0 && (
-                    <span className="text-base text-white/30 ml-1">(Ante {cur.ante.toLocaleString()})</span>
+                    <span className="text-white/30 ml-1">(Ante {cur.ante.toLocaleString()})</span>
                   )}
                 </div>
               </div>
@@ -449,7 +449,7 @@ function Inner() {
             <span className="text-[10px] text-white/30 uppercase tracking-wider font-semibold">Next</span>
             <span className="text-sm font-bold text-white/50 timer-font">
               {nextPlay.smallBlind.toLocaleString()}/{nextPlay.bigBlind.toLocaleString()}
-              {nextPlay.ante > 0 && <span className="text-white/30 text-xs ml-1">(Ante {nextPlay.ante.toLocaleString()})</span>}
+              {nextPlay.ante > 0 && <span className="text-white/30 ml-1">(Ante {nextPlay.ante.toLocaleString()})</span>}
             </span>
           </div>
         )}

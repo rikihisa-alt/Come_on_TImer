@@ -17,11 +17,11 @@ function MobileBottomTabs({ tab, switchTab }: { tab: string; switchTab: (t: type
   useEffect(() => { setMounted(true); }, []);
   if (!mounted) return null;
   return createPortal(
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex px-3 py-2 gap-1.5 border-t border-white/[0.06] overflow-x-auto"
-      style={{ background: 'var(--tab-bg, var(--sys-bg-from))', paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex px-3 py-2.5 gap-1.5 border-t border-white/[0.06] overflow-x-auto"
+      style={{ background: 'var(--tab-bg, var(--sys-bg-from))', paddingBottom: 'max(0.625rem, env(safe-area-inset-bottom))' }}>
       {TAB_ORDER.map(t => (
         <button key={t} onClick={() => switchTab(t)}
-          className={`flex-1 shrink-0 py-2 rounded-xl text-sm font-semibold transition-all duration-200 whitespace-nowrap ${tab === t ? 'border' : 'hover:bg-white/[0.04] border border-transparent'}`}
+          className={`flex-1 shrink-0 py-3 rounded-xl text-sm font-semibold transition-all duration-200 whitespace-nowrap ${tab === t ? 'border' : 'hover:bg-white/[0.04] border border-transparent'}`}
           style={tab === t
             ? { background: 'rgba(var(--tab-active-rgb), 0.2)', color: 'var(--tab-active)', borderColor: 'rgba(var(--tab-active-rgb), 0.3)' }
             : { color: 'var(--tab-text, var(--sys-text-muted))' }}>
@@ -240,7 +240,7 @@ function TournamentPresetPanel({ tournament: t }: { tournament: Tournament }) {
                   <div key={p.id} className={`flex items-center gap-2 py-1.5 px-2 rounded-lg transition-colors ${isSource ? 'bg-blue-500/5 border border-blue-500/15' : 'hover:bg-white/[0.03]'}`}>
                     <div className="flex-1 min-w-0">
                       <div className="text-xs text-white/50 font-medium truncate">{p.name}{isSource && <span className="ml-1.5 text-[9px] text-blue-400/60">(loaded)</span>}</div>
-                      <div className="text-[10px] text-white/20">
+                      <div className="text-xs text-white/20">
                         {p.tournamentName ? `${p.tournamentName} · ` : ''}{(p.startingChips / 1000).toFixed(0)}K · {fp ? `${fp.smallBlind}/${fp.bigBlind}` : '--'} · {p.levels.filter(l => l.type === 'play').length}lvl
                       </div>
                     </div>
@@ -319,7 +319,7 @@ function CashPresetPanel({ cashGame: c }: { cashGame: CashGame }) {
                   <div key={p.id} className={`flex items-center gap-2 py-1.5 px-2 rounded-lg transition-colors ${isSource ? 'bg-green-500/5 border border-green-500/15' : 'hover:bg-white/[0.03]'}`}>
                     <div className="flex-1 min-w-0">
                       <div className="text-xs text-white/50 font-medium truncate">{p.name}{isSource && <span className="ml-1.5 text-[9px] text-green-400/60">(loaded)</span>}</div>
-                      <div className="text-[10px] text-white/20">
+                      <div className="text-xs text-white/20">
                         {p.cashName ? `${p.cashName} · ` : ''}{p.smallBlind}/{p.bigBlind}{p.ante > 0 ? ` (${p.ante})` : ''}{p.memo ? ` · ${p.memo}` : ''}
                       </div>
                     </div>
@@ -402,15 +402,17 @@ function TournamentTimer({ tournament: t }: { tournament: Tournament }) {
       <div className="seek-bar bg-white/5 h-2 rounded" onClick={handleSeek}>
         <div className="seek-fill rounded" style={{ width: `${Math.min(progress * 100, 100)}%`, background: isWarning ? 'linear-gradient(to right, #f59e0b, #ef4444)' : isBreak ? '#22c55e' : 'linear-gradient(to right, #2563eb, #60a5fa)' }} />
       </div>
-      <div className="flex items-center gap-2 flex-wrap">
-        <button onClick={() => store.tPrevLevel(t.id)} className="btn btn-ghost btn-sm">Prev</button>
-        {t.status === 'idle' && <button onClick={() => store.tStart(t.id)} className="btn btn-primary">Start</button>}
-        {t.status === 'running' && <button onClick={() => store.tPause(t.id)} className="btn btn-warning">Pause</button>}
-        {t.status === 'paused' && <button onClick={() => store.tResume(t.id)} className="btn btn-success">Resume</button>}
-        {t.status === 'finished' && <button onClick={() => store.tReset(t.id)} className="btn btn-ghost">Restart</button>}
-        {(t.status === 'running' || t.status === 'paused') && <button onClick={() => store.tReset(t.id)} className="btn btn-danger btn-sm">Reset</button>}
-        <button onClick={() => store.tNextLevel(t.id)} className="btn btn-ghost btn-sm">Next</button>
-        <div className="ml-auto flex items-center gap-1">
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <button onClick={() => store.tPrevLevel(t.id)} className="btn btn-ghost btn-sm">Prev</button>
+          {t.status === 'idle' && <button onClick={() => store.tStart(t.id)} className="btn btn-primary">Start</button>}
+          {t.status === 'running' && <button onClick={() => store.tPause(t.id)} className="btn btn-warning">Pause</button>}
+          {t.status === 'paused' && <button onClick={() => store.tResume(t.id)} className="btn btn-success">Resume</button>}
+          {t.status === 'finished' && <button onClick={() => store.tReset(t.id)} className="btn btn-ghost">Restart</button>}
+          {(t.status === 'running' || t.status === 'paused') && <button onClick={() => store.tReset(t.id)} className="btn btn-danger btn-sm">Reset</button>}
+          <button onClick={() => store.tNextLevel(t.id)} className="btn btn-ghost btn-sm">Next</button>
+        </div>
+        <div className="flex items-center gap-1 justify-center sm:justify-end">
           <button onClick={() => store.tAdjust(t.id, -30000)} className="btn btn-ghost btn-sm">-30s</button>
           <button onClick={() => store.tAdjust(t.id, 30000)} className="btn btn-ghost btn-sm">+30s</button>
           <button onClick={() => store.tAdjust(t.id, -60000)} className="btn btn-ghost btn-sm">-1m</button>
@@ -433,8 +435,8 @@ function TournamentStats({ tournament: t }: { tournament: Tournament }) {
   const avg = activePlayers > 0 ? Math.round(totalChips / activePlayers) : 0;
 
   const CountRow = ({ label, count, countKey, chips, chipsKey }: { label: string; count: number; countKey: keyof Tournament; chips?: number; chipsKey?: keyof Tournament }) => (
-    <div className="flex items-center gap-1">
-      <span className="text-[10px] text-white/30 w-16 shrink-0">{label}</span>
+    <div className="flex items-center gap-1 flex-wrap">
+      <span className="text-xs text-white/30 w-16 shrink-0">{label}</span>
       <div className="flex gap-0.5 items-center shrink-0">
         <button className="btn btn-ghost btn-sm px-1" onClick={() => up({ [countKey]: Math.max(0, count - 1) } as Partial<Tournament>)}>-</button>
         <input type="number" className="input input-sm w-12 text-center" value={count} onChange={e => up({ [countKey]: Math.max(0, +e.target.value) } as Partial<Tournament>)} />
@@ -443,7 +445,7 @@ function TournamentStats({ tournament: t }: { tournament: Tournament }) {
       {chipsKey && (
         <div className="flex items-center gap-0.5 shrink-0">
           <input type="number" className="input input-sm w-16 text-center" value={chips || 0} onChange={e => up({ [chipsKey]: Math.max(0, +e.target.value) } as Partial<Tournament>)} />
-          <span className="text-[9px] text-white/20">chips</span>
+          <span className="text-xs text-white/20">chips</span>
         </div>
       )}
     </div>
@@ -453,9 +455,9 @@ function TournamentStats({ tournament: t }: { tournament: Tournament }) {
     <div className="space-y-3">
       <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Tournament Info</div>
       <div className="grid grid-cols-2 gap-3">
-        <div><label className="text-[11px] text-white/25 block mb-1">Starting Chips</label><input type="number" className="input input-sm" value={t.startingChips} onChange={e => up({ startingChips: +e.target.value })} /></div>
+        <div><label className="text-xs text-white/25 block mb-1">Starting Chips</label><input type="number" className="input input-sm" value={t.startingChips} onChange={e => up({ startingChips: +e.target.value })} /></div>
         <div>
-          <label className="text-[11px] text-white/25 block mb-1">Reg Close Level</label>
+          <label className="text-xs text-white/25 block mb-1">Reg Close Level</label>
           <select className="input input-sm" value={t.regCloseLevel || 0} onChange={e => up({ regCloseLevel: +e.target.value || undefined })}>
             <option value={0}>-- None --</option>
             {Array.from({ length: totalPlayLevels }, (_, i) => (
@@ -475,27 +477,27 @@ function TournamentStats({ tournament: t }: { tournament: Tournament }) {
 
       {/* アーリーバード / 特典 */}
       <div className="border-t border-white/[0.06] pt-3">
-        <div className="text-[11px] text-white/25 font-semibold mb-2">Early Bird / 特典</div>
+        <div className="text-xs text-white/25 font-semibold mb-2">Early Bird / 特典</div>
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[11px] text-white/30 w-24 shrink-0">対象者数</span>
+          <span className="text-xs text-white/30 w-24 shrink-0">対象者数</span>
           <div className="flex gap-0.5 items-center">
             <button className="btn btn-ghost btn-sm px-1.5" onClick={() => up({ earlyBirdCount: Math.max(0, t.earlyBirdCount - 1) })}>-</button>
             <input type="number" className="input input-sm w-14 text-center" value={t.earlyBirdCount} onChange={e => up({ earlyBirdCount: Math.max(0, +e.target.value) })} />
             <button className="btn btn-ghost btn-sm px-1.5" onClick={() => up({ earlyBirdCount: t.earlyBirdCount + 1 })}>+</button>
           </div>
-          <span className="text-[10px] text-white/15 mx-1">+</span>
+          <span className="text-xs text-white/15 mx-1">+</span>
           <input type="number" className="input input-sm w-24" value={t.earlyBirdBonus} onChange={e => up({ earlyBirdBonus: Math.max(0, +e.target.value) })} placeholder="ボーナスチップ" />
-          <span className="text-[10px] text-white/20">chips</span>
+          <span className="text-xs text-white/20">chips</span>
         </div>
         {t.earlyBirdCount > 0 && t.earlyBirdBonus > 0 && (
-          <div className="text-[10px] text-white/20 mt-1 pl-24">合計 +{(t.earlyBirdCount * t.earlyBirdBonus).toLocaleString()} chips</div>
+          <div className="text-xs text-white/20 mt-1 pl-24">合計 +{(t.earlyBirdCount * t.earlyBirdBonus).toLocaleString()} chips</div>
         )}
       </div>
 
       {/* チップサマリー */}
       <div className="border-t border-white/[0.06] pt-3">
-        <div className="text-[11px] text-white/25 font-semibold mb-2">Chip Summary</div>
-        <div className="grid grid-cols-2 gap-1 text-[11px]">
+        <div className="text-xs text-white/25 font-semibold mb-2">Chip Summary</div>
+        <div className="grid grid-cols-2 gap-1 text-xs">
           <span className="text-white/30">Players (総数)</span><span className="text-white/50 font-bold text-right">{activePlayers}</span>
           <span className="text-white/30">Total Chips</span><span className="text-white/50 font-bold text-right">{totalChips.toLocaleString()}</span>
           <span className="text-white/30">Avg Stack</span><span className="text-white/50 font-bold text-right">{avg > 0 ? formatChips(avg) : '--'}</span>
@@ -516,8 +518,8 @@ function CashStats({ cashGame: c }: { cashGame: CashGame }) {
   const avg = activePlayers > 0 ? Math.round(totalChips / activePlayers) : 0;
 
   const CountRow = ({ label, count, countKey, chips, chipsKey }: { label: string; count: number; countKey: keyof CashGame; chips?: number; chipsKey?: keyof CashGame }) => (
-    <div className="flex items-center gap-1">
-      <span className="text-[10px] text-white/30 w-16 shrink-0">{label}</span>
+    <div className="flex items-center gap-1 flex-wrap">
+      <span className="text-xs text-white/30 w-16 shrink-0">{label}</span>
       <div className="flex gap-0.5 items-center shrink-0">
         <button className="btn btn-ghost btn-sm px-1" onClick={() => up({ [countKey]: Math.max(0, count - 1) } as Partial<CashGame>)}>-</button>
         <input type="number" className="input input-sm w-12 text-center" value={count} onChange={e => up({ [countKey]: Math.max(0, +e.target.value) } as Partial<CashGame>)} />
@@ -526,7 +528,7 @@ function CashStats({ cashGame: c }: { cashGame: CashGame }) {
       {chipsKey && (
         <div className="flex items-center gap-0.5 shrink-0">
           <input type="number" className="input input-sm w-16 text-center" value={chips || 0} onChange={e => up({ [chipsKey]: Math.max(0, +e.target.value) } as Partial<CashGame>)} />
-          <span className="text-[9px] text-white/20">chips</span>
+          <span className="text-xs text-white/20">chips</span>
         </div>
       )}
     </div>
@@ -536,7 +538,7 @@ function CashStats({ cashGame: c }: { cashGame: CashGame }) {
     <div className="space-y-3">
       <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Player Info</div>
       <div>
-        <label className="text-[11px] text-white/25 block mb-1">Starting Chips</label>
+        <label className="text-xs text-white/25 block mb-1">Starting Chips</label>
         <input type="number" className="input input-sm" value={c.startingChips} onChange={e => up({ startingChips: +e.target.value })} />
       </div>
 
@@ -548,8 +550,8 @@ function CashStats({ cashGame: c }: { cashGame: CashGame }) {
       </div>
 
       <div className="border-t border-white/[0.06] pt-3">
-        <div className="text-[11px] text-white/25 font-semibold mb-2">Chip Summary</div>
-        <div className="grid grid-cols-2 gap-1 text-[11px]">
+        <div className="text-xs text-white/25 font-semibold mb-2">Chip Summary</div>
+        <div className="grid grid-cols-2 gap-1 text-xs">
           <span className="text-white/30">Players</span><span className="text-white/50 font-bold text-right">{activePlayers}</span>
           <span className="text-white/30">Total Chips</span><span className="text-white/50 font-bold text-right">{totalChips.toLocaleString()}</span>
           <span className="text-white/30">Avg Stack</span><span className="text-white/50 font-bold text-right">{avg > 0 ? formatChips(avg) : '--'}</span>
@@ -582,11 +584,11 @@ function TickerPanel({ timerId, timerType }: { timerId: string; timerType: 'tour
     <div className="space-y-3">
       <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Ticker (テロップ)</div>
       <div>
-        <label className="text-[11px] text-white/25 block mb-1">Ticker Text</label>
+        <label className="text-xs text-white/25 block mb-1">Ticker Text</label>
         <input className="input" value={dt.tickerText} onChange={e => up({ tickerText: e.target.value })} placeholder="画面下部に表示するテキストを入力..." />
       </div>
       <div>
-        <label className="text-[11px] text-white/25 block mb-1">Ticker Speed</label>
+        <label className="text-xs text-white/25 block mb-1">Ticker Speed</label>
         <select className="input input-sm" value={dt.tickerSpeed || 25} onChange={e => up({ tickerSpeed: +e.target.value })}>
           {speedOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
@@ -640,10 +642,10 @@ function TogglesPanel({ timerId, timerType }: { timerId: string; timerType: 'tou
       <div className="border-t border-white/[0.06] pt-3">
         <div className="text-xs text-white/30 font-semibold uppercase tracking-wider mb-2">Display Font Size</div>
         <div className="flex items-center gap-3">
-          <span className="text-[10px] text-white/20">小</span>
+          <span className="text-xs text-white/20">小</span>
           <input type="range" className="flex-1 accent-blue-500" min={0.5} max={2.0} step={0.05} value={fontScale}
             onChange={e => store.updateSystemStyle({ displayFontScale: +e.target.value })} />
-          <span className="text-[10px] text-white/20">大</span>
+          <span className="text-xs text-white/20">大</span>
           <span className="text-xs text-white/40 font-mono w-10 text-center">{fontScale.toFixed(2)}</span>
           {fontScale !== 1.0 && (
             <button className="btn btn-ghost btn-sm text-[10px]" onClick={() => store.updateSystemStyle({ displayFontScale: 1.0 })}>Reset</button>
@@ -719,10 +721,10 @@ function DisplaySettingsPanel({ timerId, timerType }: { timerId: string; timerTy
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" /></svg>
           Upload Image
         </button>
-        <button onClick={() => setShowUrlInput(!showUrlInput)} className="btn btn-ghost btn-sm text-[10px] text-white/20">URLで指定</button>
+        <button onClick={() => setShowUrlInput(!showUrlInput)} className="btn btn-ghost btn-sm text-xs text-white/20">URLで指定</button>
       </div>
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
-      <p className="text-[10px] text-white/15">最大2MB · JPG/PNG/WebP</p>
+      <p className="text-xs text-white/15">最大2MB · JPG/PNG/WebP</p>
       {/* URL input (collapsible) */}
       {showUrlInput && (
         <div className="fade-in">
@@ -840,7 +842,7 @@ function BlindEditor({ tournament: t }: { tournament: Tournament }) {
           {hasPreLevel && (
             <>
               <input type="text" inputMode="numeric" className="input input-sm w-16 text-center" value={Math.floor((t.preLevelDuration || 0) / 60)} onChange={e => { const v = toHalfWidthNumber(e.target.value); up({ preLevelDuration: Math.max(0, Number(v) || 0) * 60 }); }} />
-              <span className="text-[11px] text-white/20">min</span>
+              <span className="text-xs text-white/20">min</span>
             </>
           )}
         </div>
@@ -862,19 +864,20 @@ function BlindEditor({ tournament: t }: { tournament: Tournament }) {
             className={`p-2 rounded-xl transition-colors ${dragOverIdx === i && dragIdx !== i ? 'border-t-2 border-blue-400/50' : ''} ${dragIdx === i ? 'opacity-40' : ''} ${i === t.currentLevelIndex ? 'bg-blue-500/10 border border-blue-500/20' : 'hover:bg-white/[0.02]'}`}>
             <div className="flex items-center gap-2">
               <span className="text-white/15 cursor-grab active:cursor-grabbing select-none shrink-0 text-[10px] leading-none" style={{ letterSpacing: '0px' }}>&#9776;</span>
-              <button onClick={() => store.tJumpLevel(t.id, i)} className="text-[11px] text-white/20 hover:text-blue-400 w-5 text-center cursor-pointer transition-colors shrink-0">{i === t.currentLevelIndex ? '\u25B8' : (i + 1)}</button>
+              <button onClick={() => store.tJumpLevel(t.id, i)} className="text-xs text-white/20 hover:text-blue-400 w-5 text-center cursor-pointer transition-colors shrink-0">{i === t.currentLevelIndex ? '\u25B8' : (i + 1)}</button>
               {lv.type === 'break' ? (
-                <><span className="text-green-400 text-xs font-semibold flex-1">BREAK</span><input type="text" inputMode="numeric" className="input input-sm w-16 text-center" value={Math.floor(lv.duration / 60)} onChange={e => { const v = toHalfWidthNumber(e.target.value); upLv(i, { duration: (Number(v) || 1) * 60 }); }} /><span className="text-[11px] text-white/20">min</span></>
+                <><span className="text-green-400 text-xs font-semibold flex-1">BREAK</span><input type="text" inputMode="numeric" className="input input-sm w-16 text-center" value={Math.floor(lv.duration / 60)} onChange={e => { const v = toHalfWidthNumber(e.target.value); upLv(i, { duration: (Number(v) || 1) * 60 }); }} /><span className="text-xs text-white/20">min</span></>
               ) : (
                 <div className="flex flex-wrap items-center gap-1 sm:gap-2 flex-1 min-w-0">
-                  <span className="text-[11px] text-white/30 w-6 shrink-0">Lv{lv.level}</span>
+                  <span className="text-xs text-white/30 w-6 shrink-0">Lv{lv.level}</span>
                   <input type="text" inputMode="numeric" className="input input-sm shrink-0" style={{ width: '4.5rem' }} value={lv.smallBlind} onChange={e => { const v = Number(toHalfWidthNumber(e.target.value)) || 0; upLv(i, { smallBlind: v, bigBlind: v * 2, ante: v * 2 }); }} />
                   <span className="text-white/15">/</span>
                   <input type="text" inputMode="numeric" className="input input-sm shrink-0" style={{ width: '4.5rem' }} value={lv.bigBlind} onChange={e => { const v = toHalfWidthNumber(e.target.value); upLv(i, { bigBlind: Number(v) || 0 }); }} />
-                  <span className="text-[11px] text-white/20 ml-1">A:</span>
+                  <div className="w-full sm:hidden h-0" />
+                  <span className="text-xs text-white/20 ml-6 sm:ml-1">A:</span>
                   <input type="text" inputMode="numeric" className="input input-sm shrink-0" style={{ width: '3.5rem' }} value={lv.ante} onChange={e => { const v = toHalfWidthNumber(e.target.value); upLv(i, { ante: Number(v) || 0 }); }} />
                   <input type="text" inputMode="numeric" className="input input-sm text-center shrink-0" style={{ width: '3.5rem' }} value={Math.floor(lv.duration / 60)} onChange={e => { const v = toHalfWidthNumber(e.target.value); upLv(i, { duration: (Number(v) || 1) * 60 }); }} />
-                  <span className="text-[11px] text-white/20">m</span>
+                  <span className="text-xs text-white/20">m</span>
                 </div>
               )}
               <button onClick={() => rmLv(i)} className="text-white/15 hover:text-red-400 text-xs ml-1 transition-colors shrink-0">x</button>
@@ -975,24 +978,24 @@ function CashEditor({ id, onDelete }: { id: string; onDelete: (id: string) => vo
         <button onClick={() => onDelete(id)} className="btn btn-danger btn-sm">Delete</button>
       </div>
       <div className="grid grid-cols-3 gap-3">
-        <div><label className="text-[11px] text-white/25 block mb-1">SB</label><input type="number" className="input input-sm" value={c.smallBlind} onChange={e => store.updateCashGame(id, { smallBlind: +e.target.value })} /></div>
-        <div><label className="text-[11px] text-white/25 block mb-1">BB</label><input type="number" className="input input-sm" value={c.bigBlind} onChange={e => store.updateCashGame(id, { bigBlind: +e.target.value })} /></div>
-        <div><label className="text-[11px] text-white/25 block mb-1">Ante</label><input type="number" className="input input-sm" value={c.ante} onChange={e => store.updateCashGame(id, { ante: +e.target.value })} /></div>
+        <div><label className="text-xs text-white/25 block mb-1">SB</label><input type="number" className="input input-sm" value={c.smallBlind} onChange={e => store.updateCashGame(id, { smallBlind: +e.target.value })} /></div>
+        <div><label className="text-xs text-white/25 block mb-1">BB</label><input type="number" className="input input-sm" value={c.bigBlind} onChange={e => store.updateCashGame(id, { bigBlind: +e.target.value })} /></div>
+        <div><label className="text-xs text-white/25 block mb-1">Ante</label><input type="number" className="input input-sm" value={c.ante} onChange={e => store.updateCashGame(id, { ante: +e.target.value })} /></div>
       </div>
-      <div className="text-[11px] text-white/25 font-semibold mt-1">NEXT Blind</div>
+      <div className="text-xs text-white/25 font-semibold mt-1">NEXT Blind</div>
       <div className="grid grid-cols-3 gap-3">
-        <div><label className="text-[11px] text-white/25 block mb-1">Next SB</label><input type="number" className="input input-sm" value={c.nextSmallBlind} onChange={e => store.updateCashGame(id, { nextSmallBlind: +e.target.value })} /></div>
-        <div><label className="text-[11px] text-white/25 block mb-1">Next BB</label><input type="number" className="input input-sm" value={c.nextBigBlind} onChange={e => store.updateCashGame(id, { nextBigBlind: +e.target.value })} /></div>
-        <div><label className="text-[11px] text-white/25 block mb-1">Next Ante</label><input type="number" className="input input-sm" value={c.nextAnte} onChange={e => store.updateCashGame(id, { nextAnte: +e.target.value })} /></div>
+        <div><label className="text-xs text-white/25 block mb-1">Next SB</label><input type="number" className="input input-sm" value={c.nextSmallBlind} onChange={e => store.updateCashGame(id, { nextSmallBlind: +e.target.value })} /></div>
+        <div><label className="text-xs text-white/25 block mb-1">Next BB</label><input type="number" className="input input-sm" value={c.nextBigBlind} onChange={e => store.updateCashGame(id, { nextBigBlind: +e.target.value })} /></div>
+        <div><label className="text-xs text-white/25 block mb-1">Next Ante</label><input type="number" className="input input-sm" value={c.nextAnte} onChange={e => store.updateCashGame(id, { nextAnte: +e.target.value })} /></div>
       </div>
-      <div><label className="text-[11px] text-white/25 block mb-1">Memo</label><input className="input" value={c.memo} onChange={e => store.updateCashGame(id, { memo: e.target.value })} placeholder="Table info" /></div>
+      <div><label className="text-xs text-white/25 block mb-1">Memo</label><input className="input" value={c.memo} onChange={e => store.updateCashGame(id, { memo: e.target.value })} placeholder="Table info" /></div>
       <div>
-        <label className="text-[11px] text-white/25 block mb-1">Pre-Level (開始前カウントダウン)</label>
+        <label className="text-xs text-white/25 block mb-1">Pre-Level (開始前カウントダウン)</label>
         <div className="flex items-center gap-2">
           <input type="number" className="input input-sm w-20 text-center" value={Math.floor((c.preLevelDuration || 0) / 60)} onChange={e => store.updateCashGame(id, { preLevelDuration: Math.max(0, +e.target.value) * 60 })} min={0} />
           <span className="text-xs text-white/25">min</span>
         </div>
-        <p className="text-[10px] text-white/15 mt-1">Start押下後、この時間のカウントダウン後にゲームが開始します</p>
+        <p className="text-xs text-white/15 mt-1">Start押下後、この時間のカウントダウン後にゲームが開始します</p>
       </div>
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2"><div className={`toggle ${!c.countdownMode ? 'on' : ''}`} onClick={() => store.updateCashGame(id, { countdownMode: false })} /><span className="text-xs text-white/40">Count Up</span></div>
@@ -1278,33 +1281,33 @@ function GenericLayoutEditor<T extends string>({
         <div className="grid grid-cols-5 gap-2">
           {(['x', 'y', 'w', 'h'] as const).map(f => (
             <div key={f}>
-              <label className="text-[11px] text-white/25 block mb-1 uppercase">{f} (%)</label>
+              <label className="text-xs text-white/25 block mb-1 uppercase">{f} (%)</label>
               <input type="number" step={0.1} min={0} max={100} className="input input-sm text-center"
                 value={localPositions[selected!][f]} onChange={e => updateField(f, +e.target.value)} />
             </div>
           ))}
           <div>
-            <label className="text-[11px] text-white/25 block mb-1">Font</label>
+            <label className="text-xs text-white/25 block mb-1">Font</label>
             <input type="number" step={0.1} min={0.3} max={3.0} className="input input-sm text-center"
               value={localPositions[selected!].fontSize ?? 1.0} onChange={e => updateField('fontSize', +e.target.value)} />
           </div>
         </div>
         {(selected === 'timer' || selected === ('timer' as T)) && (
           <div className="border-t border-white/[0.06] pt-2 mt-2">
-            <div className="text-[10px] text-white/30 font-semibold mb-1.5">Timer Sub-Elements Font Size</div>
+            <div className="text-xs text-white/30 font-semibold mb-1.5">Timer Sub-Elements Font Size</div>
             <div className="grid grid-cols-3 gap-2">
               <div>
-                <label className="text-[10px] text-white/20 block mb-0.5">Timer Digit</label>
+                <label className="text-xs text-white/20 block mb-0.5">Timer Digit</label>
                 <input type="number" step={0.1} min={0.3} max={3.0} className="input input-sm text-center"
                   value={localPositions[selected!].timerDigitScale ?? 1.0} onChange={e => updateField('timerDigitScale', +e.target.value)} />
               </div>
               <div>
-                <label className="text-[10px] text-white/20 block mb-0.5">Blinds</label>
+                <label className="text-xs text-white/20 block mb-0.5">Blinds</label>
                 <input type="number" step={0.1} min={0.3} max={3.0} className="input input-sm text-center"
                   value={localPositions[selected!].blindsScale ?? 1.0} onChange={e => updateField('blindsScale', +e.target.value)} />
               </div>
               <div>
-                <label className="text-[10px] text-white/20 block mb-0.5">Ante</label>
+                <label className="text-xs text-white/20 block mb-0.5">Ante</label>
                 <input type="number" step={0.1} min={0.3} max={3.0} className="input input-sm text-center"
                   value={localPositions[selected!].anteScale ?? 1.0} onChange={e => updateField('anteScale', +e.target.value)} />
               </div>
@@ -1498,8 +1501,8 @@ function CombinedPreview({ route, targetName, themeLabel, path, editMode, setEdi
         <span className={`text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-md shrink-0 ${
           route === 'tournament' ? 'bg-blue-500/20 text-blue-400' : 'bg-green-500/20 text-green-400'
         }`}>{routeLabel}</span>
-        <span className="text-[11px] text-white/40 truncate min-w-0">{targetName}</span>
-        <span className="text-[10px] text-white/20 shrink-0 hidden sm:inline">{themeLabel}</span>
+        <span className="text-xs text-white/40 truncate min-w-0">{targetName}</span>
+        <span className="text-xs text-white/20 shrink-0 hidden sm:inline">{themeLabel}</span>
         <div className="ml-auto flex items-center gap-1">
           {/* Edit mode toggle */}
           <button onClick={() => setEditMode(!editMode)}
@@ -1636,8 +1639,8 @@ function DisplayPreview({ route, displayId, targetName, themeLabel, overridePath
           route === 'cash' ? 'bg-green-500/20 text-green-400' :
           'bg-purple-500/20 text-purple-400'
         }`}>{routeLabel}</span>
-        <span className="text-[11px] text-white/40 truncate">{targetName}</span>
-        <span className="text-[10px] text-white/20 shrink-0">{themeLabel}</span>
+        <span className="text-xs text-white/40 truncate">{targetName}</span>
+        <span className="text-xs text-white/20 shrink-0">{themeLabel}</span>
         <div className="ml-auto flex items-center gap-1">
           <button onClick={() => setIframeKey(k => k + 1)}
             className="p-1.5 rounded-lg hover:bg-white/[0.08] text-white/25 hover:text-white/60 transition-colors" title="Refresh">
@@ -1733,7 +1736,7 @@ function SplitTab() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Left panel selection */}
           <div>
-            <label className="text-[11px] text-white/25 block mb-1">左パネル</label>
+            <label className="text-xs text-white/25 block mb-1">左パネル</label>
             <select className="input" value={leftId} onChange={e => setLeftId(e.target.value)}>
               {allTimers.map(t => (
                 <option key={t.id} value={t.id}>
@@ -1741,14 +1744,14 @@ function SplitTab() {
                 </option>
               ))}
             </select>
-            <label className="text-[11px] text-white/25 block mb-1 mt-2">左テーマ</label>
+            <label className="text-xs text-white/25 block mb-1 mt-2">左テーマ</label>
             <select className="input input-sm" value={leftThemeId} onChange={e => { if (leftTimer) { if (tournaments.find(x => x.id === leftId)) store.updateTournamentTheme(leftId, e.target.value); else store.updateCashTheme(leftId, e.target.value); } }}>
               {store.themes.map(th => <option key={th.id} value={th.id}>{th.name}</option>)}
             </select>
           </div>
           {/* Right panel selection */}
           <div>
-            <label className="text-[11px] text-white/25 block mb-1">右パネル</label>
+            <label className="text-xs text-white/25 block mb-1">右パネル</label>
             <select className="input" value={rightId} onChange={e => setRightId(e.target.value)}>
               {allTimers.map(t => (
                 <option key={t.id} value={t.id}>
@@ -1756,7 +1759,7 @@ function SplitTab() {
                 </option>
               ))}
             </select>
-            <label className="text-[11px] text-white/25 block mb-1 mt-2">右テーマ</label>
+            <label className="text-xs text-white/25 block mb-1 mt-2">右テーマ</label>
             <select className="input input-sm" value={rightThemeId} onChange={e => { if (rightTimer) { if (tournaments.find(x => x.id === rightId)) store.updateTournamentTheme(rightId, e.target.value); else store.updateCashTheme(rightId, e.target.value); } }}>
               {store.themes.map(th => <option key={th.id} value={th.id}>{th.name}</option>)}
             </select>
@@ -1820,11 +1823,11 @@ function SystemStyleEditor() {
       <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">
         System Style (システムスタイル)
       </div>
-      <p className="text-[11px]" style={{ color: 'var(--sys-text-muted)' }}>アプリ全体のテーマ、フォント、アクセントカラー、ディスプレイ設定を変更できます。</p>
+      <p className="text-xs" style={{ color: 'var(--sys-text-muted)' }}>アプリ全体のテーマ、フォント、アクセントカラー、ディスプレイ設定を変更できます。</p>
 
       {/* System Theme Picker */}
       <div>
-        <label className="text-[11px] block mb-2" style={{ color: 'var(--sys-text-muted)' }}>System Theme (システムテーマ)</label>
+        <label className="text-xs block mb-2" style={{ color: 'var(--sys-text-muted)' }}>System Theme (システムテーマ)</label>
         <div className="grid grid-cols-3 gap-2">
           {SYSTEM_THEMES.map(t => (
             <button key={t.id}
@@ -1904,7 +1907,7 @@ function SystemStyleEditor() {
 
       {/* Font Selector */}
       <div>
-        <label className="text-[11px] text-white/25 block mb-1">Font (フォント)</label>
+        <label className="text-xs text-white/25 block mb-1">Font (フォント)</label>
         <select className="input input-sm" value={systemStyle.fontFamily}
           onChange={e => updateSystemStyle({ fontFamily: e.target.value })}>
           {FONT_OPTIONS.map(f => (
@@ -1915,7 +1918,7 @@ function SystemStyleEditor() {
 
       {/* Text Color Override */}
       <div>
-        <label className="text-[11px] text-white/25 block mb-1">Text Color (文字色)</label>
+        <label className="text-xs text-white/25 block mb-1">Text Color (文字色)</label>
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl border border-white/10 shrink-0"
             style={{ background: systemStyle.customTextColor || getSystemTheme(systemStyle.systemThemeId || 'bright-blue', systemStyle.customBgFrom, systemStyle.customBgTo).textPrimary }} />
@@ -1938,7 +1941,7 @@ function SystemStyleEditor() {
             </button>
           )}
         </div>
-        <p className="text-[10px] text-white/15 mt-1">空欄でテーマデフォルトの文字色を使用します</p>
+        <p className="text-xs text-white/15 mt-1">空欄でテーマデフォルトの文字色を使用します</p>
         {/* Text color preview */}
         <div className="g-card-inner p-2.5 mt-2 space-y-1">
           <div className="text-[10px] font-bold" style={{ color: systemStyle.customTextColor || getSystemTheme(systemStyle.systemThemeId || 'bright-blue', systemStyle.customBgFrom, systemStyle.customBgTo).textPrimary }}>
@@ -1952,7 +1955,7 @@ function SystemStyleEditor() {
 
       {/* UI Accent Color — Slider */}
       <div className="space-y-3">
-        <label className="text-[11px] text-white/25 block">UI Accent Color (アクセントカラー)</label>
+        <label className="text-xs text-white/25 block">UI Accent Color (アクセントカラー)</label>
         <div className="flex items-center gap-3 mb-2">
           <div className="w-10 h-10 rounded-xl border border-white/10 shrink-0" style={{ background: systemStyle.uiAccentColor }} />
           <input className="input input-sm flex-1 font-mono text-xs" value={systemStyle.uiAccentColor}
@@ -1961,8 +1964,8 @@ function SystemStyleEditor() {
         {/* Hue slider */}
         <div>
           <div className="flex justify-between mb-1">
-            <span className="text-[10px] text-white/20">色相 (Hue)</span>
-            <span className="text-[10px] text-white/20">{hsl.h}°</span>
+            <span className="text-xs text-white/20">色相 (Hue)</span>
+            <span className="text-xs text-white/20">{hsl.h}°</span>
           </div>
           <input type="range" min={0} max={360} value={hsl.h}
             onChange={e => setHsl(+e.target.value, hsl.s, hsl.l)}
@@ -1972,8 +1975,8 @@ function SystemStyleEditor() {
         {/* Saturation slider */}
         <div>
           <div className="flex justify-between mb-1">
-            <span className="text-[10px] text-white/20">彩度 (Saturation)</span>
-            <span className="text-[10px] text-white/20">{hsl.s}%</span>
+            <span className="text-xs text-white/20">彩度 (Saturation)</span>
+            <span className="text-xs text-white/20">{hsl.s}%</span>
           </div>
           <input type="range" min={10} max={100} value={hsl.s}
             onChange={e => setHsl(hsl.h, +e.target.value, hsl.l)}
@@ -1983,8 +1986,8 @@ function SystemStyleEditor() {
         {/* Lightness slider */}
         <div>
           <div className="flex justify-between mb-1">
-            <span className="text-[10px] text-white/20">明るさ (Lightness)</span>
-            <span className="text-[10px] text-white/20">{hsl.l}%</span>
+            <span className="text-xs text-white/20">明るさ (Lightness)</span>
+            <span className="text-xs text-white/20">{hsl.l}%</span>
           </div>
           <input type="range" min={15} max={85} value={hsl.l}
             onChange={e => setHsl(hsl.h, hsl.s, +e.target.value)}
@@ -2007,7 +2010,7 @@ function SystemStyleEditor() {
 
       {/* Tab Bar Colors */}
       <div className="space-y-3 border-t border-white/[0.06] pt-5">
-        <label className="text-[11px] text-white/25 block">Tab Bar Colors (タブバーカラー)</label>
+        <label className="text-xs text-white/25 block">Tab Bar Colors (タブバーカラー)</label>
         {/* Tab BG */}
         <div>
           <label className="text-[10px] block mb-1" style={{ color: 'var(--sys-text-muted)' }}>タブバー背景色</label>
@@ -2059,7 +2062,7 @@ function SystemStyleEditor() {
 
       {/* UI Colors */}
       <div className="space-y-3 border-t border-white/[0.06] pt-5">
-        <label className="text-[11px] text-white/25 block">UI Colors (UIカラー)</label>
+        <label className="text-xs text-white/25 block">UI Colors (UIカラー)</label>
         {/* Card BG */}
         <div>
           <label className="text-[10px] block mb-1" style={{ color: 'var(--sys-text-muted)' }}>カード背景色</label>
@@ -2118,7 +2121,7 @@ function SystemStyleEditor() {
 
       {/* Display Aspect Ratio */}
       <div>
-        <label className="text-[11px] text-white/25 block mb-2">Display Aspect Ratio (ディスプレイ比率)</label>
+        <label className="text-xs text-white/25 block mb-2">Display Aspect Ratio (ディスプレイ比率)</label>
         <div className="grid grid-cols-2 gap-2">
           {ASPECT_RATIO_OPTIONS.map(opt => (
             <button key={opt.id}
@@ -2138,8 +2141,8 @@ function SystemStyleEditor() {
       {/* Display Font Size */}
       <div>
         <div className="flex justify-between mb-1">
-          <label className="text-[11px] text-white/25">Display Font Size (文字サイズ)</label>
-          <span className="text-[11px] text-white/30 font-mono">{Math.round((systemStyle.displayFontScale || 1) * 100)}%</span>
+          <label className="text-xs text-white/25">Display Font Size (文字サイズ)</label>
+          <span className="text-xs text-white/30 font-mono">{Math.round((systemStyle.displayFontScale || 1) * 100)}%</span>
         </div>
         <input type="range" min={50} max={200} step={5}
           value={Math.round((systemStyle.displayFontScale || 1) * 100)}
@@ -2152,7 +2155,7 @@ function SystemStyleEditor() {
 
       {/* Preview */}
       <div className="g-card-inner p-4 space-y-2">
-        <div className="text-[11px] text-white/25 mb-2">Preview</div>
+        <div className="text-xs text-white/25 mb-2">Preview</div>
         <div style={{ fontFamily: currentFont.value, fontSize: `${(systemStyle.displayFontScale || 1) * 100}%` }}>
           <div className="text-lg font-bold" style={{ color: systemStyle.uiAccentColor }}>
             COME ON Timer
@@ -2203,11 +2206,11 @@ function ThemePicker() {
         <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Timer Themes (タイマーテーマ)</div>
         <button className="btn btn-ghost btn-sm" onClick={handleAdd}>+ Add Theme</button>
       </div>
-      <p className="text-[11px] text-white/20">各ディスプレイの背景・カラーテーマを管理します。各タイマーの設定で個別にテーマを選択できます。</p>
+      <p className="text-xs text-white/20">各ディスプレイの背景・カラーテーマを管理します。各タイマーの設定で個別にテーマを選択できます。</p>
 
       {/* Default Theme Selector */}
       <div className="space-y-2">
-        <div className="text-[11px] text-white/25 font-semibold">Default Theme (デフォルトテーマ)</div>
+        <div className="text-xs text-white/25 font-semibold">Default Theme (デフォルトテーマ)</div>
         <div className="flex items-center gap-2 flex-wrap">
           {themes.map(th => (
             <button
@@ -2255,11 +2258,11 @@ function ThemePicker() {
             {editingId === t.id && (
               <div className="p-3 space-y-3 bg-white/[0.02]">
                 <div>
-                  <label className="text-[11px] text-white/25 block mb-1">Theme Name</label>
+                  <label className="text-xs text-white/25 block mb-1">Theme Name</label>
                   <input className="input input-sm" value={t.name} onChange={e => updateTheme(t.id, { name: e.target.value })} />
                 </div>
                 <div>
-                  <label className="text-[11px] text-white/25 block mb-1">Type</label>
+                  <label className="text-xs text-white/25 block mb-1">Type</label>
                   <select className="input input-sm" value={t.type} onChange={e => updateTheme(t.id, { type: e.target.value as 'gradient' | 'solid' | 'image' })}>
                     <option value="gradient">Gradient</option>
                     <option value="solid">Solid</option>
@@ -2269,14 +2272,14 @@ function ThemePicker() {
                 {t.type === 'gradient' && (
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="text-[11px] text-white/25 block mb-1">From</label>
+                      <label className="text-xs text-white/25 block mb-1">From</label>
                       <div className="flex items-center gap-2">
                         <input type="color" className="w-8 h-8 rounded cursor-pointer border-0 bg-transparent" value={t.gradientFrom || '#0f172a'} onChange={e => updateTheme(t.id, { gradientFrom: e.target.value })} />
                         <input className="input input-sm flex-1" value={t.gradientFrom || ''} onChange={e => updateTheme(t.id, { gradientFrom: e.target.value })} />
                       </div>
                     </div>
                     <div>
-                      <label className="text-[11px] text-white/25 block mb-1">To</label>
+                      <label className="text-xs text-white/25 block mb-1">To</label>
                       <div className="flex items-center gap-2">
                         <input type="color" className="w-8 h-8 rounded cursor-pointer border-0 bg-transparent" value={t.gradientTo || '#1e3a5f'} onChange={e => updateTheme(t.id, { gradientTo: e.target.value })} />
                         <input className="input input-sm flex-1" value={t.gradientTo || ''} onChange={e => updateTheme(t.id, { gradientTo: e.target.value })} />
@@ -2286,7 +2289,7 @@ function ThemePicker() {
                 )}
                 {t.type === 'solid' && (
                   <div>
-                    <label className="text-[11px] text-white/25 block mb-1">Background Color</label>
+                    <label className="text-xs text-white/25 block mb-1">Background Color</label>
                     <div className="flex items-center gap-2">
                       <input type="color" className="w-8 h-8 rounded cursor-pointer border-0 bg-transparent" value={t.bgColor || '#0a0e1a'} onChange={e => updateTheme(t.id, { bgColor: e.target.value })} />
                       <input className="input input-sm flex-1" value={t.bgColor || ''} onChange={e => updateTheme(t.id, { bgColor: e.target.value })} />
@@ -2295,20 +2298,20 @@ function ThemePicker() {
                 )}
                 {t.type === 'image' && (
                   <div>
-                    <label className="text-[11px] text-white/25 block mb-1">Image URL</label>
+                    <label className="text-xs text-white/25 block mb-1">Image URL</label>
                     <input className="input input-sm" value={t.imageUrl || ''} onChange={e => updateTheme(t.id, { imageUrl: e.target.value })} placeholder="https://example.com/bg.jpg" />
                   </div>
                 )}
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-[11px] text-white/25 block mb-1">Primary Color</label>
+                    <label className="text-xs text-white/25 block mb-1">Primary Color</label>
                     <div className="flex items-center gap-2">
                       <input type="color" className="w-8 h-8 rounded cursor-pointer border-0 bg-transparent" value={t.primaryColor} onChange={e => updateTheme(t.id, { primaryColor: e.target.value })} />
                       <input className="input input-sm flex-1" value={t.primaryColor} onChange={e => updateTheme(t.id, { primaryColor: e.target.value })} />
                     </div>
                   </div>
                   <div>
-                    <label className="text-[11px] text-white/25 block mb-1">Accent Color</label>
+                    <label className="text-xs text-white/25 block mb-1">Accent Color</label>
                     <div className="flex items-center gap-2">
                       <input type="color" className="w-8 h-8 rounded cursor-pointer border-0 bg-transparent" value={t.accentColor} onChange={e => updateTheme(t.id, { accentColor: e.target.value })} />
                       <input className="input input-sm flex-1" value={t.accentColor} onChange={e => updateTheme(t.id, { accentColor: e.target.value })} />
@@ -2316,7 +2319,7 @@ function ThemePicker() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-[11px] text-white/25 block mb-1">Overlay Opacity</label>
+                  <label className="text-xs text-white/25 block mb-1">Overlay Opacity</label>
                   <div className="flex items-center gap-2">
                     <input type="range" min={0} max={80} value={t.overlayOpacity} onChange={e => updateTheme(t.id, { overlayOpacity: +e.target.value })} className="flex-1" />
                     <span className="text-xs text-white/30 w-10 text-right">{t.overlayOpacity}%</span>
