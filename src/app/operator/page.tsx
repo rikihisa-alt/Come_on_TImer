@@ -435,18 +435,16 @@ function TournamentStats({ tournament: t }: { tournament: Tournament }) {
   const avg = activePlayers > 0 ? Math.round(totalChips / activePlayers) : 0;
 
   const CountRow = ({ label, count, countKey, chips, chipsKey }: { label: string; count: number; countKey: keyof Tournament; chips?: number; chipsKey?: keyof Tournament }) => (
-    <div className="flex items-center gap-1 flex-wrap">
-      <span className="text-xs text-white/30 w-16 shrink-0">{label}</span>
-      <div className="flex gap-0.5 items-center shrink-0">
-        <button className="btn btn-ghost btn-sm px-1" onClick={() => up({ [countKey]: Math.max(0, count - 1) } as Partial<Tournament>)}>-</button>
-        <input type="number" className="input input-sm w-12 text-center" value={count} onChange={e => up({ [countKey]: Math.max(0, +e.target.value) } as Partial<Tournament>)} />
-        <button className="btn btn-ghost btn-sm px-1" onClick={() => up({ [countKey]: count + 1 } as Partial<Tournament>)}>+</button>
-      </div>
+    <div className="flex items-center gap-1">
+      <span className="text-xs text-white/30 w-14 shrink-0">{label}</span>
+      <button className="btn btn-ghost btn-sm px-1.5" onClick={() => up({ [countKey]: Math.max(0, count - 1) } as Partial<Tournament>)}>-</button>
+      <input type="text" inputMode="numeric" className="input input-sm w-12 text-center" value={count} onChange={e => { const v = toHalfWidthNumber(e.target.value); up({ [countKey]: Math.max(0, Number(v) || 0) } as Partial<Tournament>); }} />
+      <button className="btn btn-ghost btn-sm px-1.5" onClick={() => up({ [countKey]: count + 1 } as Partial<Tournament>)}>+</button>
       {chipsKey && (
-        <div className="flex items-center gap-0.5 shrink-0">
-          <input type="number" className="input input-sm w-16 text-center" value={chips || 0} onChange={e => up({ [chipsKey]: Math.max(0, +e.target.value) } as Partial<Tournament>)} />
-          <span className="text-xs text-white/20">chips</span>
-        </div>
+        <>
+          <input type="text" inputMode="numeric" className="input input-sm flex-1 min-w-0 text-center" value={chips || 0} onChange={e => { const v = toHalfWidthNumber(e.target.value); up({ [chipsKey]: Math.max(0, Number(v) || 0) } as Partial<Tournament>); }} />
+          <span className="text-xs text-white/20 shrink-0">chips</span>
+        </>
       )}
     </div>
   );
@@ -455,7 +453,7 @@ function TournamentStats({ tournament: t }: { tournament: Tournament }) {
     <div className="space-y-3">
       <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Tournament Info</div>
       <div className="grid grid-cols-2 gap-3">
-        <div><label className="text-xs text-white/25 block mb-1">Starting Chips</label><input type="number" className="input input-sm" value={t.startingChips} onChange={e => up({ startingChips: +e.target.value })} /></div>
+        <div><label className="text-xs text-white/25 block mb-1">Starting Chips</label><input type="text" inputMode="numeric" className="input input-sm" value={t.startingChips} onChange={e => { const v = toHalfWidthNumber(e.target.value); up({ startingChips: Number(v) || 0 }); }} /></div>
         <div>
           <label className="text-xs text-white/25 block mb-1">Reg Close Level</label>
           <select className="input input-sm" value={t.regCloseLevel || 0} onChange={e => up({ regCloseLevel: +e.target.value || undefined })}>
@@ -482,11 +480,11 @@ function TournamentStats({ tournament: t }: { tournament: Tournament }) {
           <span className="text-xs text-white/30 w-24 shrink-0">対象者数</span>
           <div className="flex gap-0.5 items-center">
             <button className="btn btn-ghost btn-sm px-1.5" onClick={() => up({ earlyBirdCount: Math.max(0, t.earlyBirdCount - 1) })}>-</button>
-            <input type="number" className="input input-sm w-14 text-center" value={t.earlyBirdCount} onChange={e => up({ earlyBirdCount: Math.max(0, +e.target.value) })} />
+            <input type="text" inputMode="numeric" className="input input-sm w-14 text-center" value={t.earlyBirdCount} onChange={e => { const v = toHalfWidthNumber(e.target.value); up({ earlyBirdCount: Math.max(0, Number(v) || 0) }); }} />
             <button className="btn btn-ghost btn-sm px-1.5" onClick={() => up({ earlyBirdCount: t.earlyBirdCount + 1 })}>+</button>
           </div>
           <span className="text-xs text-white/15 mx-1">+</span>
-          <input type="number" className="input input-sm w-24" value={t.earlyBirdBonus} onChange={e => up({ earlyBirdBonus: Math.max(0, +e.target.value) })} placeholder="ボーナスチップ" />
+          <input type="text" inputMode="numeric" className="input input-sm w-24" value={t.earlyBirdBonus} onChange={e => { const v = toHalfWidthNumber(e.target.value); up({ earlyBirdBonus: Math.max(0, Number(v) || 0) }); }} placeholder="ボーナスチップ" />
           <span className="text-xs text-white/20">chips</span>
         </div>
         {t.earlyBirdCount > 0 && t.earlyBirdBonus > 0 && (
@@ -518,18 +516,16 @@ function CashStats({ cashGame: c }: { cashGame: CashGame }) {
   const avg = activePlayers > 0 ? Math.round(totalChips / activePlayers) : 0;
 
   const CountRow = ({ label, count, countKey, chips, chipsKey }: { label: string; count: number; countKey: keyof CashGame; chips?: number; chipsKey?: keyof CashGame }) => (
-    <div className="flex items-center gap-1 flex-wrap">
-      <span className="text-xs text-white/30 w-16 shrink-0">{label}</span>
-      <div className="flex gap-0.5 items-center shrink-0">
-        <button className="btn btn-ghost btn-sm px-1" onClick={() => up({ [countKey]: Math.max(0, count - 1) } as Partial<CashGame>)}>-</button>
-        <input type="number" className="input input-sm w-12 text-center" value={count} onChange={e => up({ [countKey]: Math.max(0, +e.target.value) } as Partial<CashGame>)} />
-        <button className="btn btn-ghost btn-sm px-1" onClick={() => up({ [countKey]: count + 1 } as Partial<CashGame>)}>+</button>
-      </div>
+    <div className="flex items-center gap-1">
+      <span className="text-xs text-white/30 w-14 shrink-0">{label}</span>
+      <button className="btn btn-ghost btn-sm px-1.5" onClick={() => up({ [countKey]: Math.max(0, count - 1) } as Partial<CashGame>)}>-</button>
+      <input type="text" inputMode="numeric" className="input input-sm w-12 text-center" value={count} onChange={e => { const v = toHalfWidthNumber(e.target.value); up({ [countKey]: Math.max(0, Number(v) || 0) } as Partial<CashGame>); }} />
+      <button className="btn btn-ghost btn-sm px-1.5" onClick={() => up({ [countKey]: count + 1 } as Partial<CashGame>)}>+</button>
       {chipsKey && (
-        <div className="flex items-center gap-0.5 shrink-0">
-          <input type="number" className="input input-sm w-16 text-center" value={chips || 0} onChange={e => up({ [chipsKey]: Math.max(0, +e.target.value) } as Partial<CashGame>)} />
-          <span className="text-xs text-white/20">chips</span>
-        </div>
+        <>
+          <input type="text" inputMode="numeric" className="input input-sm flex-1 min-w-0 text-center" value={chips || 0} onChange={e => { const v = toHalfWidthNumber(e.target.value); up({ [chipsKey]: Math.max(0, Number(v) || 0) } as Partial<CashGame>); }} />
+          <span className="text-xs text-white/20 shrink-0">chips</span>
+        </>
       )}
     </div>
   );
@@ -539,7 +535,7 @@ function CashStats({ cashGame: c }: { cashGame: CashGame }) {
       <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Player Info</div>
       <div>
         <label className="text-xs text-white/25 block mb-1">Starting Chips</label>
-        <input type="number" className="input input-sm" value={c.startingChips} onChange={e => up({ startingChips: +e.target.value })} />
+        <input type="text" inputMode="numeric" className="input input-sm" value={c.startingChips} onChange={e => { const v = toHalfWidthNumber(e.target.value); up({ startingChips: Math.max(0, Number(v) || 0) }); }} />
       </div>
 
       <div className="border-t border-white/[0.06] pt-3 space-y-2">
@@ -978,21 +974,21 @@ function CashEditor({ id, onDelete }: { id: string; onDelete: (id: string) => vo
         <button onClick={() => onDelete(id)} className="btn btn-danger btn-sm">Delete</button>
       </div>
       <div className="grid grid-cols-3 gap-3">
-        <div><label className="text-xs text-white/25 block mb-1">SB</label><input type="number" className="input input-sm" value={c.smallBlind} onChange={e => store.updateCashGame(id, { smallBlind: +e.target.value })} /></div>
-        <div><label className="text-xs text-white/25 block mb-1">BB</label><input type="number" className="input input-sm" value={c.bigBlind} onChange={e => store.updateCashGame(id, { bigBlind: +e.target.value })} /></div>
-        <div><label className="text-xs text-white/25 block mb-1">Ante</label><input type="number" className="input input-sm" value={c.ante} onChange={e => store.updateCashGame(id, { ante: +e.target.value })} /></div>
+        <div><label className="text-xs text-white/25 block mb-1">SB</label><input type="text" inputMode="numeric" className="input input-sm" value={c.smallBlind} onChange={e => { const v = toHalfWidthNumber(e.target.value); store.updateCashGame(id, { smallBlind: Math.max(0, Number(v) || 0) }); }} /></div>
+        <div><label className="text-xs text-white/25 block mb-1">BB</label><input type="text" inputMode="numeric" className="input input-sm" value={c.bigBlind} onChange={e => { const v = toHalfWidthNumber(e.target.value); store.updateCashGame(id, { bigBlind: Math.max(0, Number(v) || 0) }); }} /></div>
+        <div><label className="text-xs text-white/25 block mb-1">Ante</label><input type="text" inputMode="numeric" className="input input-sm" value={c.ante} onChange={e => { const v = toHalfWidthNumber(e.target.value); store.updateCashGame(id, { ante: Math.max(0, Number(v) || 0) }); }} /></div>
       </div>
       <div className="text-xs text-white/25 font-semibold mt-1">NEXT Blind</div>
       <div className="grid grid-cols-3 gap-3">
-        <div><label className="text-xs text-white/25 block mb-1">Next SB</label><input type="number" className="input input-sm" value={c.nextSmallBlind} onChange={e => store.updateCashGame(id, { nextSmallBlind: +e.target.value })} /></div>
-        <div><label className="text-xs text-white/25 block mb-1">Next BB</label><input type="number" className="input input-sm" value={c.nextBigBlind} onChange={e => store.updateCashGame(id, { nextBigBlind: +e.target.value })} /></div>
-        <div><label className="text-xs text-white/25 block mb-1">Next Ante</label><input type="number" className="input input-sm" value={c.nextAnte} onChange={e => store.updateCashGame(id, { nextAnte: +e.target.value })} /></div>
+        <div><label className="text-xs text-white/25 block mb-1">Next SB</label><input type="text" inputMode="numeric" className="input input-sm" value={c.nextSmallBlind} onChange={e => { const v = toHalfWidthNumber(e.target.value); store.updateCashGame(id, { nextSmallBlind: Math.max(0, Number(v) || 0) }); }} /></div>
+        <div><label className="text-xs text-white/25 block mb-1">Next BB</label><input type="text" inputMode="numeric" className="input input-sm" value={c.nextBigBlind} onChange={e => { const v = toHalfWidthNumber(e.target.value); store.updateCashGame(id, { nextBigBlind: Math.max(0, Number(v) || 0) }); }} /></div>
+        <div><label className="text-xs text-white/25 block mb-1">Next Ante</label><input type="text" inputMode="numeric" className="input input-sm" value={c.nextAnte} onChange={e => { const v = toHalfWidthNumber(e.target.value); store.updateCashGame(id, { nextAnte: Math.max(0, Number(v) || 0) }); }} /></div>
       </div>
       <div><label className="text-xs text-white/25 block mb-1">Memo</label><input className="input" value={c.memo} onChange={e => store.updateCashGame(id, { memo: e.target.value })} placeholder="Table info" /></div>
       <div>
         <label className="text-xs text-white/25 block mb-1">Pre-Level (開始前カウントダウン)</label>
         <div className="flex items-center gap-2">
-          <input type="number" className="input input-sm w-20 text-center" value={Math.floor((c.preLevelDuration || 0) / 60)} onChange={e => store.updateCashGame(id, { preLevelDuration: Math.max(0, +e.target.value) * 60 })} min={0} />
+          <input type="text" inputMode="numeric" className="input input-sm w-20 text-center" value={Math.floor((c.preLevelDuration || 0) / 60)} onChange={e => { const v = toHalfWidthNumber(e.target.value); store.updateCashGame(id, { preLevelDuration: Math.max(0, Number(v) || 0) * 60 }); }} />
           <span className="text-xs text-white/25">min</span>
         </div>
         <p className="text-xs text-white/15 mt-1">Start押下後、この時間のカウントダウン後にゲームが開始します</p>
@@ -1000,7 +996,7 @@ function CashEditor({ id, onDelete }: { id: string; onDelete: (id: string) => vo
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2"><div className={`toggle ${!c.countdownMode ? 'on' : ''}`} onClick={() => store.updateCashGame(id, { countdownMode: false })} /><span className="text-xs text-white/40">Count Up</span></div>
         <div className="flex items-center gap-2"><div className={`toggle ${c.countdownMode ? 'on' : ''}`} onClick={() => store.updateCashGame(id, { countdownMode: true })} /><span className="text-xs text-white/40">Countdown</span></div>
-        {c.countdownMode && <div className="flex items-center gap-1 ml-2"><input type="number" className="input input-sm w-16" value={Math.floor(c.countdownTotalMs / 60000)} onChange={e => { const ms = +e.target.value * 60000; store.updateCashGame(id, { countdownTotalMs: ms, countdownRemainingMs: ms }); }} min={1} /><span className="text-xs text-white/20">min</span></div>}
+        {c.countdownMode && <div className="flex items-center gap-1 ml-2"><input type="text" inputMode="numeric" className="input input-sm w-16" value={Math.floor(c.countdownTotalMs / 60000)} onChange={e => { const v = toHalfWidthNumber(e.target.value); const ms = Math.max(0, Number(v) || 0) * 60000; store.updateCashGame(id, { countdownTotalMs: ms, countdownRemainingMs: ms }); }} /><span className="text-xs text-white/20">min</span></div>}
       </div>
       <div className="text-center py-2">
         {preLevelMs > 0 && c.status === 'running' ? (
