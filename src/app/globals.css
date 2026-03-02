@@ -65,7 +65,7 @@ html, body { margin: 0; padding: 0; background: var(--bg-dark); color: var(--sys
   border: 1px solid var(--glass-border);
   border-radius: 16px;
 }
-.timer-font { font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.timer-font { font-variant-numeric: tabular-nums; letter-spacing: -0.02em; font-family: var(--timer-font-family, inherit); }
 
 /* Animations */
 @keyframes warningPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.7; } }

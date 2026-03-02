@@ -133,7 +133,9 @@ export const useStore = create<AppState>()(
       cashPresets: [],
 
       updateSystemStyle: (partial) => {
-        const clearPreset = !('unifiedPresetId' in partial) ? { unifiedPresetId: undefined } : {};
+        const nonPresetKeys = ['fontFamily', 'timerFontFamily', 'displayFontScale', 'displayAspectRatio'];
+        const isNonPresetChange = Object.keys(partial).every(k => nonPresetKeys.includes(k));
+        const clearPreset = (!('unifiedPresetId' in partial) && !isNonPresetChange) ? { unifiedPresetId: undefined } : {};
         set(s => ({ systemStyle: { ...s.systemStyle, ...partial, ...clearPreset } }));
         get().broadcastAll();
       },

@@ -1818,36 +1818,43 @@ function SystemStyleEditor() {
       <div>
         <label className="text-xs block mb-2" style={{ color: 'var(--sys-text-muted)' }}>Theme Presets (テーマプリセット)</label>
         <p className="text-xs mb-3" style={{ color: 'var(--sys-text-muted)' }}>ワンタップで全カラーを一括設定。選択後カスタム編集も可能です。</p>
-        <div className="grid grid-cols-2 gap-2">
-          {UNIFIED_PRESETS.map(p => (
-            <button key={p.id}
-              onClick={() => { applyUnifiedPreset(p.id); setShowCustom(false); }}
-              className={`p-2 rounded-xl border transition-all text-left ${
-                systemStyle.unifiedPresetId === p.id
-                  ? 'border-[var(--ui-accent)] ring-2 ring-[var(--ui-accent)]/30'
-                  : 'border-[var(--sys-input-border)] hover:border-[var(--sys-glass-border)]'
-              }`}>
-              <div className="w-full h-6 rounded-lg mb-1.5 relative overflow-hidden"
-                style={{ background: `linear-gradient(135deg, ${p.tokens['timer.background']}, ${p.tokens['timer.backgroundTo']})` }}>
-                <span className="absolute right-1.5 top-0.5 text-[10px] font-bold tracking-wider" style={{ color: p.tokens['timer.text'] }}>12:34</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-3 h-3 rounded-full shrink-0" style={{ background: p.tokens['theme.primary'] }} />
-                <div className="min-w-0 flex-1">
-                  <div className="text-[10px] font-semibold truncate" style={{ color: 'var(--sys-text)' }}>{p.name}</div>
-                  <div className="text-[9px] truncate" style={{ color: 'var(--sys-text-muted)' }}>{p.description}</div>
-                </div>
-                {systemStyle.unifiedPresetId === p.id && <span className="text-[10px]">✓</span>}
-              </div>
-            </button>
-          ))}
-        </div>
+        {(['dark', 'light'] as const).map(mode => (
+          <div key={mode}>
+            <div className="text-[9px] font-bold uppercase tracking-widest mb-1.5 mt-2" style={{ color: 'var(--sys-text-muted)' }}>
+              {mode === 'dark' ? 'Dark Themes' : 'Light Themes'}
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {UNIFIED_PRESETS.filter(p => p.mode === mode).map(p => (
+                <button key={p.id}
+                  onClick={() => { applyUnifiedPreset(p.id); setShowCustom(false); }}
+                  className={`p-2 rounded-xl border transition-all text-left ${
+                    systemStyle.unifiedPresetId === p.id
+                      ? 'border-[var(--ui-accent)] ring-2 ring-[var(--ui-accent)]/30'
+                      : 'border-[var(--sys-input-border)] hover:border-[var(--sys-glass-border)]'
+                  }`}>
+                  <div className="w-full h-6 rounded-lg mb-1.5 relative overflow-hidden"
+                    style={{ background: `linear-gradient(135deg, ${p.tokens['timer.background']}, ${p.tokens['timer.backgroundTo']})` }}>
+                    <span className="absolute right-1.5 top-0.5 text-[10px] font-bold tracking-wider" style={{ color: p.tokens['timer.text'] }}>12:34</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded-full shrink-0" style={{ background: p.tokens['theme.primary'] }} />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[10px] font-semibold truncate" style={{ color: 'var(--sys-text)' }}>{p.name}</div>
+                      <div className="text-[9px] truncate" style={{ color: 'var(--sys-text-muted)' }}>{p.description}</div>
+                    </div>
+                    {systemStyle.unifiedPresetId === p.id && <span className="text-[10px]">✓</span>}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
         {/* Mini timer preview for selected preset */}
         {activePreset && (
           <div className="mt-3 rounded-xl overflow-hidden border" style={{ borderColor: activePreset.tokens['ui.border'] }}>
             <div className="p-3" style={{ background: `linear-gradient(135deg, ${activePreset.tokens['timer.background']}, ${activePreset.tokens['timer.backgroundTo']})` }}>
               <div className="text-[9px] font-semibold mb-1" style={{ color: activePreset.tokens['text.secondary'] }}>Timer Preview — {activePreset.name}</div>
-              <div className="text-center text-2xl font-bold tracking-wider" style={{ color: activePreset.tokens['timer.text'], fontFamily: 'monospace' }}>12:34</div>
+              <div className="text-center text-2xl font-bold tracking-wider timer-font" style={{ color: activePreset.tokens['timer.text'] }}>12:34</div>
               <div className="text-center text-xs mt-1" style={{ color: activePreset.tokens['timer.text'] + 'aa' }}>100/200 (Ante 25)</div>
             </div>
             <div className="p-2 flex gap-1" style={{ background: activePreset.tokens['tab.background'] }}>
@@ -1963,9 +1970,47 @@ function SystemStyleEditor() {
         <label className="text-xs text-white/25 block mb-1">Font (フォント)</label>
         <select className="input input-sm" value={systemStyle.fontFamily}
           onChange={e => updateSystemStyle({ fontFamily: e.target.value })}>
-          {FONT_OPTIONS.map(f => (
-            <option key={f.id} value={f.id}>{f.label}</option>
-          ))}
+          <optgroup label="Sans-serif">
+            {FONT_OPTIONS.filter(f => f.category === 'sans').map(f => (
+              <option key={f.id} value={f.id}>{f.label}</option>
+            ))}
+          </optgroup>
+          <optgroup label="Display">
+            {FONT_OPTIONS.filter(f => f.category === 'display').map(f => (
+              <option key={f.id} value={f.id}>{f.label}</option>
+            ))}
+          </optgroup>
+          <optgroup label="Monospace">
+            {FONT_OPTIONS.filter(f => f.category === 'mono').map(f => (
+              <option key={f.id} value={f.id}>{f.label}</option>
+            ))}
+          </optgroup>
+        </select>
+      </div>
+
+      {/* Timer Font Selector */}
+      <div>
+        <label className="text-xs text-white/25 block mb-1">Timer Font (タイマーフォント)</label>
+        <p className="text-[9px] mb-1" style={{ color: 'var(--sys-text-muted)' }}>タイマー数字だけ別フォントを指定。空でメインフォント使用。</p>
+        <select className="input input-sm"
+          value={systemStyle.timerFontFamily || ''}
+          onChange={e => updateSystemStyle({ timerFontFamily: e.target.value || undefined })}>
+          <option value="">メインフォントと同じ</option>
+          <optgroup label="Sans-serif">
+            {FONT_OPTIONS.filter(f => f.category === 'sans').map(f => (
+              <option key={f.id} value={f.id}>{f.label}</option>
+            ))}
+          </optgroup>
+          <optgroup label="Display">
+            {FONT_OPTIONS.filter(f => f.category === 'display').map(f => (
+              <option key={f.id} value={f.id}>{f.label}</option>
+            ))}
+          </optgroup>
+          <optgroup label="Monospace">
+            {FONT_OPTIONS.filter(f => f.category === 'mono').map(f => (
+              <option key={f.id} value={f.id}>{f.label}</option>
+            ))}
+          </optgroup>
         </select>
       </div>
 

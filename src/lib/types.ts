@@ -262,6 +262,7 @@ export type SystemThemeId = 'dark-navy' | 'bright-blue' | 'light' | 'dark-gray' 
 
 export type SystemStyle = {
   fontFamily: string;
+  timerFontFamily?: string;
   uiAccentColor: string;
   displayAspectRatio: AspectRatioMode;
   displayFontScale: number;
@@ -302,6 +303,7 @@ export type UnifiedThemePreset = {
   id: string;
   name: string;
   description: string;
+  mode: 'dark' | 'light';
   tokens: UnifiedThemeTokens;
 };
 

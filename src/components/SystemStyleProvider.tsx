@@ -4,14 +4,37 @@ import { useEffect } from 'react';
 import { useStore } from '@/stores/useStore';
 import { FONT_OPTIONS, DEFAULT_SYSTEM_STYLE, getSystemTheme } from '@/lib/presets';
 
+function loadGoogleFont(googleFamily: string) {
+  const linkId = `gfont-${googleFamily.replace(/\+/g, '-')}`;
+  if (document.getElementById(linkId)) return;
+  const link = document.createElement('link');
+  link.id = linkId;
+  link.rel = 'stylesheet';
+  link.href = `https://fonts.googleapis.com/css2?family=${googleFamily}:wght@400;600;700;900&display=swap`;
+  document.head.appendChild(link);
+}
+
 export function SystemStyleProvider() {
   const systemStyle = useStore(s => s.systemStyle) || DEFAULT_SYSTEM_STYLE;
 
   useEffect(() => {
-    // Apply font family
+    // Apply font family (with Google Fonts loading)
     const font = FONT_OPTIONS.find(f => f.id === systemStyle.fontFamily);
     if (font) {
+      if (font.googleFamily) loadGoogleFont(font.googleFamily);
       document.body.style.fontFamily = font.value;
+    }
+
+    // Timer-specific font
+    const timerFontId = systemStyle.timerFontFamily;
+    if (timerFontId) {
+      const timerFont = FONT_OPTIONS.find(f => f.id === timerFontId);
+      if (timerFont) {
+        if (timerFont.googleFamily) loadGoogleFont(timerFont.googleFamily);
+        document.documentElement.style.setProperty('--timer-font-family', timerFont.value);
+      }
+    } else {
+      document.documentElement.style.removeProperty('--timer-font-family');
     }
 
     // Apply UI accent color as CSS variable
