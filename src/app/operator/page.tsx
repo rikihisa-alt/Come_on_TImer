@@ -1429,7 +1429,11 @@ function InlinePreview({ timerId, timerType, sticky }: { timerId: string; timerT
   );
   const editor = timerType === 'tournament' ? tournamentEditor : cashEditor;
   const layoutMode = timerType === 'tournament' ? tournamentEditor.layoutMode : cashEditor.layoutMode;
-  const layoutSuffix = layoutMode === 'split' ? '&layout=split' : '';
+
+  // Split mode → show actual split display page; Single mode → show individual display with &layout param
+  const previewPath = layoutMode === 'split'
+    ? `/display/split?left=${timerId}&right=${timerId}&leftTheme=${themeId}&rightTheme=${themeId}&preview=1`
+    : `/display/${route}?timer=${timerId}&theme=${themeId}&preview=1`;
 
   return (
     <div>
@@ -1449,11 +1453,12 @@ function InlinePreview({ timerId, timerType, sticky }: { timerId: string; timerT
           route={route}
           targetName={timer.name}
           themeLabel={themeName}
-          path={`/display/${route}?timer=${timerId}&theme=${themeId}&preview=1${layoutSuffix}`}
+          path={previewPath}
           editMode={editMode}
           setEditMode={setEditMode}
           editor={editor}
           isTournament={timerType === 'tournament'}
+          isSplitPreview={layoutMode === 'split'}
         />
       )}
     </div>
@@ -1461,11 +1466,12 @@ function InlinePreview({ timerId, timerType, sticky }: { timerId: string; timerT
 }
 
 /* ── Combined Preview: iframe + draggable overlay ── */
-function CombinedPreview({ route, targetName, themeLabel, path, editMode, setEditMode, editor, isTournament }: {
+function CombinedPreview({ route, targetName, themeLabel, path, editMode, setEditMode, editor, isTournament, isSplitPreview }: {
   route: string; targetName: string; themeLabel: string; path: string;
   editMode: boolean; setEditMode: (v: boolean) => void;
   editor: ReturnType<typeof useTournamentLayoutEditor> | ReturnType<typeof useCashLayoutEditor>;
   isTournament: boolean;
+  isSplitPreview?: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.25);
@@ -1556,7 +1562,14 @@ function CombinedPreview({ route, targetName, themeLabel, path, editMode, setEdi
           }}
         />
         {/* Draggable overlay (edit mode only) */}
-        {editMode && editor.overlay}
+        {editMode && (
+          isSplitPreview ? (
+            /* Split mode: overlay covers left panel only (below header, left half) */
+            <div className="absolute z-10 select-none" style={{ top: '6.7%', left: 0, width: '49.8%', height: '93.3%' }}>
+              {editor.overlay}
+            </div>
+          ) : editor.overlay
+        )}
         {/* LIVE indicator */}
         {!editMode && (
           <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/50 backdrop-blur-sm z-20">

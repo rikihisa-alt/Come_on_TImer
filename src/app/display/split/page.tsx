@@ -167,11 +167,13 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
               <div className="text-green-400/70 text-[8px] lg:text-[10px] font-semibold mt-1 text-center">{cur.note}</div>
             )}
             {dt.showFooter && cur && !isBrk && (
-              <div className="mt-1 font-black timer-font" style={{ color: pc, fontSize: `${1.8 * bds}vw` }}>
+              <div className="mt-1 font-black timer-font whitespace-nowrap" style={{ color: pc, fontSize: `${1.8 * bds}vw` }}>
                 {cur.smallBlind.toLocaleString()}/{cur.bigBlind.toLocaleString()}
+                {cur.ante > 0 && (
+                  <span className="text-white/30 ml-0.5" style={{ fontSize: `${1.2 * bds}vw` }}>(Ante {cur.ante.toLocaleString()})</span>
+                )}
               </div>
             )}
-            {cur && cur.ante > 0 && !isBrk && <div className="font-black timer-font" style={{ color: pc, fontSize: `${1.8 * bds}vw` }}>Ante {cur.ante.toLocaleString()}</div>}
           </div>
         </div>
       </AbsoluteSection>
@@ -182,7 +184,8 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
           <div className="g-card-inner h-full flex items-center justify-center gap-2 px-2">
             <span className="text-[8px] text-white/25 uppercase tracking-wider font-semibold">Next</span>
             <span className="text-[10px] lg:text-xs font-bold text-white/40 timer-font">
-              {nextPlay.ante > 0 && `A${nextPlay.ante.toLocaleString()} `}{nextPlay.smallBlind.toLocaleString()}/{nextPlay.bigBlind.toLocaleString()}
+              {nextPlay.smallBlind.toLocaleString()}/{nextPlay.bigBlind.toLocaleString()}
+              {nextPlay.ante > 0 && <span className="text-white/25 ml-0.5">(Ante {nextPlay.ante.toLocaleString()})</span>}
             </span>
           </div>
         </AbsoluteSection>

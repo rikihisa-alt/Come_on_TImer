@@ -329,11 +329,11 @@ function Inner() {
               {dt.showFooter && cur && !isBrk && (
                 <div className="mt-2 text-center">
                   <div className="font-black timer-font" style={{ color: pc, fontSize: `${3.5 * bds}vw` }}>
-                    {cur.smallBlind.toLocaleString()} / {cur.bigBlind.toLocaleString()}
+                    {cur.smallBlind.toLocaleString()}/{cur.bigBlind.toLocaleString()}
+                    {cur.ante > 0 && (
+                      <span className="text-white/30 ml-1" style={{ fontSize: `${2.2 * bds}vw` }}>(Ante {cur.ante.toLocaleString()})</span>
+                    )}
                   </div>
-                  {cur.ante > 0 && (
-                    <div className="font-black timer-font mt-1" style={{ color: pc, fontSize: `${3.5 * bds}vw` }}>Ante {cur.ante.toLocaleString()}</div>
-                  )}
                 </div>
               )}
             </div>
@@ -346,8 +346,8 @@ function Inner() {
             <div className="g-card-inner h-full flex items-center justify-center gap-3 px-4">
               <span className="text-xs text-white/30 uppercase tracking-wider font-semibold">Next</span>
               <span className="text-lg font-bold text-white/50 timer-font">
-                {nextPlay.ante > 0 && <span className="text-white/30">Ante {nextPlay.ante.toLocaleString()} </span>}
-                {nextPlay.smallBlind.toLocaleString()} / {nextPlay.bigBlind.toLocaleString()}
+                {nextPlay.smallBlind.toLocaleString()}/{nextPlay.bigBlind.toLocaleString()}
+                {nextPlay.ante > 0 && <span className="text-white/30 text-sm ml-1">(Ante {nextPlay.ante.toLocaleString()})</span>}
               </span>
             </div>
           </AbsoluteSection>
@@ -426,11 +426,11 @@ function Inner() {
             {dt.showFooter && cur && !isBrk && (
               <div className="mt-2 text-center">
                 <div className="text-2xl font-black timer-font" style={{ color: pc }}>
-                  {cur.smallBlind.toLocaleString()} / {cur.bigBlind.toLocaleString()}
+                  {cur.smallBlind.toLocaleString()}/{cur.bigBlind.toLocaleString()}
+                  {cur.ante > 0 && (
+                    <span className="text-base text-white/30 ml-1">(Ante {cur.ante.toLocaleString()})</span>
+                  )}
                 </div>
-                {cur.ante > 0 && (
-                  <div className="text-2xl font-black timer-font mt-1" style={{ color: pc }}>Ante {cur.ante.toLocaleString()}</div>
-                )}
               </div>
             )}
           </div>
@@ -448,8 +448,8 @@ function Inner() {
           <div className="g-card-inner flex items-center justify-center gap-3 px-4 py-2">
             <span className="text-[10px] text-white/30 uppercase tracking-wider font-semibold">Next</span>
             <span className="text-sm font-bold text-white/50 timer-font">
-              {nextPlay.ante > 0 && <span className="text-white/30">Ante {nextPlay.ante.toLocaleString()} </span>}
-              {nextPlay.smallBlind.toLocaleString()} / {nextPlay.bigBlind.toLocaleString()}
+              {nextPlay.smallBlind.toLocaleString()}/{nextPlay.bigBlind.toLocaleString()}
+              {nextPlay.ante > 0 && <span className="text-white/30 text-xs ml-1">(Ante {nextPlay.ante.toLocaleString()})</span>}
             </span>
           </div>
         )}
