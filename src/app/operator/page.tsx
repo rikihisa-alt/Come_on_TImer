@@ -473,19 +473,15 @@ function TournamentStats({ tournament: t }: { tournament: Tournament }) {
       {/* アーリーバード / 特典 */}
       <div className="border-t border-white/[0.06] pt-3">
         <div className="text-xs text-white/25 font-semibold mb-2">Early Bird / 特典</div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs text-white/30 w-24 shrink-0">対象者数</span>
-          <div className="flex gap-0.5 items-center">
-            <button className="btn btn-ghost btn-sm px-1.5" onClick={() => up({ earlyBirdCount: Math.max(0, t.earlyBirdCount - 1) })}>-</button>
-            <input type="text" inputMode="numeric" className="input input-sm w-14 text-center" value={t.earlyBirdCount} onChange={e => { const v = toHalfWidthNumber(e.target.value); up({ earlyBirdCount: Math.max(0, Number(v) || 0) }); }} />
-            <button className="btn btn-ghost btn-sm px-1.5" onClick={() => up({ earlyBirdCount: t.earlyBirdCount + 1 })}>+</button>
-          </div>
-          <span className="text-xs text-white/15 mx-1">+</span>
-          <input type="text" inputMode="numeric" className="input input-sm w-24" value={t.earlyBirdBonus} onChange={e => { const v = toHalfWidthNumber(e.target.value); up({ earlyBirdBonus: Math.max(0, Number(v) || 0) }); }} placeholder="ボーナスチップ" />
-          <span className="text-xs text-white/20">chips</span>
+        <div className="flex items-center gap-0.5">
+          <span className="text-xs text-white/30 w-11 shrink-0">対象者</span>
+          <button className="btn btn-ghost btn-sm px-1" onClick={() => up({ earlyBirdCount: Math.max(0, t.earlyBirdCount - 1) })}>-</button>
+          <input type="text" inputMode="numeric" className="input input-sm flex-1 min-w-[5rem] text-center" value={t.earlyBirdCount} onChange={e => { const v = toHalfWidthNumber(e.target.value); up({ earlyBirdCount: Math.max(0, Number(v) || 0) }); }} />
+          <button className="btn btn-ghost btn-sm px-1" onClick={() => up({ earlyBirdCount: t.earlyBirdCount + 1 })}>+</button>
+          <input type="text" inputMode="numeric" className="input input-sm w-10 text-center px-0" value={t.earlyBirdBonus} placeholder="chips" onChange={e => { const v = toHalfWidthNumber(e.target.value); up({ earlyBirdBonus: Math.max(0, Number(v) || 0) }); }} />
         </div>
         {t.earlyBirdCount > 0 && t.earlyBirdBonus > 0 && (
-          <div className="text-xs text-white/20 mt-1 pl-24">合計 +{(t.earlyBirdCount * t.earlyBirdBonus).toLocaleString()} chips</div>
+          <div className="text-xs text-white/20 mt-1 pl-11">合計 +{(t.earlyBirdCount * t.earlyBirdBonus).toLocaleString()} chips</div>
         )}
       </div>
 
