@@ -435,16 +435,13 @@ function TournamentStats({ tournament: t }: { tournament: Tournament }) {
   const avg = activePlayers > 0 ? Math.round(totalChips / activePlayers) : 0;
 
   const CountRow = ({ label, count, countKey, chips, chipsKey }: { label: string; count: number; countKey: keyof Tournament; chips?: number; chipsKey?: keyof Tournament }) => (
-    <div className="flex items-center gap-1">
-      <span className="text-xs text-white/30 w-14 shrink-0">{label}</span>
-      <button className="btn btn-ghost btn-sm px-1.5" onClick={() => up({ [countKey]: Math.max(0, count - 1) } as Partial<Tournament>)}>-</button>
-      <input type="text" inputMode="numeric" className="input input-sm w-12 text-center" value={count} onChange={e => { const v = toHalfWidthNumber(e.target.value); up({ [countKey]: Math.max(0, Number(v) || 0) } as Partial<Tournament>); }} />
-      <button className="btn btn-ghost btn-sm px-1.5" onClick={() => up({ [countKey]: count + 1 } as Partial<Tournament>)}>+</button>
+    <div className="flex items-center gap-0.5">
+      <span className="text-xs text-white/30 w-11 shrink-0">{label}</span>
+      <button className="btn btn-ghost btn-sm px-1" onClick={() => up({ [countKey]: Math.max(0, count - 1) } as Partial<Tournament>)}>-</button>
+      <input type="text" inputMode="numeric" className="input input-sm w-10 text-center px-0" value={count} onChange={e => { const v = toHalfWidthNumber(e.target.value); up({ [countKey]: Math.max(0, Number(v) || 0) } as Partial<Tournament>); }} />
+      <button className="btn btn-ghost btn-sm px-1" onClick={() => up({ [countKey]: count + 1 } as Partial<Tournament>)}>+</button>
       {chipsKey && (
-        <>
-          <input type="text" inputMode="numeric" className="input input-sm flex-1 min-w-0 text-center" value={chips || 0} onChange={e => { const v = toHalfWidthNumber(e.target.value); up({ [chipsKey]: Math.max(0, Number(v) || 0) } as Partial<Tournament>); }} />
-          <span className="text-xs text-white/20 shrink-0">chips</span>
-        </>
+        <input type="text" inputMode="numeric" className="input input-sm flex-1 min-w-[5rem] text-center" value={chips || 0} placeholder="chips" onChange={e => { const v = toHalfWidthNumber(e.target.value); up({ [chipsKey]: Math.max(0, Number(v) || 0) } as Partial<Tournament>); }} />
       )}
     </div>
   );
@@ -516,16 +513,13 @@ function CashStats({ cashGame: c }: { cashGame: CashGame }) {
   const avg = activePlayers > 0 ? Math.round(totalChips / activePlayers) : 0;
 
   const CountRow = ({ label, count, countKey, chips, chipsKey }: { label: string; count: number; countKey: keyof CashGame; chips?: number; chipsKey?: keyof CashGame }) => (
-    <div className="flex items-center gap-1">
-      <span className="text-xs text-white/30 w-14 shrink-0">{label}</span>
-      <button className="btn btn-ghost btn-sm px-1.5" onClick={() => up({ [countKey]: Math.max(0, count - 1) } as Partial<CashGame>)}>-</button>
-      <input type="text" inputMode="numeric" className="input input-sm w-12 text-center" value={count} onChange={e => { const v = toHalfWidthNumber(e.target.value); up({ [countKey]: Math.max(0, Number(v) || 0) } as Partial<CashGame>); }} />
-      <button className="btn btn-ghost btn-sm px-1.5" onClick={() => up({ [countKey]: count + 1 } as Partial<CashGame>)}>+</button>
+    <div className="flex items-center gap-0.5">
+      <span className="text-xs text-white/30 w-11 shrink-0">{label}</span>
+      <button className="btn btn-ghost btn-sm px-1" onClick={() => up({ [countKey]: Math.max(0, count - 1) } as Partial<CashGame>)}>-</button>
+      <input type="text" inputMode="numeric" className="input input-sm w-10 text-center px-0" value={count} onChange={e => { const v = toHalfWidthNumber(e.target.value); up({ [countKey]: Math.max(0, Number(v) || 0) } as Partial<CashGame>); }} />
+      <button className="btn btn-ghost btn-sm px-1" onClick={() => up({ [countKey]: count + 1 } as Partial<CashGame>)}>+</button>
       {chipsKey && (
-        <>
-          <input type="text" inputMode="numeric" className="input input-sm flex-1 min-w-0 text-center" value={chips || 0} onChange={e => { const v = toHalfWidthNumber(e.target.value); up({ [chipsKey]: Math.max(0, Number(v) || 0) } as Partial<CashGame>); }} />
-          <span className="text-xs text-white/20 shrink-0">chips</span>
-        </>
+        <input type="text" inputMode="numeric" className="input input-sm flex-1 min-w-[5rem] text-center" value={chips || 0} placeholder="chips" onChange={e => { const v = toHalfWidthNumber(e.target.value); up({ [chipsKey]: Math.max(0, Number(v) || 0) } as Partial<CashGame>); }} />
       )}
     </div>
   );
