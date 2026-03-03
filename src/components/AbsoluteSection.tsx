@@ -8,6 +8,7 @@ export function AbsoluteSection({ pos, children }: { pos: SectionPosition; child
     <div className="absolute overflow-hidden" style={{
       left: `${pos.x}%`, top: `${pos.y}%`,
       width: `${pos.w}%`, height: `${pos.h}%`,
+      ...(pos.textColor ? { '--section-text-color': pos.textColor } as React.CSSProperties : {}),
     }}>
       <div className="w-full h-full origin-center" style={{
         transform: sfs !== 1 ? `scale(${sfs})` : undefined,

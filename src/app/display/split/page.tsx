@@ -87,7 +87,8 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
       {dt.showTournamentName && (
         <AbsoluteSection pos={layout.tournamentName}>
           <div className="h-full flex items-center justify-center">
-            <span className="font-black text-white/60 tracking-wide truncate" style={{ fontSize: '1.5em' }}>{tournament.name}</span>
+            <span className={`font-black tracking-wide truncate ${layout.tournamentName.textColor ? '' : 'text-white/60'}`}
+              style={{ fontSize: '1.5em', ...(layout.tournamentName.textColor ? { color: layout.tournamentName.textColor } : {}) }}>{tournament.name}</span>
           </div>
         </AbsoluteSection>
       )}
@@ -96,46 +97,57 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
       {dt.showEntryCount && (
         <AbsoluteSection pos={layout.players}>
           <div className="g-card-inner h-full flex flex-col items-center justify-center p-1">
-            <div className="text-[7px] lg:text-[9px] text-white/30 uppercase tracking-wider font-semibold">Players</div>
-            <div className="text-xs lg:text-base font-bold text-white/65 timer-font">{activePlayers}</div>
+            <div className={`text-[7px] lg:text-[9px] uppercase tracking-wider font-semibold ${layout.players.textColor ? '' : 'text-white/30'}`}
+              style={layout.players.textColor ? { color: layout.players.textColor, opacity: 0.5 } : undefined}>Players</div>
+            <div className={`text-xs lg:text-base font-bold timer-font ${layout.players.textColor ? '' : 'text-white/65'}`}
+              style={layout.players.textColor ? { color: layout.players.textColor } : undefined}>{activePlayers}</div>
           </div>
         </AbsoluteSection>
       )}
       {dt.showEntryCount && (
         <AbsoluteSection pos={layout.reEntry}>
           <div className="g-card-inner h-full flex flex-col items-center justify-center p-1">
-            <div className="text-[7px] lg:text-[9px] text-white/30 uppercase tracking-wider font-semibold">Re-Entry</div>
-            <div className="text-xs lg:text-base font-bold text-white/65 timer-font">{tournament.reEntryCount}</div>
+            <div className={`text-[7px] lg:text-[9px] uppercase tracking-wider font-semibold ${layout.reEntry.textColor ? '' : 'text-white/30'}`}
+              style={layout.reEntry.textColor ? { color: layout.reEntry.textColor, opacity: 0.5 } : undefined}>Re-Entry</div>
+            <div className={`text-xs lg:text-base font-bold timer-font ${layout.reEntry.textColor ? '' : 'text-white/65'}`}
+              style={layout.reEntry.textColor ? { color: layout.reEntry.textColor } : undefined}>{tournament.reEntryCount}</div>
           </div>
         </AbsoluteSection>
       )}
       {dt.showEntryCount && (
         <AbsoluteSection pos={layout.rebuy}>
           <div className="g-card-inner h-full flex flex-col items-center justify-center p-1">
-            <div className="text-[7px] lg:text-[9px] text-white/30 uppercase tracking-wider font-semibold">Rebuy</div>
-            <div className="text-xs lg:text-base font-bold text-white/65 timer-font">{tournament.rebuyCount}</div>
+            <div className={`text-[7px] lg:text-[9px] uppercase tracking-wider font-semibold ${layout.rebuy.textColor ? '' : 'text-white/30'}`}
+              style={layout.rebuy.textColor ? { color: layout.rebuy.textColor, opacity: 0.5 } : undefined}>Rebuy</div>
+            <div className={`text-xs lg:text-base font-bold timer-font ${layout.rebuy.textColor ? '' : 'text-white/65'}`}
+              style={layout.rebuy.textColor ? { color: layout.rebuy.textColor } : undefined}>{tournament.rebuyCount}</div>
           </div>
         </AbsoluteSection>
       )}
       {dt.showEntryCount && (
         <AbsoluteSection pos={layout.addon}>
           <div className="g-card-inner h-full flex flex-col items-center justify-center p-1">
-            <div className="text-[7px] lg:text-[9px] text-white/30 uppercase tracking-wider font-semibold">Add-on</div>
-            <div className="text-xs lg:text-base font-bold text-white/65 timer-font">{tournament.addonCount}</div>
+            <div className={`text-[7px] lg:text-[9px] uppercase tracking-wider font-semibold ${layout.addon.textColor ? '' : 'text-white/30'}`}
+              style={layout.addon.textColor ? { color: layout.addon.textColor, opacity: 0.5 } : undefined}>Add-on</div>
+            <div className={`text-xs lg:text-base font-bold timer-font ${layout.addon.textColor ? '' : 'text-white/65'}`}
+              style={layout.addon.textColor ? { color: layout.addon.textColor } : undefined}>{tournament.addonCount}</div>
           </div>
         </AbsoluteSection>
       )}
       {dt.showChipInfo && (
         <AbsoluteSection pos={layout.avgStack}>
           <div className="g-card-inner h-full flex flex-col items-center justify-center p-1">
-            <div className="text-[7px] lg:text-[9px] text-white/30 uppercase tracking-wider font-semibold">Avg Stack</div>
-            <div className="text-xs lg:text-base font-bold text-white/65 timer-font">{avg > 0 ? formatChips(avg) : '--'}</div>
+            <div className={`text-[7px] lg:text-[9px] uppercase tracking-wider font-semibold ${layout.avgStack.textColor ? '' : 'text-white/30'}`}
+              style={layout.avgStack.textColor ? { color: layout.avgStack.textColor, opacity: 0.5 } : undefined}>Avg Stack</div>
+            <div className={`text-xs lg:text-base font-bold timer-font ${layout.avgStack.textColor ? '' : 'text-white/65'}`}
+              style={layout.avgStack.textColor ? { color: layout.avgStack.textColor } : undefined}>{avg > 0 ? formatChips(avg) : '--'}</div>
           </div>
         </AbsoluteSection>
       )}
 
       {/* Timer */}
       <AbsoluteSection pos={layout.timer}>
+        {(() => { const tc = timerPos.textColor; return (
         <div className="g-card h-full p-2 overflow-hidden" style={{ display: 'grid', gridTemplateRows: '1fr auto 1fr' }}>
           {/* Top: Level info */}
           <div className="flex flex-col items-center justify-end pb-0.5">
@@ -144,15 +156,16 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
                 {isBrk ? (
                   <span className="text-green-400 text-base lg:text-xl font-black tracking-[0.15em]">BREAK</span>
                 ) : (
-                  <span className="text-white/20 text-xs lg:text-sm font-black tracking-[0.2em]">Level {cur?.level || '-'}</span>
+                  <span className={`text-xs lg:text-sm font-black tracking-[0.2em] ${tc ? '' : 'text-white/20'}`}
+                    style={tc ? { color: tc, opacity: 0.4 } : undefined}>Level {cur?.level || '-'}</span>
                 )}
               </div>
             )}
           </div>
           {/* Middle: Timer digits */}
           <div className="flex items-center justify-center">
-            <div className={`font-black timer-font leading-[0.85] ${isWarn ? 'text-amber-400 warning-pulse' : isBrk ? 'text-green-400' : 'text-white'}`}
-              style={{ fontSize: `${5.5 * tds}vw` }}>
+            <div className={`font-black timer-font leading-[0.85] ${isWarn ? 'text-amber-400 warning-pulse' : isBrk ? 'text-green-400' : (tc ? '' : 'text-white')}`}
+              style={{ fontSize: `${5.5 * tds}vw`, ...(tc && !isWarn && !isBrk ? { color: tc } : {}) }}>
               {formatTimer(displayMs)}
             </div>
           </div>
@@ -167,25 +180,28 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
               <div className="text-green-400/70 text-[8px] lg:text-[10px] font-semibold mt-1 text-center">{cur.note}</div>
             )}
             {dt.showFooter && cur && !isBrk && (
-              <div className="mt-1 font-black timer-font whitespace-nowrap" style={{ color: pc, fontSize: `${1.8 * bds}vw` }}>
+              <div className="mt-1 font-black timer-font whitespace-nowrap" style={{ color: tc || pc, fontSize: `${1.8 * bds}vw` }}>
                 {cur.smallBlind.toLocaleString()}/{cur.bigBlind.toLocaleString()}
                 {cur.ante > 0 && (
-                  <span className="text-white/30 ml-0.5">(Ante {cur.ante.toLocaleString()})</span>
+                  <span style={tc ? { color: tc, opacity: 0.4 } : undefined} className={tc ? 'ml-0.5' : 'text-white/30 ml-0.5'}>(Ante {cur.ante.toLocaleString()})</span>
                 )}
               </div>
             )}
           </div>
         </div>
+        ); })()}
       </AbsoluteSection>
 
       {/* Next Level */}
       {dt.showNextLevel && nextPlay && (
         <AbsoluteSection pos={layout.nextLevel}>
           <div className="g-card-inner h-full flex items-center justify-center gap-2 px-2">
-            <span className="text-[8px] text-white/25 uppercase tracking-wider font-semibold">Next</span>
-            <span className="text-[10px] lg:text-xs font-bold text-white/40 timer-font">
+            <span className={`text-[8px] uppercase tracking-wider font-semibold ${layout.nextLevel.textColor ? '' : 'text-white/25'}`}
+              style={layout.nextLevel.textColor ? { color: layout.nextLevel.textColor, opacity: 0.5 } : undefined}>Next</span>
+            <span className={`text-[10px] lg:text-xs font-bold timer-font ${layout.nextLevel.textColor ? '' : 'text-white/40'}`}
+              style={layout.nextLevel.textColor ? { color: layout.nextLevel.textColor } : undefined}>
               {nextPlay.smallBlind.toLocaleString()}/{nextPlay.bigBlind.toLocaleString()}
-              {nextPlay.ante > 0 && <span className="text-white/25 ml-0.5">(Ante {nextPlay.ante.toLocaleString()})</span>}
+              {nextPlay.ante > 0 && <span className={layout.nextLevel.textColor ? 'ml-0.5 opacity-50' : 'text-white/25 ml-0.5'}>(Ante {nextPlay.ante.toLocaleString()})</span>}
             </span>
           </div>
         </AbsoluteSection>
@@ -195,8 +211,10 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
       {dt.showTimeToEnd && (
         <AbsoluteSection pos={layout.cornerTime}>
           <div className="g-card-inner h-full flex flex-col items-center justify-center p-1">
-            <div className="text-[7px] lg:text-[9px] text-white/30 uppercase tracking-wider font-semibold">Corner</div>
-            <div className="text-xs lg:text-base font-bold text-white/65 timer-font">{formatTimerHMS(tte)}</div>
+            <div className={`text-[7px] lg:text-[9px] uppercase tracking-wider font-semibold ${layout.cornerTime.textColor ? '' : 'text-white/30'}`}
+              style={layout.cornerTime.textColor ? { color: layout.cornerTime.textColor, opacity: 0.5 } : undefined}>Corner</div>
+            <div className={`text-xs lg:text-base font-bold timer-font ${layout.cornerTime.textColor ? '' : 'text-white/65'}`}
+              style={layout.cornerTime.textColor ? { color: layout.cornerTime.textColor } : undefined}>{formatTimerHMS(tte)}</div>
           </div>
         </AbsoluteSection>
       )}
@@ -204,8 +222,10 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
       {/* Reg Close */}
       <AbsoluteSection pos={layout.regClose}>
         <div className="g-card-inner h-full flex flex-col items-center justify-center p-1">
-          <div className="text-[7px] lg:text-[9px] text-white/30 uppercase tracking-wider font-semibold">{tournament.regCloseLevel ? `Reg Lv${tournament.regCloseLevel}` : 'Reg Close'}</div>
-          <div className="text-xs lg:text-base font-bold text-white/65 timer-font">{regClose !== null ? formatTimer(regClose) : 'N/A'}</div>
+          <div className={`text-[7px] lg:text-[9px] uppercase tracking-wider font-semibold ${layout.regClose.textColor ? '' : 'text-white/30'}`}
+            style={layout.regClose.textColor ? { color: layout.regClose.textColor, opacity: 0.5 } : undefined}>{tournament.regCloseLevel ? `Reg Lv${tournament.regCloseLevel}` : 'Reg Close'}</div>
+          <div className={`text-xs lg:text-base font-bold timer-font ${layout.regClose.textColor ? '' : 'text-white/65'}`}
+            style={layout.regClose.textColor ? { color: layout.regClose.textColor } : undefined}>{regClose !== null ? formatTimer(regClose) : 'N/A'}</div>
         </div>
       </AbsoluteSection>
 
@@ -213,8 +233,10 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
       {dt.showTimeToBreak && (
         <AbsoluteSection pos={layout.nextBreak}>
           <div className="g-card-inner h-full flex flex-col items-center justify-center p-1">
-            <div className="text-[7px] lg:text-[9px] text-white/30 uppercase tracking-wider font-semibold">Next Break</div>
-            <div className="text-xs lg:text-base font-bold text-white/65 timer-font">{ttb !== null ? formatTimerHMS(ttb) : '--:--:--'}</div>
+            <div className={`text-[7px] lg:text-[9px] uppercase tracking-wider font-semibold ${layout.nextBreak.textColor ? '' : 'text-white/30'}`}
+              style={layout.nextBreak.textColor ? { color: layout.nextBreak.textColor, opacity: 0.5 } : undefined}>Next Break</div>
+            <div className={`text-xs lg:text-base font-bold timer-font ${layout.nextBreak.textColor ? '' : 'text-white/65'}`}
+              style={layout.nextBreak.textColor ? { color: layout.nextBreak.textColor } : undefined}>{ttb !== null ? formatTimerHMS(ttb) : '--:--:--'}</div>
           </div>
         </AbsoluteSection>
       )}
@@ -223,12 +245,14 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
       {dt.showPrizeStructure && tournament.prizeStructure.some(p => p.label) && (
         <AbsoluteSection pos={layout.prizeTable}>
           <div className="g-card-inner p-2 h-full overflow-auto">
-            <div className="text-[7px] text-white/30 uppercase tracking-wider font-semibold mb-1 text-center">Prize</div>
+            <div className={`text-[7px] uppercase tracking-wider font-semibold mb-1 text-center ${layout.prizeTable.textColor ? '' : 'text-white/30'}`}
+              style={layout.prizeTable.textColor ? { color: layout.prizeTable.textColor, opacity: 0.5 } : undefined}>Prize</div>
             <div className="space-y-0.5">
               {tournament.prizeStructure.filter(p => p.label).map(p => (
                 <div key={p.place} className="flex items-center justify-between text-[10px] gap-1">
-                  <span className="text-white/40">{p.place}位</span>
-                  <span className="font-bold timer-font truncate" style={{ color: p.place === 1 ? pc : 'rgba(255,255,255,0.5)' }}>
+                  <span className={layout.prizeTable.textColor ? '' : 'text-white/40'}
+                    style={layout.prizeTable.textColor ? { color: layout.prizeTable.textColor, opacity: 0.5 } : undefined}>{p.place}位</span>
+                  <span className="font-bold timer-font truncate" style={{ color: layout.prizeTable.textColor || (p.place === 1 ? pc : 'rgba(255,255,255,0.5)') }}>
                     {p.label}
                   </span>
                 </div>
@@ -243,7 +267,8 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
         <AbsoluteSection pos={layout.ticker}>
           <div className="g-ticker h-full flex items-center overflow-hidden">
             <div className="ticker-container">
-              <span className="ticker-scroll text-xs font-semibold text-white/35 px-2" style={{ animationDuration: `${tickerSpeed}s` }}>{dt.tickerText}</span>
+              <span className={`ticker-scroll text-xs font-semibold px-2 ${layout.ticker.textColor ? '' : 'text-white/35'}`}
+                style={{ animationDuration: `${tickerSpeed}s`, ...(layout.ticker.textColor ? { color: layout.ticker.textColor } : {}) }}>{dt.tickerText}</span>
             </div>
           </div>
         </AbsoluteSection>

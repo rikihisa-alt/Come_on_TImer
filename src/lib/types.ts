@@ -66,6 +66,7 @@ export type SectionPosition = {
   timerDigitScale?: number;
   blindsScale?: number;
   anteScale?: number;
+  textColor?: string;
 };
 
 export type SectionLayout = Record<TournamentSectionId, SectionPosition>;

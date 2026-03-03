@@ -1200,6 +1200,14 @@ function GenericLayoutEditor<T extends string>({
     onUpdatePosition(selected, newPos);
     onBroadcast();
   };
+  const updateTextColor = (color: string | undefined) => {
+    if (!selected) return;
+    const cur = { ...localPositions[selected] };
+    if (color) cur.textColor = color; else delete cur.textColor;
+    setLocalPositions(prev => ({ ...prev, [selected as T]: cur }));
+    onUpdatePosition(selected, cur);
+    onBroadcast();
+  };
 
   const undoLayoutRef = useRef<Record<T, SectionPosition> | null>(null);
   const [showUndo, setShowUndo] = useState(false);
@@ -1277,6 +1285,19 @@ function GenericLayoutEditor<T extends string>({
             <input type="number" step={0.1} min={0.3} max={3.0} className="input input-sm text-center"
               value={localPositions[selected!].fontSize ?? 1.0} onChange={e => updateField('fontSize', +e.target.value)} />
           </div>
+        </div>
+        {/* Text Color */}
+        <div className="flex items-center gap-2 mt-1">
+          <label className="text-xs text-white/25 shrink-0">Color</label>
+          <input type="color" value={localPositions[selected!].textColor || '#ffffff'}
+            onChange={e => updateTextColor(e.target.value)}
+            className="w-7 h-7 rounded cursor-pointer bg-transparent border border-white/10" />
+          {localPositions[selected!].textColor ? (
+            <button onClick={() => updateTextColor(undefined)}
+              className="text-[10px] text-white/30 hover:text-white/60 underline">Reset</button>
+          ) : (
+            <span className="text-[10px] text-white/20">Default</span>
+          )}
         </div>
         {(selected === 'timer' || selected === ('timer' as T)) && (
           <div className="border-t border-white/[0.06] pt-2 mt-2">

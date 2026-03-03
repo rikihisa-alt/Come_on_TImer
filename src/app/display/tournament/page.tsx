@@ -58,27 +58,30 @@ function TimerSelector({ selectedId, onSelect, tournaments }: {
 }
 
 /* ── Glass Stat Card ── */
-function GlassStat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+function GlassStat({ label, value, accent, textColor }: { label: string; value: string; accent?: boolean; textColor?: string }) {
   return (
     <div className="g-card-inner p-3 lg:p-4 h-full flex flex-col items-center justify-center text-center">
-      <div className="text-[9px] lg:text-[11px] text-white/35 uppercase tracking-wider font-semibold mb-1.5">{label}</div>
-      <div className={`text-base lg:text-xl xl:text-2xl font-bold timer-font leading-tight ${accent ? 'text-blue-400' : 'text-white/75'}`}>{value}</div>
+      <div className={`text-[9px] lg:text-[11px] uppercase tracking-wider font-semibold mb-1.5 ${textColor ? '' : 'text-white/35'}`}
+        style={textColor ? { color: textColor, opacity: 0.5 } : undefined}>{label}</div>
+      <div className={`text-base lg:text-xl xl:text-2xl font-bold timer-font leading-tight ${textColor ? '' : (accent ? 'text-blue-400' : 'text-white/75')}`}
+        style={textColor ? { color: textColor } : undefined}>{value}</div>
     </div>
   );
 }
 
 /* ── Prize Table ── */
-function PrizeTable({ tournament, primaryColor }: { tournament: Tournament; primaryColor: string }) {
+function PrizeTable({ tournament, primaryColor, textColor }: { tournament: Tournament; primaryColor: string; textColor?: string }) {
   const hasAny = tournament.prizeStructure.some(p => p.label);
   if (tournament.prizeStructure.length === 0 || !hasAny) return null;
   return (
     <div className="g-card-inner p-3 lg:p-4 h-full overflow-auto">
-      <div className="text-[9px] lg:text-[11px] text-white/35 uppercase tracking-wider font-semibold mb-2 text-center">Prize</div>
+      <div className={`text-[9px] lg:text-[11px] uppercase tracking-wider font-semibold mb-2 text-center ${textColor ? '' : 'text-white/35'}`}
+        style={textColor ? { color: textColor, opacity: 0.5 } : undefined}>Prize</div>
       <div className="space-y-1">
         {tournament.prizeStructure.filter(p => p.label).map((p) => (
           <div key={p.place} className="flex items-center justify-between text-xs gap-2">
-            <span className="text-white/40 shrink-0">{p.place}位</span>
-            <span className="font-bold timer-font text-right truncate" style={{ color: p.place === 1 ? primaryColor : 'rgba(255,255,255,0.5)' }}>
+            <span className={textColor ? '' : 'text-white/40'} style={textColor ? { color: textColor, opacity: 0.5 } : undefined}>{p.place}位</span>
+            <span className="font-bold timer-font text-right truncate" style={{ color: textColor || (p.place === 1 ? primaryColor : 'rgba(255,255,255,0.5)') }}>
               {p.label}
             </span>
           </div>
@@ -105,6 +108,7 @@ function Inner() {
   const [displayMs, setDisplayMs] = useState(0);
   const prevRef = useRef(-1);
   const warnRef = useRef(false);
+  const fs = useStore(s => s.systemStyle?.displayFontScale) || 1;
 
   useEffect(() => {
     const h = () => unlockAudio();
@@ -191,7 +195,6 @@ function Inner() {
   const ttb = computeTimeToBreak(tournament.levels, tournament.currentLevelIndex, displayMs);
   const tte = computeTimeToEnd(tournament.levels, tournament.currentLevelIndex, displayMs);
   const regClose = computeRegCloseTime(tournament.levels, tournament.currentLevelIndex, displayMs, tournament.regCloseLevel);
-  const fs = useStore(s => s.systemStyle?.displayFontScale) || 1;
   const activePlayers = tournament.initialEntries + tournament.reEntryCount;
   const totalChips = tournament.initialEntries * tournament.startingChips
     + tournament.reEntryCount * tournament.reEntryChips
@@ -257,7 +260,8 @@ function Inner() {
         {dt.showTournamentName && (
           <AbsoluteSection pos={layout.tournamentName}>
             <div className="h-full flex items-center justify-center">
-              <span className="font-black text-white/70 tracking-wide truncate" style={{ fontSize: '2em' }}>{tournament.name}</span>
+              <span className={`font-black tracking-wide truncate ${layout.tournamentName.textColor ? '' : 'text-white/70'}`}
+                style={{ fontSize: '2em', ...(layout.tournamentName.textColor ? { color: layout.tournamentName.textColor } : {}) }}>{tournament.name}</span>
             </div>
           </AbsoluteSection>
         )}
@@ -265,32 +269,33 @@ function Inner() {
         {/* Left column sections */}
         {dt.showEntryCount && (
           <AbsoluteSection pos={layout.players}>
-            <GlassStat label="Players" value={`${activePlayers}`} accent />
+            <GlassStat label="Players" value={`${activePlayers}`} accent textColor={layout.players.textColor} />
           </AbsoluteSection>
         )}
         {dt.showEntryCount && (
           <AbsoluteSection pos={layout.reEntry}>
-            <GlassStat label="Re-Entry" value={String(tournament.reEntryCount)} />
+            <GlassStat label="Re-Entry" value={String(tournament.reEntryCount)} textColor={layout.reEntry.textColor} />
           </AbsoluteSection>
         )}
         {dt.showEntryCount && (
           <AbsoluteSection pos={layout.rebuy}>
-            <GlassStat label="Rebuy" value={String(tournament.rebuyCount)} />
+            <GlassStat label="Rebuy" value={String(tournament.rebuyCount)} textColor={layout.rebuy.textColor} />
           </AbsoluteSection>
         )}
         {dt.showEntryCount && (
           <AbsoluteSection pos={layout.addon}>
-            <GlassStat label="Add-on" value={String(tournament.addonCount)} />
+            <GlassStat label="Add-on" value={String(tournament.addonCount)} textColor={layout.addon.textColor} />
           </AbsoluteSection>
         )}
         {dt.showChipInfo && (
           <AbsoluteSection pos={layout.avgStack}>
-            <GlassStat label="Avg Stack" value={avg > 0 ? formatChips(avg) : '--'} />
+            <GlassStat label="Avg Stack" value={avg > 0 ? formatChips(avg) : '--'} textColor={layout.avgStack.textColor} />
           </AbsoluteSection>
         )}
 
         {/* Center: Timer */}
         <AbsoluteSection pos={layout.timer}>
+          {(() => { const tc = timerPos.textColor; return (
           <div className="g-card h-full p-5 relative overflow-hidden" style={{ display: 'grid', gridTemplateRows: '1fr auto 1fr' }}>
             {/* Top row: Level info - pinned to bottom */}
             <div className="flex flex-col items-center justify-end pb-2">
@@ -299,7 +304,8 @@ function Inner() {
                   {isBrk ? (
                     <span className="text-green-400 text-3xl lg:text-4xl font-black tracking-[0.15em]">BREAK</span>
                   ) : (
-                    <span className="text-white/25 text-2xl lg:text-3xl font-black tracking-[0.2em]">Level {cur?.level || '-'}</span>
+                    <span className={`text-2xl lg:text-3xl font-black tracking-[0.2em] ${tc ? '' : 'text-white/25'}`}
+                      style={tc ? { color: tc, opacity: 0.4 } : undefined}>Level {cur?.level || '-'}</span>
                   )}
                 </div>
               )}
@@ -307,8 +313,8 @@ function Inner() {
             {/* Middle row: Timer digits - always centered */}
             <div className="flex items-center justify-center">
               {dt.showTimer && (
-                <div className={`font-black timer-font leading-[0.85] transition-colors duration-300 ${isWarn ? 'text-amber-400 warning-pulse' : isBrk ? 'text-green-400' : 'text-white'}`}
-                  style={{ fontSize: `${11 * tds}vw` }}>
+                <div className={`font-black timer-font leading-[0.85] transition-colors duration-300 ${isWarn ? 'text-amber-400 warning-pulse' : isBrk ? 'text-green-400' : (tc ? '' : 'text-white')}`}
+                  style={{ fontSize: `${11 * tds}vw`, ...(tc && !isWarn && !isBrk ? { color: tc } : {}) }}>
                   {formatTimer(displayMs)}
                 </div>
               )}
@@ -328,26 +334,29 @@ function Inner() {
               )}
               {dt.showFooter && cur && !isBrk && (
                 <div className="mt-2 text-center">
-                  <div className="font-black timer-font" style={{ color: pc, fontSize: `${3.5 * bds}vw` }}>
+                  <div className="font-black timer-font" style={{ color: tc || pc, fontSize: `${3.5 * bds}vw` }}>
                     {cur.smallBlind.toLocaleString()}/{cur.bigBlind.toLocaleString()}
                     {cur.ante > 0 && (
-                      <span className="text-white/30 ml-1">(Ante {cur.ante.toLocaleString()})</span>
+                      <span style={tc ? { color: tc, opacity: 0.4 } : undefined} className={tc ? 'ml-1' : 'text-white/30 ml-1'}>(Ante {cur.ante.toLocaleString()})</span>
                     )}
                   </div>
                 </div>
               )}
             </div>
           </div>
+          ); })()}
         </AbsoluteSection>
 
         {/* Center: Next Level */}
         {dt.showNextLevel && nextPlay && (
           <AbsoluteSection pos={layout.nextLevel}>
             <div className="g-card-inner h-full flex items-center justify-center gap-3 px-4">
-              <span className="text-xs text-white/30 uppercase tracking-wider font-semibold">Next</span>
-              <span className="text-lg font-bold text-white/50 timer-font">
+              <span className={`text-xs uppercase tracking-wider font-semibold ${layout.nextLevel.textColor ? '' : 'text-white/30'}`}
+                style={layout.nextLevel.textColor ? { color: layout.nextLevel.textColor, opacity: 0.5 } : undefined}>Next</span>
+              <span className={`text-lg font-bold timer-font ${layout.nextLevel.textColor ? '' : 'text-white/50'}`}
+                style={layout.nextLevel.textColor ? { color: layout.nextLevel.textColor } : undefined}>
                 {nextPlay.smallBlind.toLocaleString()}/{nextPlay.bigBlind.toLocaleString()}
-                {nextPlay.ante > 0 && <span className="text-white/30 ml-1">(Ante {nextPlay.ante.toLocaleString()})</span>}
+                {nextPlay.ante > 0 && <span className={layout.nextLevel.textColor ? 'ml-1 opacity-50' : 'text-white/30 ml-1'}>(Ante {nextPlay.ante.toLocaleString()})</span>}
               </span>
             </div>
           </AbsoluteSection>
@@ -356,20 +365,20 @@ function Inner() {
         {/* Right column sections */}
         {dt.showTimeToEnd && (
           <AbsoluteSection pos={layout.cornerTime}>
-            <GlassStat label="Corner Time" value={formatTimerHMS(tte)} />
+            <GlassStat label="Corner Time" value={formatTimerHMS(tte)} textColor={layout.cornerTime.textColor} />
           </AbsoluteSection>
         )}
         <AbsoluteSection pos={layout.regClose}>
-          <GlassStat label={tournament.regCloseLevel ? `Reg Close Lv${tournament.regCloseLevel}` : 'Reg Close'} value={regClose !== null ? formatTimer(regClose) : 'N/A'} />
+          <GlassStat label={tournament.regCloseLevel ? `Reg Close Lv${tournament.regCloseLevel}` : 'Reg Close'} value={regClose !== null ? formatTimer(regClose) : 'N/A'} textColor={layout.regClose.textColor} />
         </AbsoluteSection>
         {dt.showTimeToBreak && (
           <AbsoluteSection pos={layout.nextBreak}>
-            <GlassStat label="Next Break" value={ttb !== null ? formatTimerHMS(ttb) : '--:--:--'} />
+            <GlassStat label="Next Break" value={ttb !== null ? formatTimerHMS(ttb) : '--:--:--'} textColor={layout.nextBreak.textColor} />
           </AbsoluteSection>
         )}
         {dt.showPrizeStructure && (
           <AbsoluteSection pos={layout.prizeTable}>
-            <PrizeTable tournament={tournament} primaryColor={pc} />
+            <PrizeTable tournament={tournament} primaryColor={pc} textColor={layout.prizeTable.textColor} />
           </AbsoluteSection>
         )}
 
@@ -378,7 +387,8 @@ function Inner() {
           <AbsoluteSection pos={layout.ticker}>
             <div className="g-ticker h-full flex items-center overflow-hidden">
               <div className="ticker-container">
-                <span className="ticker-scroll text-lg lg:text-xl font-semibold text-white/40 px-4" style={{ animationDuration: `${tickerSpeed}s` }}>{dt.tickerText}</span>
+                <span className={`ticker-scroll text-lg lg:text-xl font-semibold px-4 ${layout.ticker.textColor ? '' : 'text-white/40'}`}
+                  style={{ animationDuration: `${tickerSpeed}s`, ...(layout.ticker.textColor ? { color: layout.ticker.textColor } : {}) }}>{dt.tickerText}</span>
               </div>
             </div>
           </AbsoluteSection>
