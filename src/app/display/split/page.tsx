@@ -177,7 +177,7 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
               </div>
             )}
             {isBrk && cur?.note && (
-              <div className="text-green-400/70 text-[8px] lg:text-[10px] font-semibold mt-1 text-center">{cur.note}</div>
+              <div className="text-green-400/70 font-semibold mt-1 text-center" style={{ fontSize: `${1.5 * tds}vw` }}>{cur.note}</div>
             )}
             {dt.showFooter && cur && !isBrk && (
               <div className="mt-1 font-black timer-font whitespace-nowrap" style={{ color: tc || pc, fontSize: `${1.8 * bds}vw` }}>
@@ -616,10 +616,15 @@ function SplitInner() {
   const leftThemeParam = params.get('leftTheme') || '';
   const rightThemeParam = params.get('rightTheme') || '';
   const leftTimerThemeId = leftTournament?.themeId || leftCash?.themeId;
-  const baseThemeId = leftTimerThemeId || assignment?.themeId || defaultThemeId || 'come-on-blue';
-  const theme = themes.find(t => t.id === baseThemeId) || themes[0];
-  const leftTheme = (leftThemeParam ? themes.find(t => t.id === leftThemeParam) : undefined) || theme;
-  const rightTheme = (rightThemeParam ? themes.find(t => t.id === rightThemeParam) : undefined) || theme;
+  const rightTimerThemeId = rightTournament?.themeId || rightCash?.themeId;
+  const fallbackThemeId = assignment?.themeId || defaultThemeId || 'come-on-blue';
+  const fallbackTheme = themes.find(t => t.id === fallbackThemeId) || themes[0];
+  const leftTheme = (leftThemeParam ? themes.find(t => t.id === leftThemeParam) : undefined)
+    || (leftTimerThemeId ? themes.find(t => t.id === leftTimerThemeId) : undefined)
+    || fallbackTheme;
+  const rightTheme = (rightThemeParam ? themes.find(t => t.id === rightThemeParam) : undefined)
+    || (rightTimerThemeId ? themes.find(t => t.id === rightTimerThemeId) : undefined)
+    || fallbackTheme;
 
   /* per-timer settings for each panel */
   const leftDt = (leftTournament?.displayToggles || leftCash?.displayToggles) || globalToggles;
@@ -635,10 +640,8 @@ function SplitInner() {
     return { background: 'linear-gradient(160deg, #0e1c36 0%, #152d52 50%, #1c3d6e 100%)' };
   };
 
-  const bgStyle = themeBgStyle(theme, leftDt.backgroundImageUrl || rightDt.backgroundImageUrl);
   const leftBgStyle = themeBgStyle(leftTheme, leftDt.backgroundImageUrl);
   const rightBgStyle = themeBgStyle(rightTheme, rightDt.backgroundImageUrl);
-  const hasSeparateThemes = leftThemeParam || rightThemeParam;
 
   const hasLeft = leftTournament || leftCash;
   const hasRight = rightTournament || rightCash;

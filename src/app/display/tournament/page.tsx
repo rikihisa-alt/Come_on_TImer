@@ -330,7 +330,7 @@ function Inner() {
                 </div>
               )}
               {isBrk && cur?.note && (
-                <div className="text-green-400/70 text-sm lg:text-lg font-semibold mt-3 text-center">{cur.note}</div>
+                <div className="text-green-400/70 font-semibold mt-3 text-center" style={{ fontSize: `${2.8 * tds}vw` }}>{cur.note}</div>
               )}
               {dt.showFooter && cur && !isBrk && (
                 <div className="mt-2 text-center">
@@ -431,7 +431,7 @@ function Inner() {
               </div>
             )}
             {isBrk && cur?.note && (
-              <div className="text-green-400/70 text-xs font-semibold mt-2 text-center">{cur.note}</div>
+              <div className="text-green-400/70 font-semibold mt-2 text-center" style={{ fontSize: `${4.5 * fs}vw` }}>{cur.note}</div>
             )}
             {dt.showFooter && cur && !isBrk && (
               <div className="mt-2 text-center">
