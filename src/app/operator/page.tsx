@@ -1193,7 +1193,7 @@ function GenericLayoutEditor<T extends string>({
     setDragging(null); dragStartRef.current = null;
   };
 
-  const updateField = (field: 'x' | 'y' | 'w' | 'h' | 'fontSize' | 'timerDigitScale' | 'blindsScale' | 'anteScale', val: number) => {
+  const updateField = (field: 'x' | 'y' | 'w' | 'h' | 'fontSize' | 'timerDigitScale' | 'blindsScale' | 'anteScale' | 'frameVisibility', val: number) => {
     if (!selected) return;
     const newPos = { ...localPositions[selected], [field]: val };
     setLocalPositions(prev => ({ ...prev, [selected as T]: newPos }));
@@ -1204,6 +1204,23 @@ function GenericLayoutEditor<T extends string>({
     if (!selected) return;
     const cur = { ...localPositions[selected] };
     if (color) cur.textColor = color; else delete cur.textColor;
+    setLocalPositions(prev => ({ ...prev, [selected as T]: cur }));
+    onUpdatePosition(selected, cur);
+    onBroadcast();
+  };
+  const updateFrameColor = (color: string | undefined) => {
+    if (!selected) return;
+    const cur = { ...localPositions[selected] };
+    if (color) cur.frameColor = color; else delete cur.frameColor;
+    setLocalPositions(prev => ({ ...prev, [selected as T]: cur }));
+    onUpdatePosition(selected, cur);
+    onBroadcast();
+  };
+  const resetFrame = () => {
+    if (!selected) return;
+    const cur = { ...localPositions[selected] };
+    delete cur.frameColor;
+    delete cur.frameVisibility;
     setLocalPositions(prev => ({ ...prev, [selected as T]: cur }));
     onUpdatePosition(selected, cur);
     onBroadcast();
@@ -1297,6 +1314,39 @@ function GenericLayoutEditor<T extends string>({
               className="text-[10px] text-white/30 hover:text-white/60 underline">Reset</button>
           ) : (
             <span className="text-[10px] text-white/20">Default</span>
+          )}
+        </div>
+        {/* Frame / Border */}
+        <div className="border-t border-white/[0.06] pt-2 mt-2">
+          <div className="text-xs text-white/30 font-semibold mb-1.5">Frame / Border</div>
+          <div className="flex items-center gap-2 mb-2">
+            <label className="text-xs text-white/25 shrink-0">Color</label>
+            <input type="color" value={localPositions[selected!].frameColor || '#ffffff'}
+              onChange={e => updateFrameColor(e.target.value)}
+              className="w-7 h-7 rounded cursor-pointer bg-transparent border border-white/10" />
+            {localPositions[selected!].frameColor ? (
+              <button onClick={() => updateFrameColor(undefined)}
+                className="text-[10px] text-white/30 hover:text-white/60 underline">Reset</button>
+            ) : (
+              <span className="text-[10px] text-white/20">Default</span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-white/25 shrink-0 w-10">Frame</label>
+            <input type="range" min={0} max={100} step={1}
+              value={localPositions[selected!].frameVisibility ?? 50}
+              onChange={e => updateField('frameVisibility', +e.target.value)}
+              className="flex-1 h-1.5 rounded-full appearance-none"
+              style={{ background: `linear-gradient(to right, rgba(255,255,255,0.08), rgba(255,255,255,0.35)` }} />
+            <span className="text-[10px] text-white/30 w-10 text-right font-mono">
+              {(localPositions[selected!].frameVisibility ?? 50) === 0 ? 'None'
+                : (localPositions[selected!].frameVisibility ?? 50) === 50 ? 'Dflt'
+                : `${localPositions[selected!].frameVisibility ?? 50}%`}
+            </span>
+          </div>
+          {(localPositions[selected!].frameVisibility !== undefined || localPositions[selected!].frameColor) && (
+            <button onClick={resetFrame}
+              className="text-[10px] text-white/30 hover:text-white/60 underline mt-1">Reset Frame</button>
           )}
         </div>
         {(selected === 'timer' || selected === ('timer' as T)) && (

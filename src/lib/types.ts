@@ -67,6 +67,9 @@ export type SectionPosition = {
   blindsScale?: number;
   anteScale?: number;
   textColor?: string;
+  // F2: フレーム（枠）カスタマイズ
+  frameColor?: string;      // 枠の色 (hex e.g. '#ff0000')
+  frameVisibility?: number; // 0=非表示, 50=デフォルト, 100=最大強調
 };
 
 export type SectionLayout = Record<TournamentSectionId, SectionPosition>;
