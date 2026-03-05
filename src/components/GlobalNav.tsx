@@ -21,20 +21,24 @@ export function GlobalNav() {
   const [isFs, setIsFs] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userProfile, setUserProfile] = useState<{ display_name: string; role: string } | null>(null);
 
+  // Fetch profile via API route (bypasses RLS issues)
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) {
-        supabase
-          .from('profiles')
-          .select('display_name, role')
-          .eq('id', user.id)
-          .single()
-          .then(({ data }) => {
-            if (data) setUserProfile(data);
-          });
+        setIsLoggedIn(true);
+        // Fetch profile via server API (reliable, uses server-side auth)
+        fetch('/api/auth/profile')
+          .then(res => res.ok ? res.json() : null)
+          .then(data => {
+            if (data && data.display_name) {
+              setUserProfile({ display_name: data.display_name, role: data.role });
+            }
+          })
+          .catch(() => { /* profile fetch failed, but user is still logged in */ });
       }
     });
   }, []);
@@ -43,6 +47,7 @@ export function GlobalNav() {
     const supabase = createClient();
     await supabase.auth.signOut();
     setUserProfile(null);
+    setIsLoggedIn(false);
     router.push('/login');
     router.refresh();
   };
@@ -113,8 +118,8 @@ export function GlobalNav() {
           </Link>
         )}
 
-        {/* Logout button (desktop only) */}
-        {userProfile && (
+        {/* Logout button (desktop) — always visible when logged in */}
+        {isLoggedIn && (
           <button onClick={handleLogout}
             className="hidden md:block px-3 py-1.5 text-xs text-white/40 hover:text-white/70 hover:bg-white/[0.06] rounded-lg transition-colors">
             ログアウト
