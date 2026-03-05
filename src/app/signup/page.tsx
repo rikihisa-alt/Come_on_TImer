@@ -30,7 +30,11 @@ export default function SignupPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || 'Signup failed');
+        if (data.error?.includes('already been registered')) {
+          setError('このメールアドレスは既に登録されています');
+        } else {
+          setError(data.error || '登録に失敗しました');
+        }
         return;
       }
 
@@ -42,14 +46,14 @@ export default function SignupPage() {
       });
 
       if (signInError) {
-        setError('Account created but login failed. Please go to login page.');
+        setError('アカウントは作成されましたが、ログインに失敗しました。ログインページからお試しください。');
         return;
       }
 
       router.push('/operator');
       router.refresh();
     } catch {
-      setError('An unexpected error occurred');
+      setError('予期せぬエラーが発生しました');
     } finally {
       setLoading(false);
     }
@@ -66,7 +70,7 @@ export default function SignupPage() {
 
         {/* Signup Card */}
         <div className="g-card p-6 md:p-8">
-          <h2 className="text-xl font-bold text-white mb-6 text-center">Create Account</h2>
+          <h2 className="text-xl font-bold text-white mb-6 text-center">新規登録</h2>
 
           <form onSubmit={handleSignup} className="space-y-4">
             {error && (
@@ -76,31 +80,31 @@ export default function SignupPage() {
             )}
 
             <div>
-              <label className="block text-white/50 text-xs font-medium mb-1.5">Organization Name</label>
+              <label className="block text-white/50 text-xs font-medium mb-1.5">店舗名</label>
               <input
                 type="text"
                 value={organizationName}
                 onChange={(e) => setOrganizationName(e.target.value)}
                 required
                 className="w-full px-4 py-3 bg-white/[0.06] border border-white/[0.1] rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-colors"
-                placeholder="Your Poker Room Name"
+                placeholder="ポーカールーム名"
               />
             </div>
 
             <div>
-              <label className="block text-white/50 text-xs font-medium mb-1.5">Display Name</label>
+              <label className="block text-white/50 text-xs font-medium mb-1.5">表示名</label>
               <input
                 type="text"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 required
                 className="w-full px-4 py-3 bg-white/[0.06] border border-white/[0.1] rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-colors"
-                placeholder="Your Name"
+                placeholder="あなたの名前"
               />
             </div>
 
             <div>
-              <label className="block text-white/50 text-xs font-medium mb-1.5">Email</label>
+              <label className="block text-white/50 text-xs font-medium mb-1.5">メールアドレス</label>
               <input
                 type="email"
                 value={email}
@@ -112,7 +116,7 @@ export default function SignupPage() {
             </div>
 
             <div>
-              <label className="block text-white/50 text-xs font-medium mb-1.5">Password</label>
+              <label className="block text-white/50 text-xs font-medium mb-1.5">パスワード</label>
               <input
                 type="password"
                 value={password}
@@ -120,7 +124,7 @@ export default function SignupPage() {
                 required
                 minLength={6}
                 className="w-full px-4 py-3 bg-white/[0.06] border border-white/[0.1] rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-colors"
-                placeholder="6+ characters"
+                placeholder="6文字以上"
               />
             </div>
 
@@ -129,14 +133,14 @@ export default function SignupPage() {
               disabled={loading}
               className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/50 text-white font-semibold rounded-xl transition-colors"
             >
-              {loading ? 'Creating account...' : 'Create Account'}
+              {loading ? '登録中...' : 'アカウント作成'}
             </button>
           </form>
 
           <p className="text-center text-white/30 text-sm mt-6">
-            Already have an account?{' '}
+            既にアカウントをお持ちの方は{' '}
             <Link href="/login" className="text-blue-400 hover:text-blue-300 transition-colors">
-              Login
+              ログイン
             </Link>
           </p>
         </div>

@@ -9,6 +9,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -25,14 +26,18 @@ export default function LoginPage() {
       });
 
       if (signInError) {
-        setError(signInError.message);
+        if (signInError.message.includes('Invalid login credentials')) {
+          setError('メールアドレスまたはパスワードが正しくありません');
+        } else {
+          setError('ログインに失敗しました');
+        }
         return;
       }
 
       router.push('/operator');
       router.refresh();
     } catch {
-      setError('An unexpected error occurred');
+      setError('予期せぬエラーが発生しました');
     } finally {
       setLoading(false);
     }
@@ -49,7 +54,7 @@ export default function LoginPage() {
 
         {/* Login Card */}
         <div className="g-card p-6 md:p-8">
-          <h2 className="text-xl font-bold text-white mb-6 text-center">Login</h2>
+          <h2 className="text-xl font-bold text-white mb-6 text-center">ログイン</h2>
 
           <form onSubmit={handleLogin} className="space-y-4">
             {error && (
@@ -59,7 +64,7 @@ export default function LoginPage() {
             )}
 
             <div>
-              <label className="block text-white/50 text-xs font-medium mb-1.5">Email</label>
+              <label className="block text-white/50 text-xs font-medium mb-1.5">メールアドレス</label>
               <input
                 type="email"
                 value={email}
@@ -71,30 +76,40 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-white/50 text-xs font-medium mb-1.5">Password</label>
+              <label className="block text-white/50 text-xs font-medium mb-1.5">パスワード</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 className="w-full px-4 py-3 bg-white/[0.06] border border-white/[0.1] rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-colors"
-                placeholder="Password"
+                placeholder="パスワード"
               />
             </div>
+
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="w-4 h-4 rounded bg-white/[0.06] border border-white/[0.1] accent-blue-500"
+              />
+              <span className="text-white/40 text-sm">ログイン状態を維持する</span>
+            </label>
 
             <button
               type="submit"
               disabled={loading}
               className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/50 text-white font-semibold rounded-xl transition-colors"
             >
-              {loading ? 'Logging in...' : 'Login'}
+              {loading ? 'ログイン中...' : 'ログイン'}
             </button>
           </form>
 
           <p className="text-center text-white/30 text-sm mt-6">
-            Don&apos;t have an account?{' '}
+            アカウントをお持ちでない方は{' '}
             <Link href="/signup" className="text-blue-400 hover:text-blue-300 transition-colors">
-              Sign Up
+              新規登録
             </Link>
           </p>
         </div>

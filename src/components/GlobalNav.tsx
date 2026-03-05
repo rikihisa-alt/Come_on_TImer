@@ -107,9 +107,24 @@ export function GlobalNav() {
 
   if (isFs || isPreview) return null;
 
-  const allNavItems = auth?.role === 'owner'
-    ? [...NAV_ITEMS, { href: '/app/users', label: 'Users' }]
-    : NAV_ITEMS;
+  // Hide nav completely if not authenticated (except on login/signup pages where we show nothing)
+  const isAuthPage = pathname === '/login' || pathname === '/signup';
+  if (isAuthPage) return null;
+
+  // While loading auth state, show minimal nav
+  if (authLoading) {
+    return (
+      <nav className="g-topbar flex items-center justify-between px-3 md:px-5 py-2 md:py-3 border-b border-white/[0.06] sticky top-0 z-50">
+        <Link href="/" className="flex items-center gap-2 group shrink-0">
+          <span className="text-xl font-black text-blue-400 tracking-tight group-hover:text-blue-300 transition-colors">COME ON</span>
+          <span className="text-white/25 font-medium text-base">Timer</span>
+        </Link>
+      </nav>
+    );
+  }
+
+  // Not authenticated - hide nav entirely
+  if (!auth) return null;
 
   return (
     <nav className="g-topbar flex items-center justify-between px-3 md:px-5 py-2 md:py-3 border-b border-white/[0.06] sticky top-0 z-50">
@@ -120,7 +135,7 @@ export function GlobalNav() {
 
       {/* Desktop nav */}
       <div className="hidden md:flex items-center gap-1">
-        {allNavItems.map(item => (
+        {NAV_ITEMS.map(item => (
           <Link key={item.href} href={item.href}
             className={`nav-link ${pathname === item.href ? 'active' : ''}`}>
             {item.label}
@@ -128,30 +143,20 @@ export function GlobalNav() {
         ))}
       </div>
 
-      {/* Auth section (desktop) */}
+      {/* Auth section (desktop) - always show logout when authenticated */}
       <div className="hidden md:flex items-center gap-2 shrink-0">
-        {!authLoading && (
-          auth ? (
-            <>
-              <span className="text-white/40 text-xs">{auth.displayName}</span>
-              <button onClick={handleLogout}
-                className="px-3 py-1.5 text-xs text-white/40 hover:text-white/70 hover:bg-white/[0.06] rounded-lg transition-colors">
-                Logout
-              </button>
-            </>
-          ) : (
-            <Link href="/login" className="px-3 py-1.5 text-xs text-blue-400 hover:text-blue-300 transition-colors">
-              Login
-            </Link>
-          )
-        )}
+        <span className="text-white/40 text-xs">{auth.displayName}</span>
+        <button onClick={handleLogout}
+          className="px-3 py-1.5 text-xs text-white/40 hover:text-white/70 hover:bg-white/[0.06] rounded-lg transition-colors">
+          ログアウト
+        </button>
       </div>
 
       {/* Mobile hamburger */}
       <div className="md:hidden relative" ref={menuRef}>
         <button onClick={() => setMenuOpen(v => !v)}
           className="p-2 rounded-lg hover:bg-white/[0.08] text-white/50 transition-colors"
-          aria-label="Menu">
+          aria-label="メニュー">
           {menuOpen ? (
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -164,7 +169,7 @@ export function GlobalNav() {
         </button>
         {menuOpen && (
           <div className="absolute right-0 top-full mt-1 w-48 py-1 rounded-xl bg-[var(--sys-bg-from)] border border-white/[0.1] shadow-lg z-50 fade-in">
-            {allNavItems.map(item => (
+            {NAV_ITEMS.map(item => (
               <Link key={item.href} href={item.href}
                 className={`block px-4 py-2.5 text-sm font-medium transition-colors ${
                   pathname === item.href ? 'text-blue-400 bg-blue-500/10' : 'text-white/50 hover:text-white/80 hover:bg-white/[0.04]'
@@ -172,27 +177,13 @@ export function GlobalNav() {
                 {item.label}
               </Link>
             ))}
-            {/* Mobile auth */}
-            {!authLoading && (
-              auth ? (
-                <>
-                  <div className="border-t border-white/[0.06] my-1" />
-                  <div className="px-4 py-2 text-xs text-white/30">{auth.displayName}</div>
-                  <button onClick={handleLogout}
-                    className="block w-full text-left px-4 py-2.5 text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors">
-                    Logout
-                  </button>
-                </>
-              ) : (
-                <>
-                  <div className="border-t border-white/[0.06] my-1" />
-                  <Link href="/login"
-                    className="block px-4 py-2.5 text-sm font-medium text-blue-400 hover:bg-blue-500/10 transition-colors">
-                    Login
-                  </Link>
-                </>
-              )
-            )}
+            {/* Mobile auth - logout */}
+            <div className="border-t border-white/[0.06] my-1" />
+            <div className="px-4 py-2 text-xs text-white/30">{auth.displayName}</div>
+            <button onClick={handleLogout}
+              className="block w-full text-left px-4 py-2.5 text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors">
+              ログアウト
+            </button>
           </div>
         )}
       </div>
