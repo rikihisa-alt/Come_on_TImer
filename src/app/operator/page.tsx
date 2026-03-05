@@ -81,24 +81,41 @@ export default function OperatorPage() {
 }
 
 function TournamentsTab() {
-  const { tournaments, addTournament } = useStore();
+  const { tournaments, addTournament, removeTournament } = useStore();
   const [selectedId, setSelectedId] = useState(tournaments[0]?.id || '');
   useEffect(() => { if (!selectedId && tournaments.length) setSelectedId(tournaments[0].id); }, [tournaments, selectedId]);
+  useEffect(() => {
+    if (tournaments.length && !tournaments.find(t => t.id === selectedId)) setSelectedId(tournaments[0]?.id || '');
+  }, [tournaments, selectedId]);
+  const handleDelete = (id: string) => {
+    removeTournament(id);
+    if (id === selectedId) {
+      const remaining = tournaments.filter(t => t.id !== id);
+      setSelectedId(remaining[0]?.id || '');
+    }
+  };
   return (
     <div className="space-y-4 fade-in">
       <div className="flex items-center gap-2 flex-wrap">
         {tournaments.map(t => (
-          <button key={t.id} onClick={() => setSelectedId(t.id)}
-            className={`px-3 py-1.5 rounded-xl text-sm font-medium transition-all duration-200 ${selectedId === t.id ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-white/[0.05] text-white/40 hover:text-white/60 border border-white/[0.08] hover:border-white/[0.15]'}`}>
-            {t.name}
-            <span className={`ml-2 text-xs ${t.status === 'running' ? 'text-green-400' : t.status === 'paused' ? 'text-amber-400' : 'text-white/20'}`}>
-              {t.status === 'running' ? 'LIVE' : t.status === 'paused' ? 'PAUSED' : t.status === 'finished' ? 'END' : ''}
-            </span>
-          </button>
+          <div key={t.id} className="flex items-center gap-0">
+            <button onClick={() => setSelectedId(t.id)}
+              className={`px-3 py-1.5 rounded-l-xl text-sm font-medium transition-all duration-200 ${selectedId === t.id ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30 border-r-0' : 'bg-white/[0.05] text-white/40 hover:text-white/60 border border-white/[0.08] hover:border-white/[0.15] border-r-0'}`}>
+              {t.name}
+              <span className={`ml-2 text-xs ${t.status === 'running' ? 'text-green-400' : t.status === 'paused' ? 'text-amber-400' : 'text-white/20'}`}>
+                {t.status === 'running' ? 'LIVE' : t.status === 'paused' ? 'PAUSED' : t.status === 'finished' ? 'END' : ''}
+              </span>
+            </button>
+            <button onClick={() => { if (confirm(`${t.name} を削除しますか？`)) handleDelete(t.id); }}
+              className={`px-1.5 py-1.5 rounded-r-xl text-sm transition-all duration-200 hover:text-red-400 ${selectedId === t.id ? 'bg-blue-500/20 text-blue-400/40 border border-blue-500/30 border-l-0' : 'bg-white/[0.05] text-white/20 border border-white/[0.08] hover:border-white/[0.15] border-l-0'}`}
+              title="Delete">
+              ×
+            </button>
+          </div>
         ))}
         <button onClick={() => { const id = addTournament(`Tournament ${tournaments.length + 1}`); setSelectedId(id); }} className="btn btn-ghost btn-sm">+ Add</button>
       </div>
-      {selectedId && <TournamentEditor id={selectedId} />}
+      {selectedId && <TournamentEditor key={selectedId} id={selectedId} />}
     </div>
   );
 }
@@ -908,10 +925,17 @@ function CashTab() {
     <div className="space-y-4 fade-in">
       <div className="flex items-center gap-2 flex-wrap">
         {cashGames.map(c => (
-          <button key={c.id} onClick={() => setSelectedId(c.id)}
-            className={`px-3 py-1.5 rounded-xl text-sm font-medium transition-all duration-200 ${selectedId === c.id ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-white/[0.05] text-white/40 border border-white/[0.08] hover:border-white/[0.15]'}`}>
-            {c.name}{c.status === 'running' && <span className="ml-2 text-xs text-green-400">LIVE</span>}
-          </button>
+          <div key={c.id} className="flex items-center gap-0">
+            <button onClick={() => setSelectedId(c.id)}
+              className={`px-3 py-1.5 rounded-l-xl text-sm font-medium transition-all duration-200 ${selectedId === c.id ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30 border-r-0' : 'bg-white/[0.05] text-white/40 border border-white/[0.08] hover:border-white/[0.15] border-r-0'}`}>
+              {c.name}{c.status === 'running' && <span className="ml-2 text-xs text-green-400">LIVE</span>}
+            </button>
+            <button onClick={() => { if (confirm(`${c.name} を削除しますか？`)) handleDelete(c.id); }}
+              className={`px-1.5 py-1.5 rounded-r-xl text-sm transition-all duration-200 hover:text-red-400 ${selectedId === c.id ? 'bg-blue-500/20 text-blue-400/40 border border-blue-500/30 border-l-0' : 'bg-white/[0.05] text-white/20 border border-white/[0.08] hover:border-white/[0.15] border-l-0'}`}
+              title="Delete">
+              ×
+            </button>
+          </div>
         ))}
         <button onClick={() => { const id = addCashGame(`Ring ${cashGames.length + 1}`); setSelectedId(id); }} className="btn btn-ghost btn-sm">+ Add</button>
       </div>
