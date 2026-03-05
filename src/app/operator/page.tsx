@@ -493,7 +493,14 @@ function TournamentStats({ tournament: t }: { tournament: Tournament }) {
       <div className="border-t border-white/[0.06] pt-3 space-y-2">
         <div className="text-xs text-white/25 font-semibold mb-1">Entry</div>
         <CountRow label="Entry" count={t.initialEntries} countKey="initialEntries" />
-        <CountRow label="Re-Entry" count={t.reEntryCount} countKey="reEntryCount" chips={t.reEntryChips} chipsKey="reEntryChips" />
+        {/* Re-Entry: +1 → Eliminated も +1 連動（リエントリー＝飛んだ人が再参加） */}
+        <div className="flex items-center gap-0.5">
+          <span className="text-xs text-white/30 w-14 shrink-0">Re-Entry</span>
+          <button className="btn btn-ghost btn-sm px-1" onClick={() => { if (t.reEntryCount > 0) up({ reEntryCount: t.reEntryCount - 1, eliminated: Math.max(0, elim - 1) } as Partial<Tournament>); }}>-</button>
+          <input type="text" inputMode="numeric" className="input input-sm flex-1 min-w-[4rem] text-center" value={t.reEntryCount} onChange={e => { const v = Math.max(0, Number(toHalfWidthNumber(e.target.value)) || 0); const delta = v - t.reEntryCount; up({ reEntryCount: v, eliminated: Math.max(0, elim + delta) } as Partial<Tournament>); }} />
+          <button className="btn btn-ghost btn-sm px-1" onClick={() => up({ reEntryCount: t.reEntryCount + 1, eliminated: elim + 1 } as Partial<Tournament>)}>+</button>
+          <input type="text" inputMode="numeric" className="input input-sm w-14 text-center px-0" value={t.reEntryChips || 0} placeholder="chips" onChange={e => { const v = toHalfWidthNumber(e.target.value); up({ reEntryChips: Math.max(0, Number(v) || 0) }); }} />
+        </div>
         <CountRow label="Eliminated" count={elim} countKey="eliminated" />
       </div>
 
