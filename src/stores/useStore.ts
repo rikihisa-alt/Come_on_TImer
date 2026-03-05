@@ -563,10 +563,17 @@ export const useStore = create<AppState>()(
           splitSectionLayout: cashGame.splitSectionLayout ? { ...cashGame.splitSectionLayout } : undefined,
         } : p) }));
       },
-      broadcastAll: () => {
-        const s = get();
-        broadcast('FULL_SYNC', { tournaments: s.tournaments, cashGames: s.cashGames, displays: s.displays, themes: s.themes, sound: s.sound, displayToggles: s.displayToggles, defaultThemeId: s.defaultThemeId, systemStyle: s.systemStyle, blindTemplates: s.blindTemplates, tournamentPresets: s.tournamentPresets, cashPresets: s.cashPresets });
-      },
+      broadcastAll: (() => {
+        let timer: ReturnType<typeof setTimeout> | null = null;
+        return () => {
+          if (timer) return; // Already scheduled
+          timer = setTimeout(() => {
+            timer = null;
+            const s = get();
+            broadcast('FULL_SYNC', { tournaments: s.tournaments, cashGames: s.cashGames, displays: s.displays, themes: s.themes, sound: s.sound, displayToggles: s.displayToggles, defaultThemeId: s.defaultThemeId, systemStyle: s.systemStyle, blindTemplates: s.blindTemplates, tournamentPresets: s.tournamentPresets, cashPresets: s.cashPresets });
+          }, 100);
+        };
+      })(),
       // Apply remote store data (from Supabase) without triggering broadcastAll
       _hydrateFromRemote: (data: Record<string, unknown>) => {
         const keys = ['tournaments', 'cashGames', 'displays', 'themes', 'sound', 'displayToggles', 'defaultThemeId', 'systemStyle', 'blindTemplates', 'tournamentPresets', 'cashPresets'] as const;
