@@ -13,11 +13,6 @@ const NAV_ITEMS = [
   { href: '/display/split', label: 'Split' },
 ];
 
-type AuthInfo = {
-  displayName: string;
-  role: string;
-} | null;
-
 export function GlobalNav() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -26,55 +21,17 @@ export function GlobalNav() {
   const [isFs, setIsFs] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const [auth, setAuth] = useState<AuthInfo>(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  const [authReady, setAuthReady] = useState(false);
 
-  // Fetch auth state
   useEffect(() => {
     const supabase = createClient();
-    let cancelled = false;
-
-    const fetchAuth = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (cancelled) return;
-
-        if (user) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('display_name, role')
-            .eq('id', user.id)
-            .single();
-
-          if (!cancelled) {
-            setAuth(profile ? { displayName: profile.display_name, role: profile.role } : null);
-          }
-        } else {
-          if (!cancelled) setAuth(null);
-        }
-      } catch {
-        if (!cancelled) setAuth(null);
-      } finally {
-        if (!cancelled) setAuthLoading(false);
-      }
-    };
-
-    fetchAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
-      fetchAuth();
-    });
-
-    return () => {
-      cancelled = true;
-      subscription.unsubscribe();
-    };
+    // Just check if session exists — middleware already guarantees auth on protected pages
+    supabase.auth.getUser().then(() => setAuthReady(true));
   }, []);
 
   const handleLogout = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
-    setAuth(null);
     router.push('/login');
     router.refresh();
   };
@@ -105,21 +62,20 @@ export function GlobalNav() {
   // Close menu on route change
   useEffect(() => { setMenuOpen(false); }, [pathname]);
 
-  // Hide nav: fullscreen, preview, auth pages, or not logged in
+  // Only hide: fullscreen or login/signup pages
   if (isFs || isPreview) return null;
   const isAuthPage = pathname === '/login' || pathname === '/signup';
   if (isAuthPage) return null;
-  if (authLoading || !auth) return null;
 
   return (
     <nav className="g-topbar flex items-center justify-between px-3 md:px-5 py-2 md:py-3 border-b border-white/[0.06] sticky top-0 z-50">
-      {/* Logo */}
+      {/* Left: Logo */}
       <Link href="/" className="flex items-center gap-2 group shrink-0">
         <span className="text-xl font-black text-blue-400 tracking-tight group-hover:text-blue-300 transition-colors">COME ON</span>
         <span className="text-white/25 font-medium text-base">Timer</span>
       </Link>
 
-      {/* Desktop nav links */}
+      {/* Center: Desktop nav links — always visible */}
       <div className="hidden md:flex items-center gap-1">
         {NAV_ITEMS.map(item => (
           <Link key={item.href} href={item.href}
@@ -129,13 +85,14 @@ export function GlobalNav() {
         ))}
       </div>
 
-      {/* Right side: logout */}
-      <div className="flex items-center gap-2 shrink-0">
-        <span className="hidden md:inline text-white/40 text-xs">{auth.displayName}</span>
-        <button onClick={handleLogout}
-          className="px-3 py-1.5 text-xs text-white/40 hover:text-white/70 hover:bg-white/[0.06] rounded-lg transition-colors">
-          ログアウト
-        </button>
+      {/* Right: Logout + Mobile hamburger */}
+      <div className="flex items-center gap-1 shrink-0">
+        {authReady && (
+          <button onClick={handleLogout}
+            className="px-3 py-1.5 text-xs text-white/40 hover:text-white/70 hover:bg-white/[0.06] rounded-lg transition-colors">
+            ログアウト
+          </button>
+        )}
 
         {/* Mobile hamburger */}
         <div className="md:hidden relative" ref={menuRef}>
@@ -163,7 +120,6 @@ export function GlobalNav() {
                 </Link>
               ))}
               <div className="border-t border-white/[0.06] my-1" />
-              <div className="px-4 py-2 text-xs text-white/30">{auth.displayName}</div>
               <button onClick={handleLogout}
                 className="block w-full text-left px-4 py-2.5 text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors">
                 ログアウト
