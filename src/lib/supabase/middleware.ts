@@ -13,7 +13,7 @@ export async function updateSession(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
+          cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
           supabaseResponse = NextResponse.next({ request });
@@ -29,17 +29,17 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-  // Protected routes: /operator, /app/*
-  const isProtected = pathname.startsWith('/operator') || pathname.startsWith('/app');
-  // Auth pages: /login, /signup
+  // Auth pages: /login, /signup — accessible without login
   const isAuthPage = pathname === '/login' || pathname === '/signup';
 
-  if (!user && isProtected) {
+  // Not logged in and not on auth page → redirect to /login
+  if (!user && !isAuthPage) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     return NextResponse.redirect(url);
   }
 
+  // Logged in and on auth page → redirect to /operator
   if (user && isAuthPage) {
     const url = request.nextUrl.clone();
     url.pathname = '/operator';
