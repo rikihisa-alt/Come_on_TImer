@@ -28,7 +28,24 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {children}
         <script
           dangerouslySetInnerHTML={{
-            __html: `if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js')}`,
+            __html: `
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/sw.js').then(function(reg){
+    reg.addEventListener('updatefound',function(){
+      var nw=reg.installing;
+      if(nw){nw.addEventListener('statechange',function(){
+        if(nw.state==='activated'){window.location.reload()}
+      })}
+    });
+  });
+  navigator.serviceWorker.addEventListener('message',function(e){
+    if(e.data&&e.data.type==='SW_UPDATED'){window.location.reload()}
+  });
+  var refreshing=false;
+  navigator.serviceWorker.addEventListener('controllerchange',function(){
+    if(!refreshing){refreshing=true;window.location.reload()}
+  });
+}`,
           }}
         />
       </body>
