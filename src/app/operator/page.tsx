@@ -17,8 +17,8 @@ function MobileBottomTabs({ tab, switchTab }: { tab: string; switchTab: (t: type
   useEffect(() => { setMounted(true); }, []);
   if (!mounted) return null;
   return createPortal(
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex px-3 py-2.5 gap-1.5 border-t border-white/[0.06] overflow-x-auto"
-      style={{ background: 'var(--tab-bg, var(--sys-bg-from))', paddingBottom: 'max(0.625rem, env(safe-area-inset-bottom))' }}>
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex px-3 py-2.5 gap-1.5 border-t border-white/[0.1] overflow-x-auto"
+      style={{ background: '#0a0e1a', paddingBottom: 'max(0.625rem, env(safe-area-inset-bottom))' }}>
       {TAB_ORDER.map(t => (
         <button key={t} onClick={() => switchTab(t)}
           className={`flex-1 shrink-0 py-3 rounded-xl text-sm font-semibold transition-all duration-200 whitespace-nowrap ${tab === t ? 'border' : 'hover:bg-white/[0.04] border border-transparent'}`}
