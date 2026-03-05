@@ -21,17 +21,28 @@ export function GlobalNav() {
   const [isFs, setIsFs] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const [authReady, setAuthReady] = useState(false);
+  const [userProfile, setUserProfile] = useState<{ display_name: string; role: string } | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
-    // Just check if session exists — middleware already guarantees auth on protected pages
-    supabase.auth.getUser().then(() => setAuthReady(true));
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        supabase
+          .from('profiles')
+          .select('display_name, role')
+          .eq('id', user.id)
+          .single()
+          .then(({ data }) => {
+            if (data) setUserProfile(data);
+          });
+      }
+    });
   }, []);
 
   const handleLogout = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
+    setUserProfile(null);
     router.push('/login');
     router.refresh();
   };
@@ -75,7 +86,7 @@ export function GlobalNav() {
         <span className="text-white/25 font-medium text-base">Timer</span>
       </Link>
 
-      {/* Center: Desktop nav links — always visible */}
+      {/* Center: Desktop nav links */}
       <div className="hidden md:flex items-center gap-1">
         {NAV_ITEMS.map(item => (
           <Link key={item.href} href={item.href}
@@ -85,11 +96,27 @@ export function GlobalNav() {
         ))}
       </div>
 
-      {/* Right: Logout + Mobile hamburger */}
+      {/* Right: User info + Logout + Mobile hamburger */}
       <div className="flex items-center gap-1 shrink-0">
-        {authReady && (
+        {/* User badge — links to account settings */}
+        {userProfile && (
+          <Link
+            href="/app/account"
+            className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg hover:bg-white/[0.06] transition-colors group"
+          >
+            <svg className="w-4 h-4 text-white/40 group-hover:text-blue-400 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+            </svg>
+            <span className="text-white/50 text-xs group-hover:text-white/70 transition-colors max-w-[80px] md:max-w-[120px] truncate">
+              {userProfile.display_name}
+            </span>
+          </Link>
+        )}
+
+        {/* Logout button (desktop only) */}
+        {userProfile && (
           <button onClick={handleLogout}
-            className="px-3 py-1.5 text-xs text-white/40 hover:text-white/70 hover:bg-white/[0.06] rounded-lg transition-colors">
+            className="hidden md:block px-3 py-1.5 text-xs text-white/40 hover:text-white/70 hover:bg-white/[0.06] rounded-lg transition-colors">
             ログアウト
           </button>
         )}
@@ -110,7 +137,30 @@ export function GlobalNav() {
             )}
           </button>
           {menuOpen && (
-            <div className="absolute right-0 top-full mt-1 w-48 py-1 rounded-xl bg-[var(--sys-bg-from)] border border-white/[0.1] shadow-lg z-50 fade-in">
+            <div className="absolute right-0 top-full mt-1 w-52 py-1 rounded-xl bg-[var(--sys-bg-from)] border border-white/[0.1] shadow-lg z-50 fade-in">
+              {/* Account section */}
+              {userProfile && (
+                <>
+                  <Link href="/app/account"
+                    className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-white/60 hover:text-white/90 hover:bg-white/[0.04] transition-colors">
+                    <svg className="w-4 h-4 text-blue-400 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                    </svg>
+                    アカウント設定
+                  </Link>
+                  {userProfile.role === 'owner' && (
+                    <Link href="/app/users"
+                      className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-white/60 hover:text-white/90 hover:bg-white/[0.04] transition-colors">
+                      <svg className="w-4 h-4 text-blue-400 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+                      </svg>
+                      従業員管理
+                    </Link>
+                  )}
+                  <div className="border-t border-white/[0.06] my-1" />
+                </>
+              )}
+              {/* Nav links */}
               {NAV_ITEMS.map(item => (
                 <Link key={item.href} href={item.href}
                   className={`block px-4 py-2.5 text-sm font-medium transition-colors ${
