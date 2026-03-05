@@ -64,6 +64,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 4. Initialize org_store with empty data (will be populated on first sync)
+    await getSupabaseAdmin()
+      .from('org_store')
+      .insert({
+        organization_id: org.id,
+        store_data: {},
+        updated_by: userId,
+      });
+
     return NextResponse.json({ success: true, userId });
   } catch {
     return NextResponse.json(

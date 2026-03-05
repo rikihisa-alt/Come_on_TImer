@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import './globals.css';
 import { GlobalNav } from '@/components/GlobalNav';
 import { SystemStyleProvider } from '@/components/SystemStyleProvider';
+import { StoreSync } from '@/components/StoreSync';
 
 export const metadata: Metadata = {
   title: 'COME ON Timer - ポーカータイマー',
@@ -23,6 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="antialiased">
         <SystemStyleProvider />
         <Suspense><GlobalNav /></Suspense>
+        <StoreSync />
         {children}
         <script
           dangerouslySetInnerHTML={{

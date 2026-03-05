@@ -75,6 +75,9 @@ interface AppState {
   resetCashSplitSectionLayout: (id: string) => void;
   applyUnifiedPreset: (presetId: string) => void;
   broadcastAll: () => void;
+  // Remote sync helpers
+  _hydrateFromRemote: (data: Record<string, unknown>) => void;
+  _getPersistedState: () => Record<string, unknown>;
 }
 
 function mkTournament(name?: string, levels?: BlindLevel[]): Tournament {
@@ -563,6 +566,27 @@ export const useStore = create<AppState>()(
       broadcastAll: () => {
         const s = get();
         broadcast('FULL_SYNC', { tournaments: s.tournaments, cashGames: s.cashGames, displays: s.displays, themes: s.themes, sound: s.sound, displayToggles: s.displayToggles, defaultThemeId: s.defaultThemeId, systemStyle: s.systemStyle, blindTemplates: s.blindTemplates, tournamentPresets: s.tournamentPresets, cashPresets: s.cashPresets });
+      },
+      // Apply remote store data (from Supabase) without triggering broadcastAll
+      _hydrateFromRemote: (data: Record<string, unknown>) => {
+        const keys = ['tournaments', 'cashGames', 'displays', 'themes', 'sound', 'displayToggles', 'defaultThemeId', 'systemStyle', 'blindTemplates', 'tournamentPresets', 'cashPresets'] as const;
+        const patch: Record<string, unknown> = {};
+        for (const key of keys) {
+          if (data[key] !== undefined) {
+            patch[key] = data[key];
+          }
+        }
+        if (Object.keys(patch).length > 0) {
+          set(patch as Partial<AppState>);
+          // Also broadcast to other tabs on the same device
+          const s = get();
+          broadcast('FULL_SYNC', { tournaments: s.tournaments, cashGames: s.cashGames, displays: s.displays, themes: s.themes, sound: s.sound, displayToggles: s.displayToggles, defaultThemeId: s.defaultThemeId, systemStyle: s.systemStyle, blindTemplates: s.blindTemplates, tournamentPresets: s.tournamentPresets, cashPresets: s.cashPresets });
+        }
+      },
+      // Get the persisted portion of state (for saving to remote)
+      _getPersistedState: () => {
+        const s = get();
+        return { tournaments: s.tournaments, cashGames: s.cashGames, displays: s.displays, themes: s.themes, sound: s.sound, displayToggles: s.displayToggles, defaultThemeId: s.defaultThemeId, systemStyle: s.systemStyle, blindTemplates: s.blindTemplates, tournamentPresets: s.tournamentPresets, cashPresets: s.cashPresets };
       },
     }),
     {
