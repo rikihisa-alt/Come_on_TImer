@@ -24,23 +24,36 @@ export function GlobalNav() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userProfile, setUserProfile] = useState<{ display_name: string; role: string } | null>(null);
 
-  // Fetch profile via API route (bypasses RLS issues)
+  // Fetch profile via API route
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) {
+
+    const fetchProfile = () => {
+      fetch('/api/auth/profile')
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+          if (data && data.display_name) {
+            setIsLoggedIn(true);
+            setUserProfile({ display_name: data.display_name, role: data.role });
+          }
+        })
+        .catch(() => { /* ignore */ });
+    };
+
+    // Listen for auth state changes (handles login, logout, token refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') && session) {
         setIsLoggedIn(true);
-        // Fetch profile via server API (reliable, uses server-side auth)
-        fetch('/api/auth/profile')
-          .then(res => res.ok ? res.json() : null)
-          .then(data => {
-            if (data && data.display_name) {
-              setUserProfile({ display_name: data.display_name, role: data.role });
-            }
-          })
-          .catch(() => { /* profile fetch failed, but user is still logged in */ });
+        fetchProfile();
+      } else if (event === 'SIGNED_OUT') {
+        setIsLoggedIn(false);
+        setUserProfile(null);
       }
     });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const handleLogout = async () => {
