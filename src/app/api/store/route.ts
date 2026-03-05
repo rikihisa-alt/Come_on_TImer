@@ -12,8 +12,10 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get user's organization_id from profile
-    const { data: profile, error: profileError } = await supabase
+    const admin = getSupabaseAdmin();
+
+    // Get user's organization_id from profile (use admin to bypass RLS)
+    const { data: profile, error: profileError } = await admin
       .from('profiles')
       .select('organization_id')
       .eq('id', user.id)
@@ -23,8 +25,8 @@ export async function GET() {
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
     }
 
-    // Fetch org store
-    const { data: orgStore, error: storeError } = await supabase
+    // Fetch org store (use admin to bypass RLS)
+    const { data: orgStore, error: storeError } = await admin
       .from('org_store')
       .select('store_data, updated_at')
       .eq('organization_id', profile.organization_id)
@@ -63,8 +65,10 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Invalid store_data' }, { status: 400 });
     }
 
-    // Get user's organization_id
-    const { data: profile, error: profileError } = await supabase
+    const admin = getSupabaseAdmin();
+
+    // Get user's organization_id (use admin to bypass RLS)
+    const { data: profile, error: profileError } = await admin
       .from('profiles')
       .select('organization_id')
       .eq('id', user.id)
@@ -74,8 +78,8 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
     }
 
-    // Upsert using admin client (RLS INSERT is blocked for regular users)
-    const { error: upsertError } = await getSupabaseAdmin()
+    // Upsert using admin client
+    const { error: upsertError } = await admin
       .from('org_store')
       .upsert({
         organization_id: profile.organization_id,
