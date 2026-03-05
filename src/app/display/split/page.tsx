@@ -13,6 +13,13 @@ import { AbsoluteSection } from '@/components/AbsoluteSection';
 import { DisplayWrapper } from '@/components/DisplayWrapper';
 import { RoomSync } from '@/components/RoomSync';
 
+function ordinalLabel(n: number): string {
+  if (n === 1) return '1st';
+  if (n === 2) return '2nd';
+  if (n === 3) return '3rd';
+  return `${n}th`;
+}
+
 /* ═══ Tournament Panel (AbsoluteSection layout) ═══ */
 function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutOverride }: {
   tournament: Tournament;
@@ -70,7 +77,9 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
   const tds = (timerPos.timerDigitScale ?? 1) * fs;
   const bds = (timerPos.blindsScale ?? 1) * fs;
   const ads = (timerPos.anteScale ?? 1) * fs;
-  const activePlayers = tournament.initialEntries + tournament.reEntryCount;
+  const elim = tournament.eliminated || 0;
+  const activePlayers = Math.max(0, tournament.initialEntries + tournament.reEntryCount - elim);
+  const totalEntries = tournament.initialEntries + tournament.reEntryCount;
   const totalChips = tournament.initialEntries * tournament.startingChips
     + tournament.reEntryCount * tournament.reEntryChips
     + tournament.rebuyCount * tournament.rebuyChips
@@ -100,7 +109,7 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
             <div className={`text-[7px] lg:text-[9px] uppercase tracking-wider font-semibold ${layout.players.textColor ? '' : 'text-white/30'}`}
               style={layout.players.textColor ? { color: layout.players.textColor, opacity: 0.5 } : undefined}>Players</div>
             <div className={`text-xs lg:text-base font-bold timer-font ${layout.players.textColor ? '' : 'text-white/65'}`}
-              style={layout.players.textColor ? { color: layout.players.textColor } : undefined}>{activePlayers}</div>
+              style={layout.players.textColor ? { color: layout.players.textColor } : undefined}>{activePlayers}/{totalEntries}</div>
           </div>
         </AbsoluteSection>
       )}
@@ -156,8 +165,8 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
                 {isBrk ? (
                   <span className="text-green-400 text-base lg:text-xl font-black tracking-[0.15em]">BREAK</span>
                 ) : (
-                  <span className={`text-xs lg:text-sm font-black tracking-[0.2em] ${tc ? '' : 'text-white/20'}`}
-                    style={tc ? { color: tc, opacity: 0.4 } : undefined}>Level {cur?.level || '-'}</span>
+                  <span className={`text-xs lg:text-sm font-black tracking-[0.2em] ${tc ? '' : 'text-white/60'}`}
+                    style={tc ? { color: tc } : undefined}>Level {cur?.level || '-'}</span>
                 )}
               </div>
             )}
@@ -183,7 +192,7 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
               <div className="mt-1 font-black timer-font whitespace-nowrap" style={{ color: tc || pc, fontSize: `${1.8 * bds}vw` }}>
                 {cur.smallBlind.toLocaleString()}/{cur.bigBlind.toLocaleString()}
                 {cur.ante > 0 && (
-                  <span style={tc ? { color: tc, opacity: 0.4 } : undefined} className={tc ? 'ml-0.5' : 'text-white/30 ml-0.5'}>(Ante {cur.ante.toLocaleString()})</span>
+                  <span style={tc ? { color: tc, opacity: (timerPos.anteOpacity ?? 40) / 100 } : { opacity: (timerPos.anteOpacity ?? 40) / 100 }} className={tc ? 'ml-0.5' : 'text-white ml-0.5'}>(Ante {cur.ante.toLocaleString()})</span>
                 )}
               </div>
             )}
@@ -201,7 +210,7 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
             <span className={`text-[10px] lg:text-xs font-bold timer-font ${layout.nextLevel.textColor ? '' : 'text-white/40'}`}
               style={layout.nextLevel.textColor ? { color: layout.nextLevel.textColor } : undefined}>
               {nextPlay.smallBlind.toLocaleString()}/{nextPlay.bigBlind.toLocaleString()}
-              {nextPlay.ante > 0 && <span className={layout.nextLevel.textColor ? 'ml-0.5 opacity-50' : 'text-white/25 ml-0.5'}>(Ante {nextPlay.ante.toLocaleString()})</span>}
+              {nextPlay.ante > 0 && <span className="ml-0.5" style={{ opacity: (timerPos.anteOpacity ?? 40) / 100 }}>(Ante {nextPlay.ante.toLocaleString()})</span>}
             </span>
           </div>
         </AbsoluteSection>
@@ -244,14 +253,16 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
       {/* Prize Table */}
       {dt.showPrizeStructure && tournament.prizeStructure.some(p => p.label) && (
         <AbsoluteSection pos={layout.prizeTable}>
-          <div className="g-card-inner p-2 h-full overflow-auto">
-            <div className={`text-[7px] uppercase tracking-wider font-semibold mb-1 text-center ${layout.prizeTable.textColor ? '' : 'text-white/30'}`}
+          <div className="g-card-inner p-2 h-full flex flex-col">
+            <div className={`text-[7px] uppercase tracking-wider font-semibold mb-1 text-center shrink-0 ${layout.prizeTable.textColor ? '' : 'text-white/30'}`}
               style={layout.prizeTable.textColor ? { color: layout.prizeTable.textColor, opacity: 0.5 } : undefined}>Prize</div>
-            <div className="space-y-0.5">
+            <div className="flex-1 flex flex-col justify-evenly min-h-0">
               {tournament.prizeStructure.filter(p => p.label).map(p => (
-                <div key={p.place} className="flex items-center justify-between text-[10px] gap-1">
-                  <span className={layout.prizeTable.textColor ? '' : 'text-white/40'}
-                    style={layout.prizeTable.textColor ? { color: layout.prizeTable.textColor, opacity: 0.5 } : undefined}>{p.place}位</span>
+                <div key={p.place} className="flex items-center justify-between text-[10px] gap-1 px-1">
+                  <span className={`shrink-0 ${layout.prizeTable.textColor ? '' : 'text-white/40'}`}
+                    style={layout.prizeTable.textColor ? { color: layout.prizeTable.textColor, opacity: 0.5 } : undefined}>
+                    {(dt.prizeLabelFormat || 'jp') === 'ordinal' ? ordinalLabel(p.place) : `${p.place}位`}
+                  </span>
                   <span className="font-bold timer-font truncate" style={{ color: layout.prizeTable.textColor || (p.place === 1 ? pc : 'rgba(255,255,255,0.5)') }}>
                     {p.label}
                   </span>

@@ -66,6 +66,7 @@ export type SectionPosition = {
   timerDigitScale?: number;
   blindsScale?: number;
   anteScale?: number;
+  anteOpacity?: number;  // 0〜100 (default 40)
   textColor?: string;
   // F2: フレーム（枠）カスタマイズ
   frameColor?: string;      // 枠の色 (hex e.g. '#ff0000')
@@ -259,6 +260,7 @@ export type DisplayToggles = {
   tickerText: string;
   tickerSpeed: number;
   backgroundImageUrl: string;
+  prizeLabelFormat: 'ordinal' | 'jp';  // 'ordinal' = 1st/2nd, 'jp' = 1位/2位
 };
 
 export type AspectRatioMode = '16:9' | '4:3' | 'panorama' | 'zoom';

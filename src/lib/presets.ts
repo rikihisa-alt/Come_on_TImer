@@ -225,6 +225,7 @@ export const DEFAULT_DISPLAY_TOGGLES: DisplayToggles = {
   showCashName: true, showCashRate: true, showCashMemo: true, showCashTimer: true,
   showCashPlayers: false, showCashChipInfo: false, showCashNextBlinds: true,
   tickerText: '', tickerSpeed: 25, backgroundImageUrl: '',
+  prizeLabelFormat: 'jp',
 };
 
 // ====================================

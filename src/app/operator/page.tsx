@@ -445,7 +445,7 @@ function TournamentStats({ tournament: t }: { tournament: Tournament }) {
   const totalPlayLevels = t.levels.filter(l => l.type === 'play').length;
   const elim = t.eliminated || 0;
   const activePlayers = Math.max(0, t.initialEntries + t.reEntryCount - elim);
-  const totalEntries = t.initialEntries + t.reEntryCount + t.rebuyCount; // アドオン除外
+  const totalEntries = t.initialEntries + t.reEntryCount; // リバイ・アドオン除外
   const totalChips = t.initialEntries * t.startingChips
     + t.reEntryCount * t.reEntryChips
     + t.rebuyCount * t.rebuyChips
@@ -679,6 +679,19 @@ function TogglesPanel({ timerId, timerType }: { timerId: string; timerType: 'tou
           )}
         </div>
       </div>
+
+      {/* プライズ表記フォーマット */}
+      {timerType === 'tournament' && (
+        <div className="border-t border-white/[0.06] pt-3">
+          <div className="text-xs text-white/30 font-semibold uppercase tracking-wider mb-2">Prize Label Format</div>
+          <div className="flex gap-2">
+            {([['jp', '1位 / 2位 / 3位'], ['ordinal', '1st / 2nd / 3rd']] as const).map(([val, label]) => (
+              <button key={val} className={`btn btn-sm flex-1 ${(dt.prizeLabelFormat || 'jp') === val ? 'bg-blue-600 text-white' : 'btn-ghost text-white/40'}`}
+                onClick={() => up({ prizeLabelFormat: val })}>{label}</button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1241,7 +1254,7 @@ function GenericLayoutEditor<T extends string>({
     setDragging(null); dragStartRef.current = null;
   };
 
-  const updateField = (field: 'x' | 'y' | 'w' | 'h' | 'fontSize' | 'timerDigitScale' | 'blindsScale' | 'anteScale' | 'frameVisibility', val: number) => {
+  const updateField = (field: 'x' | 'y' | 'w' | 'h' | 'fontSize' | 'timerDigitScale' | 'blindsScale' | 'anteScale' | 'anteOpacity' | 'frameVisibility', val: number) => {
     if (!selected) return;
     const newPos = { ...localPositions[selected], [field]: val };
     setLocalPositions(prev => ({ ...prev, [selected as T]: newPos }));
@@ -1415,6 +1428,14 @@ function GenericLayoutEditor<T extends string>({
                 <label className="text-xs text-white/20 block mb-0.5">Ante</label>
                 <input type="number" step={0.1} min={0.3} max={3.0} className="input input-sm text-center"
                   value={localPositions[selected!].anteScale ?? 1.0} onChange={e => updateField('anteScale', +e.target.value)} />
+              </div>
+            </div>
+            <div className="mt-2">
+              <label className="text-xs text-white/20 block mb-0.5">Ante Opacity (0-100)</label>
+              <div className="flex items-center gap-2">
+                <input type="range" min={0} max={100} step={5} className="flex-1 accent-blue-500"
+                  value={localPositions[selected!].anteOpacity ?? 40} onChange={e => updateField('anteOpacity', +e.target.value)} />
+                <span className="text-xs text-white/40 w-8 text-right">{localPositions[selected!].anteOpacity ?? 40}%</span>
               </div>
             </div>
           </div>

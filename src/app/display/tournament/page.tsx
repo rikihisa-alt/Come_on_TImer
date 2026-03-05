@@ -70,17 +70,26 @@ function GlassStat({ label, value, accent, textColor }: { label: string; value: 
 }
 
 /* ── Prize Table ── */
-function PrizeTable({ tournament, primaryColor, textColor }: { tournament: Tournament; primaryColor: string; textColor?: string }) {
-  const hasAny = tournament.prizeStructure.some(p => p.label);
-  if (tournament.prizeStructure.length === 0 || !hasAny) return null;
+function ordinalLabel(n: number): string {
+  if (n === 1) return '1st';
+  if (n === 2) return '2nd';
+  if (n === 3) return '3rd';
+  return `${n}th`;
+}
+function PrizeTable({ tournament, primaryColor, textColor, format }: { tournament: Tournament; primaryColor: string; textColor?: string; format?: 'ordinal' | 'jp' }) {
+  const prizes = tournament.prizeStructure.filter(p => p.label);
+  if (prizes.length === 0) return null;
+  const fmt = format || 'jp';
   return (
-    <div className="g-card-inner p-3 lg:p-4 h-full overflow-auto">
-      <div className={`text-[9px] lg:text-[11px] uppercase tracking-wider font-semibold mb-2 text-center ${textColor ? '' : 'text-white/35'}`}
+    <div className="g-card-inner p-3 lg:p-4 h-full flex flex-col">
+      <div className={`text-[9px] lg:text-[11px] uppercase tracking-wider font-semibold mb-2 text-center shrink-0 ${textColor ? '' : 'text-white/35'}`}
         style={textColor ? { color: textColor, opacity: 0.5 } : undefined}>Prize</div>
-      <div className="space-y-1">
-        {tournament.prizeStructure.filter(p => p.label).map((p) => (
-          <div key={p.place} className="flex items-center justify-between text-xs gap-2">
-            <span className={textColor ? '' : 'text-white/40'} style={textColor ? { color: textColor, opacity: 0.5 } : undefined}>{p.place}位</span>
+      <div className="flex-1 flex flex-col justify-evenly min-h-0">
+        {prizes.map((p) => (
+          <div key={p.place} className="flex items-center justify-between gap-2 px-1">
+            <span className={`shrink-0 ${textColor ? '' : 'text-white/40'}`} style={textColor ? { color: textColor, opacity: 0.5 } : undefined}>
+              {fmt === 'ordinal' ? ordinalLabel(p.place) : `${p.place}位`}
+            </span>
             <span className="font-bold timer-font text-right truncate" style={{ color: textColor || (p.place === 1 ? primaryColor : 'rgba(255,255,255,0.5)') }}>
               {p.label}
             </span>
@@ -197,7 +206,7 @@ function Inner() {
   const regClose = computeRegCloseTime(tournament.levels, tournament.currentLevelIndex, displayMs, tournament.regCloseLevel);
   const elim = tournament.eliminated || 0;
   const activePlayers = Math.max(0, tournament.initialEntries + tournament.reEntryCount - elim);
-  const totalEntries = tournament.initialEntries + tournament.reEntryCount + tournament.rebuyCount; // アドオン除外
+  const totalEntries = tournament.initialEntries + tournament.reEntryCount; // リバイ・アドオン除外
   const totalChips = tournament.initialEntries * tournament.startingChips
     + tournament.reEntryCount * tournament.reEntryChips
     + tournament.rebuyCount * tournament.rebuyChips
@@ -301,8 +310,8 @@ function Inner() {
                   {isBrk ? (
                     <span className="text-green-400 text-3xl lg:text-4xl font-black tracking-[0.15em]">BREAK</span>
                   ) : (
-                    <span className={`text-2xl lg:text-3xl font-black tracking-[0.2em] ${tc ? '' : 'text-white/25'}`}
-                      style={tc ? { color: tc, opacity: 0.4 } : undefined}>Level {cur?.level || '-'}</span>
+                    <span className={`text-2xl lg:text-3xl font-black tracking-[0.2em] ${tc ? '' : 'text-white/60'}`}
+                      style={tc ? { color: tc } : undefined}>Level {cur?.level || '-'}</span>
                   )}
                 </div>
               )}
@@ -334,7 +343,7 @@ function Inner() {
                   <div className="font-black timer-font" style={{ color: tc || pc, fontSize: `${3.5 * bds}vw` }}>
                     {cur.smallBlind.toLocaleString()}/{cur.bigBlind.toLocaleString()}
                     {cur.ante > 0 && (
-                      <span style={tc ? { color: tc, opacity: 0.4 } : undefined} className={tc ? 'ml-1' : 'text-white/30 ml-1'}>(Ante {cur.ante.toLocaleString()})</span>
+                      <span style={tc ? { color: tc, opacity: (timerPos.anteOpacity ?? 40) / 100 } : { opacity: (timerPos.anteOpacity ?? 40) / 100 }} className={tc ? 'ml-1' : 'text-white ml-1'}>(Ante {cur.ante.toLocaleString()})</span>
                     )}
                   </div>
                 </div>
@@ -353,7 +362,7 @@ function Inner() {
               <span className={`text-lg font-bold timer-font ${layout.nextLevel.textColor ? '' : 'text-white/50'}`}
                 style={layout.nextLevel.textColor ? { color: layout.nextLevel.textColor } : undefined}>
                 {nextPlay.smallBlind.toLocaleString()}/{nextPlay.bigBlind.toLocaleString()}
-                {nextPlay.ante > 0 && <span className={layout.nextLevel.textColor ? 'ml-1 opacity-50' : 'text-white/30 ml-1'}>(Ante {nextPlay.ante.toLocaleString()})</span>}
+                {nextPlay.ante > 0 && <span className="ml-1" style={{ opacity: (timerPos.anteOpacity ?? 40) / 100 }}>(Ante {nextPlay.ante.toLocaleString()})</span>}
               </span>
             </div>
           </AbsoluteSection>
@@ -375,7 +384,7 @@ function Inner() {
         )}
         {dt.showPrizeStructure && (
           <AbsoluteSection pos={layout.prizeTable}>
-            <PrizeTable tournament={tournament} primaryColor={pc} textColor={layout.prizeTable.textColor} />
+            <PrizeTable tournament={tournament} primaryColor={pc} textColor={layout.prizeTable.textColor} format={dt.prizeLabelFormat} />
           </AbsoluteSection>
         )}
 
@@ -466,7 +475,7 @@ function Inner() {
           <div className="flex gap-2 flex-wrap">
             {tournament.prizeStructure.filter(p => p.label).slice(0, 3).map(p => (
               <div key={p.place} className="g-card-inner flex-1 p-2 text-center">
-                <div className="text-[8px] text-white/30 uppercase tracking-wider font-semibold">{p.place}位</div>
+                <div className="text-[8px] text-white/30 uppercase tracking-wider font-semibold">{(dt.prizeLabelFormat || 'jp') === 'ordinal' ? ordinalLabel(p.place) : `${p.place}位`}</div>
                 <div className="text-xs font-bold text-white/60 timer-font truncate">{p.label}</div>
               </div>
             ))}
