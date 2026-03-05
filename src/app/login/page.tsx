@@ -64,6 +64,9 @@ export default function LoginPage() {
         localStorage.setItem('come-on-no-remember', 'true');
       }
 
+      // Clear previous user's store data to prevent data bleed between accounts
+      localStorage.removeItem('come-on-timer-v3');
+
       // Mark this browser session as active (for session guard)
       sessionStorage.setItem('come-on-session', 'active');
 

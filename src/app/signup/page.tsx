@@ -58,6 +58,9 @@ export default function SignupPage() {
         return;
       }
 
+      // Clear previous user's store data to prevent data bleed between accounts
+      localStorage.removeItem('come-on-timer-v3');
+
       router.push('/');
       router.refresh();
     } catch {

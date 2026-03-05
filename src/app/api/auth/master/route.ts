@@ -23,7 +23,7 @@ async function verifyMaster() {
 // Helper: generate random code
 function generateCode(type: 'store' | 'master'): string {
   const prefix = type === 'master' ? 'MST' : 'STR';
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no I,O,0,1 for clarity
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code = '';
   for (let i = 0; i < 6; i++) {
     code += chars[Math.floor(Math.random() * chars.length)];
@@ -99,11 +99,13 @@ export async function GET() {
         name: org.name,
         created_at: org.created_at,
         owner: owner ? {
+          id: owner.id,
           display_name: owner.display_name,
           email: emailMap.get(owner.id) || '',
           password_plain: owner.password_plain || '',
         } : null,
         employees: employees.map(e => ({
+          id: e.id,
           display_name: e.display_name,
           email: emailMap.get(e.id) || '',
           password_plain: e.password_plain || '',
@@ -205,6 +207,85 @@ export async function DELETE(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true });
+  } catch {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+// PATCH: Store/employee management (delete store, delete user)
+export async function PATCH(request: NextRequest) {
+  try {
+    const user = await verifyMaster();
+    if (!user) {
+      return NextResponse.json({ error: 'Master access required' }, { status: 403 });
+    }
+
+    const { action, storeId, userId } = await request.json();
+    const admin = getSupabaseAdmin();
+
+    if (action === 'delete_store' && storeId) {
+      // Delete entire store: all users + org_store + organization
+      // 1. Get all profiles in this org
+      const { data: orgProfiles } = await admin
+        .from('profiles')
+        .select('id')
+        .eq('organization_id', storeId);
+
+      // 2. Delete all auth users (profiles cascade)
+      if (orgProfiles) {
+        for (const p of orgProfiles) {
+          await admin.auth.admin.deleteUser(p.id);
+        }
+      }
+
+      // 3. Delete org_store
+      await admin
+        .from('org_store')
+        .delete()
+        .eq('organization_id', storeId);
+
+      // 4. Clear invitation_codes references
+      await admin
+        .from('invitation_codes')
+        .update({ organization_id: null })
+        .eq('organization_id', storeId);
+
+      // 5. Delete organization
+      await admin
+        .from('organizations')
+        .delete()
+        .eq('id', storeId);
+
+      return NextResponse.json({ success: true });
+    }
+
+    if (action === 'delete_user' && userId) {
+      // Verify target is not master
+      const { data: targetProfile } = await admin
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .single();
+
+      if (!targetProfile) {
+        return NextResponse.json({ error: 'ユーザーが見つかりません' }, { status: 404 });
+      }
+
+      if (targetProfile.role === 'master') {
+        return NextResponse.json({ error: 'マスターアカウントは削除できません' }, { status: 400 });
+      }
+
+      // Delete auth user (profile cascades)
+      const { error: deleteError } = await admin.auth.admin.deleteUser(userId);
+
+      if (deleteError) {
+        return NextResponse.json({ error: '削除に失敗しました' }, { status: 500 });
+      }
+
+      return NextResponse.json({ success: true });
+    }
+
+    return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

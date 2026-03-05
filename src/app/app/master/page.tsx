@@ -17,11 +17,13 @@ type StoreInfo = {
   name: string;
   created_at: string;
   owner: {
+    id: string;
     display_name: string;
     email: string;
     password_plain: string;
   } | null;
   employees: {
+    id: string;
     display_name: string;
     email: string;
     password_plain: string;
@@ -35,8 +37,11 @@ export default function MasterPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [visiblePasswords, setVisiblePasswords] = useState<Set<string>>(new Set());
-  const [creatingCode, setCreatingCode] = useState<string | null>(null); // 'store' | 'master' | null
+  const [creatingCode, setCreatingCode] = useState<string | null>(null);
   const [deletingCodeId, setDeletingCodeId] = useState<string | null>(null);
+  const [deletingStoreId, setDeletingStoreId] = useState<string | null>(null);
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<{ type: 'store' | 'user'; id: string; name: string } | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -97,7 +102,6 @@ export default function MasterPage() {
         setError(data.error || 'コードの作成に失敗しました');
         return;
       }
-      // Refresh data
       await fetchData();
     } catch {
       setError('コードの作成に失敗しました');
@@ -120,12 +124,57 @@ export default function MasterPage() {
         setError(data.error || '削除に失敗しました');
         return;
       }
-      // Refresh data
       await fetchData();
     } catch {
       setError('削除に失敗しました');
     } finally {
       setDeletingCodeId(null);
+    }
+  };
+
+  const handleDeleteStore = async (storeId: string) => {
+    setDeletingStoreId(storeId);
+    setError('');
+    setConfirmDelete(null);
+    try {
+      const res = await fetch('/api/auth/master', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete_store', storeId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || '店舗の削除に失敗しました');
+        return;
+      }
+      await fetchData();
+    } catch {
+      setError('店舗の削除に失敗しました');
+    } finally {
+      setDeletingStoreId(null);
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    setDeletingUserId(userId);
+    setError('');
+    setConfirmDelete(null);
+    try {
+      const res = await fetch('/api/auth/master', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete_user', userId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || '削除に失敗しました');
+        return;
+      }
+      await fetchData();
+    } catch {
+      setError('削除に失敗しました');
+    } finally {
+      setDeletingUserId(null);
     }
   };
 
@@ -160,6 +209,41 @@ export default function MasterPage() {
           </div>
         )}
 
+        {/* Confirm Delete Modal */}
+        {confirmDelete && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div className="g-card p-6 max-w-sm w-full">
+              <h3 className="text-white font-bold text-base mb-2">削除確認</h3>
+              <p className="text-white/60 text-sm mb-4">
+                {confirmDelete.type === 'store'
+                  ? `「${confirmDelete.name}」とその全アカウント（オーナー・従業員）を削除しますか？この操作は取り消せません。`
+                  : `「${confirmDelete.name}」を削除しますか？この操作は取り消せません。`
+                }
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setConfirmDelete(null)}
+                  className="flex-1 py-2 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.1] text-white/70 rounded-xl text-sm transition-colors"
+                >
+                  キャンセル
+                </button>
+                <button
+                  onClick={() => {
+                    if (confirmDelete.type === 'store') {
+                      handleDeleteStore(confirmDelete.id);
+                    } else {
+                      handleDeleteUser(confirmDelete.id);
+                    }
+                  }}
+                  className="flex-1 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-sm font-medium transition-colors"
+                >
+                  削除する
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Invitation Codes Section */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-3">
@@ -178,7 +262,7 @@ export default function MasterPage() {
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                 </svg>
-                {creatingCode === 'store' ? '作成中...' : '店舗コード'}
+                {creatingCode === 'store' ? '...' : '店舗コード'}
               </button>
               <button
                 onClick={() => handleCreateCode('master')}
@@ -188,7 +272,7 @@ export default function MasterPage() {
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                 </svg>
-                {creatingCode === 'master' ? '作成中...' : 'マスターコード'}
+                {creatingCode === 'master' ? '...' : 'マスター'}
               </button>
             </div>
           </div>
@@ -198,64 +282,66 @@ export default function MasterPage() {
                 認証コードがありません。上のボタンから作成してください。
               </div>
             ) : (
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-white/[0.06]">
-                    <th className="text-left text-white/40 text-xs font-medium px-4 py-3">コード</th>
-                    <th className="text-left text-white/40 text-xs font-medium px-4 py-3">タイプ</th>
-                    <th className="text-left text-white/40 text-xs font-medium px-4 py-3">ステータス</th>
-                    <th className="text-left text-white/40 text-xs font-medium px-4 py-3 hidden md:table-cell">紐づき店舗</th>
-                    <th className="text-left text-white/40 text-xs font-medium px-4 py-3 hidden md:table-cell">使用日</th>
-                    <th className="text-right text-white/40 text-xs font-medium px-4 py-3">操作</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {codes.map((c) => (
-                    <tr key={c.id} className={`border-b border-white/[0.04] last:border-0 ${c.used ? 'opacity-50' : ''}`}>
-                      <td className="px-4 py-3">
-                        <span className="font-mono text-sm text-white font-medium tracking-wider">{c.code}</span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className={`inline-block px-2 py-0.5 text-xs rounded-full font-medium ${
-                          c.type === 'master'
-                            ? 'bg-purple-500/20 text-purple-400'
-                            : 'bg-blue-500/20 text-blue-400'
-                        }`}>
-                          {c.type === 'master' ? 'マスター' : '店舗'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className={`inline-block px-2 py-0.5 text-xs rounded-full font-medium ${
-                          c.used
-                            ? 'bg-white/[0.06] text-white/40'
-                            : 'bg-green-500/20 text-green-400'
-                        }`}>
-                          {c.used ? '使用済み' : '未使用'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-white/50 text-sm hidden md:table-cell">
-                        {c.organization_name || '-'}
-                      </td>
-                      <td className="px-4 py-3 text-white/40 text-xs hidden md:table-cell">
-                        {formatDate(c.used_at)}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        {!c.used ? (
-                          <button
-                            onClick={() => handleDeleteCode(c.id)}
-                            disabled={deletingCodeId === c.id}
-                            className="px-2 py-1 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 text-xs rounded-lg transition-colors disabled:opacity-50"
-                          >
-                            {deletingCodeId === c.id ? '...' : '削除'}
-                          </button>
-                        ) : (
-                          <span className="text-white/15 text-xs">-</span>
-                        )}
-                      </td>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-white/[0.06]">
+                      <th className="text-left text-white/40 text-xs font-medium px-4 py-3">コード</th>
+                      <th className="text-left text-white/40 text-xs font-medium px-4 py-3">タイプ</th>
+                      <th className="text-left text-white/40 text-xs font-medium px-4 py-3">ステータス</th>
+                      <th className="text-left text-white/40 text-xs font-medium px-4 py-3 hidden md:table-cell">紐づき店舗</th>
+                      <th className="text-left text-white/40 text-xs font-medium px-4 py-3 hidden md:table-cell">使用日</th>
+                      <th className="text-right text-white/40 text-xs font-medium px-4 py-3">操作</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {codes.map((c) => (
+                      <tr key={c.id} className={`border-b border-white/[0.04] last:border-0 ${c.used ? 'opacity-50' : ''}`}>
+                        <td className="px-4 py-3">
+                          <span className="font-mono text-sm text-white font-medium tracking-wider">{c.code}</span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`inline-block px-2 py-0.5 text-xs rounded-full font-medium ${
+                            c.type === 'master'
+                              ? 'bg-purple-500/20 text-purple-400'
+                              : 'bg-blue-500/20 text-blue-400'
+                          }`}>
+                            {c.type === 'master' ? 'マスター' : '店舗'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`inline-block px-2 py-0.5 text-xs rounded-full font-medium ${
+                            c.used
+                              ? 'bg-white/[0.06] text-white/40'
+                              : 'bg-green-500/20 text-green-400'
+                          }`}>
+                            {c.used ? '使用済み' : '未使用'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-white/50 text-sm hidden md:table-cell">
+                          {c.organization_name || '-'}
+                        </td>
+                        <td className="px-4 py-3 text-white/40 text-xs hidden md:table-cell">
+                          {formatDate(c.used_at)}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          {!c.used ? (
+                            <button
+                              onClick={() => handleDeleteCode(c.id)}
+                              disabled={deletingCodeId === c.id}
+                              className="px-2 py-1 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 text-xs rounded-lg transition-colors disabled:opacity-50"
+                            >
+                              {deletingCodeId === c.id ? '...' : '削除'}
+                            </button>
+                          ) : (
+                            <span className="text-white/15 text-xs">-</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </div>
@@ -277,13 +363,21 @@ export default function MasterPage() {
           ) : (
             <div className="space-y-4">
               {stores.map((store) => (
-                <div key={store.id} className="g-card p-4 md:p-5">
+                <div key={store.id} className={`g-card p-4 md:p-5 ${deletingStoreId === store.id ? 'opacity-50 pointer-events-none' : ''}`}>
                   {/* Store header */}
-                  <div className="flex items-center gap-2 mb-4">
-                    <h3 className="text-white font-bold text-base">{store.name}</h3>
-                    <span className="text-white/20 text-xs">
-                      {formatDate(store.created_at)}登録
-                    </span>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-white font-bold text-base">{store.name}</h3>
+                      <span className="text-white/20 text-xs">
+                        {formatDate(store.created_at)}登録
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => setConfirmDelete({ type: 'store', id: store.id, name: store.name })}
+                      className="px-2.5 py-1 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 text-xs rounded-lg transition-colors"
+                    >
+                      店舗削除
+                    </button>
                   </div>
 
                   {/* Owner */}
@@ -309,7 +403,7 @@ export default function MasterPage() {
                               className="text-sm font-mono hover:text-white/80 transition-colors"
                             >
                               {visiblePasswords.has(`owner-${store.id}`) ? (
-                                <span className="text-yellow-400">{store.owner.password_plain || '(未設定)'}</span>
+                                <span className="text-yellow-400">{store.owner.password_plain || '(v82以前の登録)'}</span>
                               ) : (
                                 <span className="text-white/30">{'••••••••'} <span className="text-[10px] text-blue-400/60">表示</span></span>
                               )}
@@ -328,9 +422,9 @@ export default function MasterPage() {
                         <span className="text-white/20 text-xs">{store.employees.length}名</span>
                       </div>
                       <div className="space-y-2">
-                        {store.employees.map((emp, i) => (
-                          <div key={i} className="bg-white/[0.03] rounded-lg p-3">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                        {store.employees.map((emp) => (
+                          <div key={emp.id} className={`bg-white/[0.03] rounded-lg p-3 ${deletingUserId === emp.id ? 'opacity-50' : ''}`}>
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
                               <div>
                                 <span className="text-white/30 text-[10px] block">名前</span>
                                 <span className="text-white text-sm">{emp.display_name}</span>
@@ -342,14 +436,23 @@ export default function MasterPage() {
                               <div>
                                 <span className="text-white/30 text-[10px] block">パスワード</span>
                                 <button
-                                  onClick={() => togglePassword(`emp-${store.id}-${i}`)}
+                                  onClick={() => togglePassword(`emp-${emp.id}`)}
                                   className="text-sm font-mono hover:text-white/80 transition-colors"
                                 >
-                                  {visiblePasswords.has(`emp-${store.id}-${i}`) ? (
-                                    <span className="text-yellow-400">{emp.password_plain || '(未設定)'}</span>
+                                  {visiblePasswords.has(`emp-${emp.id}`) ? (
+                                    <span className="text-yellow-400">{emp.password_plain || '(v82以前の登録)'}</span>
                                   ) : (
                                     <span className="text-white/30">{'••••••••'} <span className="text-[10px] text-blue-400/60">表示</span></span>
                                   )}
+                                </button>
+                              </div>
+                              <div className="flex items-end justify-end">
+                                <button
+                                  onClick={() => setConfirmDelete({ type: 'user', id: emp.id, name: emp.display_name })}
+                                  disabled={deletingUserId === emp.id}
+                                  className="px-2 py-1 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 text-xs rounded-lg transition-colors disabled:opacity-50"
+                                >
+                                  削除
                                 </button>
                               </div>
                             </div>
