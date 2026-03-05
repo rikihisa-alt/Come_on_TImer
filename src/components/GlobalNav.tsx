@@ -139,7 +139,7 @@ export function GlobalNav() {
               </svg>
             </button>
             {accountOpen && (
-              <div className="absolute right-0 top-full mt-1.5 w-48 py-1 rounded-xl backdrop-blur-xl bg-white/[0.08] border border-white/[0.1] shadow-2xl z-50 fade-in">
+              <div className="absolute right-0 top-full mt-1.5 w-48 py-1 rounded-xl bg-[#1a2235] border border-white/[0.15] shadow-2xl z-50 fade-in">
                 <Link href="/app/account"
                   className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-white/60 hover:text-white/90 hover:bg-white/[0.06] transition-colors">
                   <svg className="w-4 h-4 text-blue-400/70 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -195,7 +195,7 @@ export function GlobalNav() {
             )}
           </button>
           {menuOpen && (
-            <div className="absolute right-0 top-full mt-1 w-52 py-1 rounded-xl backdrop-blur-xl bg-white/[0.08] border border-white/[0.1] shadow-2xl z-50 fade-in">
+            <div className="absolute right-0 top-full mt-1 w-52 py-1 rounded-xl bg-[#1a2235] border border-white/[0.15] shadow-2xl z-50 fade-in">
               {/* Account section */}
               {userProfile && (
                 <>

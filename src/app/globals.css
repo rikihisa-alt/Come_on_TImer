@@ -25,6 +25,13 @@
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; background: var(--bg-dark); color: var(--sys-text); -webkit-font-smoothing: antialiased; font-feature-settings: "tnum"; font-family: 'Times New Roman', Times, serif; }
+/* iOS/iPad: fix 100vh not accounting for address bar */
+html { height: -webkit-fill-available; }
+body { min-height: 100dvh; min-height: -webkit-fill-available; }
+/* iPad touch scrolling */
+@supports (-webkit-touch-callout: none) {
+  .custom-scrollbar { -webkit-overflow-scrolling: touch; }
+}
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }

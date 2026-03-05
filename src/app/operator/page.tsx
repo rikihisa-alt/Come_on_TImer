@@ -140,13 +140,13 @@ function TournamentEditor({ id }: { id: string }) {
       </div>
 
       {/* ── Desktop: two independent scroll columns ── */}
-      <div className="hidden lg:flex gap-4 fade-in" style={{ height: 'calc(100vh - 120px)' }}>
+      <div className="hidden lg:flex gap-4 fade-in" style={{ height: 'calc(100dvh - 120px)' }}>
         {/* Left: Preview (固定・独立スクロール) */}
-        <div className="w-[55%] xl:w-[60%] shrink-0 overflow-y-auto min-h-0 pr-1 custom-scrollbar">
+        <div className="w-[55%] xl:w-[60%] shrink-0 overflow-y-auto min-h-0 pr-1 custom-scrollbar" style={{ WebkitOverflowScrolling: 'touch' }}>
           <InlinePreview timerId={id} timerType="tournament" sticky />
         </div>
         {/* Right: Settings (独立スクロール) */}
-        <div className="flex-1 overflow-y-auto min-h-0 space-y-4 min-w-0 pr-1 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto min-h-0 space-y-4 min-w-0 pr-1 custom-scrollbar" style={{ WebkitOverflowScrolling: 'touch' }}>
           <div className="g-card p-4"><TournamentPresetPanel tournament={t} /></div>
           <div className="g-card p-4 space-y-4">
             <div className="flex items-center gap-3">
@@ -1036,11 +1036,11 @@ function CashEditor({ id, onDelete }: { id: string; onDelete: (id: string) => vo
         {cashDisplaySettings}
       </div>
       {/* Desktop: two independent scroll columns */}
-      <div className="hidden lg:flex gap-4 fade-in" style={{ height: 'calc(100vh - 120px)' }}>
-        <div className="w-[55%] xl:w-[60%] shrink-0 overflow-y-auto min-h-0 pr-1 custom-scrollbar">
+      <div className="hidden lg:flex gap-4 fade-in" style={{ height: 'calc(100dvh - 120px)' }}>
+        <div className="w-[55%] xl:w-[60%] shrink-0 overflow-y-auto min-h-0 pr-1 custom-scrollbar" style={{ WebkitOverflowScrolling: 'touch' }}>
           <InlinePreview timerId={id} timerType="cash" sticky />
         </div>
-        <div className="flex-1 overflow-y-auto min-h-0 space-y-4 min-w-0 pr-1 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto min-h-0 space-y-4 min-w-0 pr-1 custom-scrollbar" style={{ WebkitOverflowScrolling: 'touch' }}>
           <div className="g-card p-4"><CashPresetPanel cashGame={c} /></div>
           {cashSettings}
           <div className="g-card p-4"><CashStats cashGame={c} /></div>
