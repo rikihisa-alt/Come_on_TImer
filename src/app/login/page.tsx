@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
@@ -12,6 +12,23 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Auto-fill from saved credentials on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('come-on-remember');
+      if (saved) {
+        const data = JSON.parse(saved);
+        if (data.rememberMe && data.email) {
+          setEmail(data.email);
+          if (data.p) {
+            try { setPassword(atob(data.p)); } catch { /* ignore */ }
+          }
+          setRememberMe(true);
+        }
+      }
+    } catch { /* ignore parse errors */ }
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,6 +50,22 @@ export default function LoginPage() {
         }
         return;
       }
+
+      // Handle "remember me" preference
+      if (rememberMe) {
+        localStorage.setItem('come-on-remember', JSON.stringify({
+          email,
+          p: btoa(password),
+          rememberMe: true,
+        }));
+        localStorage.removeItem('come-on-no-remember');
+      } else {
+        localStorage.removeItem('come-on-remember');
+        localStorage.setItem('come-on-no-remember', 'true');
+      }
+
+      // Mark this browser session as active (for session guard)
+      sessionStorage.setItem('come-on-session', 'active');
 
       router.push('/');
       router.refresh();
@@ -56,7 +89,7 @@ export default function LoginPage() {
         <div className="g-card p-6 md:p-8">
           <h2 className="text-xl font-bold text-white mb-6 text-center">ログイン</h2>
 
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-4" autoComplete="on">
             {error && (
               <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl text-sm">
                 {error}
@@ -67,6 +100,8 @@ export default function LoginPage() {
               <label className="block text-white/50 text-xs font-medium mb-1.5">メールアドレス</label>
               <input
                 type="email"
+                name="email"
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -79,6 +114,8 @@ export default function LoginPage() {
               <label className="block text-white/50 text-xs font-medium mb-1.5">パスワード</label>
               <input
                 type="password"
+                name="password"
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -94,7 +131,7 @@ export default function LoginPage() {
                 onChange={(e) => setRememberMe(e.target.checked)}
                 className="w-4 h-4 rounded bg-white/[0.06] border border-white/[0.1] accent-blue-500"
               />
-              <span className="text-white/40 text-sm">ログイン状態を維持する</span>
+              <span className="text-white/40 text-sm">ログイン状態を保持する</span>
             </label>
 
             <button
