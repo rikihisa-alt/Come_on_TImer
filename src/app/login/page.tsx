@@ -80,27 +80,27 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-100 to-blue-50">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-black text-blue-400 tracking-tight">COME ON</h1>
-          <p className="text-white/30 text-sm mt-1">Timer</p>
+          <h1 className="text-3xl font-black text-blue-600 tracking-tight">COME ON</h1>
+          <p className="text-gray-400 text-sm mt-1">Timer</p>
         </div>
 
         {/* Login Card */}
-        <div className="g-card p-6 md:p-8">
-          <h2 className="text-xl font-bold text-white mb-6 text-center">ログイン</h2>
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 md:p-8">
+          <h2 className="text-xl font-bold text-gray-900 mb-6 text-center">ログイン</h2>
 
           <form onSubmit={handleLogin} className="space-y-4" autoComplete="on">
             {error && (
-              <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl text-sm">
+              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm">
                 {error}
               </div>
             )}
 
             <div>
-              <label className="block text-white/50 text-xs font-medium mb-1.5">メールアドレス</label>
+              <label className="block text-gray-500 text-xs font-medium mb-1.5">メールアドレス</label>
               <input
                 type="email"
                 name="email"
@@ -108,13 +108,13 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full px-4 py-3 bg-white/[0.06] border border-white/[0.1] rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-colors"
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-colors"
                 placeholder="email@example.com"
               />
             </div>
 
             <div>
-              <label className="block text-white/50 text-xs font-medium mb-1.5">パスワード</label>
+              <label className="block text-gray-500 text-xs font-medium mb-1.5">パスワード</label>
               <input
                 type="password"
                 name="password"
@@ -122,7 +122,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full px-4 py-3 bg-white/[0.06] border border-white/[0.1] rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-colors"
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-colors"
                 placeholder="パスワード"
               />
             </div>
@@ -132,23 +132,23 @@ export default function LoginPage() {
                 type="checkbox"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="w-4 h-4 rounded bg-white/[0.06] border border-white/[0.1] accent-blue-500"
+                className="w-4 h-4 rounded bg-gray-50 border border-gray-300 accent-blue-600"
               />
-              <span className="text-white/40 text-sm">ログイン状態を保持する</span>
+              <span className="text-gray-500 text-sm">ログイン状態を保持する</span>
             </label>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/50 text-white font-semibold rounded-xl transition-colors"
+              className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-300 text-white font-semibold rounded-xl transition-colors"
             >
               {loading ? 'ログイン中...' : 'ログイン'}
             </button>
           </form>
 
-          <p className="text-center text-white/30 text-sm mt-6">
+          <p className="text-center text-gray-400 text-sm mt-6">
             アカウントをお持ちでない方は{' '}
-            <Link href="/signup" className="text-blue-400 hover:text-blue-300 transition-colors">
+            <Link href="/signup" className="text-blue-600 hover:text-blue-500 transition-colors font-medium">
               新規登録
             </Link>
           </p>

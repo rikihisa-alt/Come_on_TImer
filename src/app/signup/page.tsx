@@ -71,98 +71,98 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-100 to-blue-50">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-black text-blue-400 tracking-tight">COME ON</h1>
-          <p className="text-white/30 text-sm mt-1">Timer</p>
+          <h1 className="text-3xl font-black text-blue-600 tracking-tight">COME ON</h1>
+          <p className="text-gray-400 text-sm mt-1">Timer</p>
         </div>
 
         {/* Signup Card */}
-        <div className="g-card p-6 md:p-8">
-          <h2 className="text-xl font-bold text-white mb-6 text-center">新規登録</h2>
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 md:p-8">
+          <h2 className="text-xl font-bold text-gray-900 mb-6 text-center">新規登録</h2>
 
           <form onSubmit={handleSignup} className="space-y-4">
             {showCodeNotice && (
-              <div className="relative bg-white/[0.04] border border-white/[0.08] px-4 py-3 rounded-xl">
+              <div className="relative bg-amber-50 border border-amber-200 px-4 py-3 rounded-xl">
                 <button
                   type="button"
                   onClick={() => setShowCodeNotice(false)}
-                  className="absolute top-2 right-2 text-white/20 hover:text-white/40 transition-colors p-0.5"
+                  className="absolute top-2 right-2 text-amber-400 hover:text-amber-600 transition-colors p-0.5"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
-                <p className="text-white/25 text-xs leading-relaxed pr-4">
+                <p className="text-amber-700 text-xs leading-relaxed pr-4">
                   認証コードがない場合はアカウントを作成できません。
                 </p>
               </div>
             )}
 
             {error && (
-              <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl text-sm">
+              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm">
                 {error}
               </div>
             )}
 
             <div>
-              <label className="block text-white/50 text-xs font-medium mb-1.5">認証コード</label>
+              <label className="block text-gray-500 text-xs font-medium mb-1.5">認証コード</label>
               <input
                 type="text"
                 value={invitationCode}
                 onChange={(e) => setInvitationCode(e.target.value.toUpperCase())}
                 required
-                className="w-full px-4 py-3 bg-white/[0.06] border border-white/[0.1] rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-colors tracking-widest font-mono"
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-colors tracking-widest font-mono"
                 placeholder="認証コードを入力"
               />
             </div>
 
             <div>
-              <label className="block text-white/50 text-xs font-medium mb-1.5">店舗名</label>
+              <label className="block text-gray-500 text-xs font-medium mb-1.5">店舗名</label>
               <input
                 type="text"
                 value={organizationName}
                 onChange={(e) => setOrganizationName(e.target.value)}
-                className="w-full px-4 py-3 bg-white/[0.06] border border-white/[0.1] rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-colors"
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-colors"
                 placeholder="ポーカールーム名"
               />
             </div>
 
             <div>
-              <label className="block text-white/50 text-xs font-medium mb-1.5">表示名</label>
+              <label className="block text-gray-500 text-xs font-medium mb-1.5">表示名</label>
               <input
                 type="text"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 required
-                className="w-full px-4 py-3 bg-white/[0.06] border border-white/[0.1] rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-colors"
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-colors"
                 placeholder="あなたの名前"
               />
             </div>
 
             <div>
-              <label className="block text-white/50 text-xs font-medium mb-1.5">メールアドレス</label>
+              <label className="block text-gray-500 text-xs font-medium mb-1.5">メールアドレス</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full px-4 py-3 bg-white/[0.06] border border-white/[0.1] rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-colors"
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-colors"
                 placeholder="email@example.com"
               />
             </div>
 
             <div>
-              <label className="block text-white/50 text-xs font-medium mb-1.5">パスワード</label>
+              <label className="block text-gray-500 text-xs font-medium mb-1.5">パスワード</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
-                className="w-full px-4 py-3 bg-white/[0.06] border border-white/[0.1] rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-colors"
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-colors"
                 placeholder="6文字以上"
               />
             </div>
@@ -170,15 +170,15 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/50 text-white font-semibold rounded-xl transition-colors"
+              className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-300 text-white font-semibold rounded-xl transition-colors"
             >
               {loading ? '登録中...' : 'アカウント作成'}
             </button>
           </form>
 
-          <p className="text-center text-white/30 text-sm mt-6">
+          <p className="text-center text-gray-400 text-sm mt-6">
             既にアカウントをお持ちの方は{' '}
-            <Link href="/login" className="text-blue-400 hover:text-blue-300 transition-colors">
+            <Link href="/login" className="text-blue-600 hover:text-blue-500 transition-colors font-medium">
               ログイン
             </Link>
           </p>
