@@ -14,6 +14,7 @@ export default function SignupPage() {
   const [displayName, setDisplayName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showCodeNotice, setShowCodeNotice] = useState(true);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,6 +81,23 @@ export default function SignupPage() {
           <h2 className="text-xl font-bold text-white mb-6 text-center">新規登録</h2>
 
           <form onSubmit={handleSignup} className="space-y-4">
+            {showCodeNotice && (
+              <div className="relative bg-white/[0.04] border border-white/[0.08] px-4 py-3 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setShowCodeNotice(false)}
+                  className="absolute top-2 right-2 text-white/20 hover:text-white/40 transition-colors p-0.5"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+                <p className="text-white/25 text-xs leading-relaxed pr-4">
+                  認証コードがない場合はアカウントを作成できません。
+                </p>
+              </div>
+            )}
+
             {error && (
               <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl text-sm">
                 {error}
@@ -94,7 +112,7 @@ export default function SignupPage() {
                 onChange={(e) => setInvitationCode(e.target.value.toUpperCase())}
                 required
                 className="w-full px-4 py-3 bg-white/[0.06] border border-white/[0.1] rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-colors tracking-widest font-mono"
-                placeholder="例: STR-7K9M2X"
+                placeholder="認証コードを入力"
               />
             </div>
 
@@ -104,7 +122,6 @@ export default function SignupPage() {
                 type="text"
                 value={organizationName}
                 onChange={(e) => setOrganizationName(e.target.value)}
-                required
                 className="w-full px-4 py-3 bg-white/[0.06] border border-white/[0.1] rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-colors"
                 placeholder="ポーカールーム名"
               />
