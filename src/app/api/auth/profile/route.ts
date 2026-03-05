@@ -12,7 +12,8 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data: profile, error: profileError } = await supabase
+    // Use admin client to bypass RLS (profiles RLS self-references, blocking regular queries)
+    const { data: profile, error: profileError } = await getSupabaseAdmin()
       .from('profiles')
       .select('display_name, role, organization_id, created_at')
       .eq('id', user.id)
