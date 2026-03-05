@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams, useRouter } from 'next/navigation';
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { createClient } from '@/lib/supabase/client';
 
 const NAV_ITEMS = [
   { href: '/', label: 'Home' },
@@ -12,13 +13,71 @@ const NAV_ITEMS = [
   { href: '/display/split', label: 'Split' },
 ];
 
+type AuthInfo = {
+  displayName: string;
+  role: string;
+} | null;
+
 export function GlobalNav() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const isPreview = searchParams.get('preview') === '1';
   const [isFs, setIsFs] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const [auth, setAuth] = useState<AuthInfo>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  // Fetch auth state
+  useEffect(() => {
+    const supabase = createClient();
+    let cancelled = false;
+
+    const fetchAuth = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (cancelled) return;
+
+        if (user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('display_name, role')
+            .eq('id', user.id)
+            .single();
+
+          if (!cancelled) {
+            setAuth(profile ? { displayName: profile.display_name, role: profile.role } : null);
+          }
+        } else {
+          if (!cancelled) setAuth(null);
+        }
+      } catch {
+        if (!cancelled) setAuth(null);
+      } finally {
+        if (!cancelled) setAuthLoading(false);
+      }
+    };
+
+    fetchAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+      fetchAuth();
+    });
+
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    setAuth(null);
+    router.push('/login');
+    router.refresh();
+  };
 
   const updateState = useCallback(() => {
     setIsFs(!!(document.fullscreenElement || (document as unknown as { webkitFullscreenElement?: Element }).webkitFullscreenElement));
@@ -48,6 +107,10 @@ export function GlobalNav() {
 
   if (isFs || isPreview) return null;
 
+  const allNavItems = auth?.role === 'owner'
+    ? [...NAV_ITEMS, { href: '/app/users', label: 'Users' }]
+    : NAV_ITEMS;
+
   return (
     <nav className="g-topbar flex items-center justify-between px-3 md:px-5 py-2 md:py-3 border-b border-white/[0.06] sticky top-0 z-50">
       <Link href="/" className="hidden md:flex items-center gap-2 group shrink-0">
@@ -57,12 +120,31 @@ export function GlobalNav() {
 
       {/* Desktop nav */}
       <div className="hidden md:flex items-center gap-1">
-        {NAV_ITEMS.map(item => (
+        {allNavItems.map(item => (
           <Link key={item.href} href={item.href}
             className={`nav-link ${pathname === item.href ? 'active' : ''}`}>
             {item.label}
           </Link>
         ))}
+      </div>
+
+      {/* Auth section (desktop) */}
+      <div className="hidden md:flex items-center gap-2 shrink-0">
+        {!authLoading && (
+          auth ? (
+            <>
+              <span className="text-white/40 text-xs">{auth.displayName}</span>
+              <button onClick={handleLogout}
+                className="px-3 py-1.5 text-xs text-white/40 hover:text-white/70 hover:bg-white/[0.06] rounded-lg transition-colors">
+                Logout
+              </button>
+            </>
+          ) : (
+            <Link href="/login" className="px-3 py-1.5 text-xs text-blue-400 hover:text-blue-300 transition-colors">
+              Login
+            </Link>
+          )
+        )}
       </div>
 
       {/* Mobile hamburger */}
@@ -81,8 +163,8 @@ export function GlobalNav() {
           )}
         </button>
         {menuOpen && (
-          <div className="absolute right-0 top-full mt-1 w-44 py-1 rounded-xl bg-[var(--sys-bg-from)] border border-white/[0.1] shadow-lg z-50 fade-in">
-            {NAV_ITEMS.map(item => (
+          <div className="absolute right-0 top-full mt-1 w-48 py-1 rounded-xl bg-[var(--sys-bg-from)] border border-white/[0.1] shadow-lg z-50 fade-in">
+            {allNavItems.map(item => (
               <Link key={item.href} href={item.href}
                 className={`block px-4 py-2.5 text-sm font-medium transition-colors ${
                   pathname === item.href ? 'text-blue-400 bg-blue-500/10' : 'text-white/50 hover:text-white/80 hover:bg-white/[0.04]'
@@ -90,6 +172,27 @@ export function GlobalNav() {
                 {item.label}
               </Link>
             ))}
+            {/* Mobile auth */}
+            {!authLoading && (
+              auth ? (
+                <>
+                  <div className="border-t border-white/[0.06] my-1" />
+                  <div className="px-4 py-2 text-xs text-white/30">{auth.displayName}</div>
+                  <button onClick={handleLogout}
+                    className="block w-full text-left px-4 py-2.5 text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors">
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="border-t border-white/[0.06] my-1" />
+                  <Link href="/login"
+                    className="block px-4 py-2.5 text-sm font-medium text-blue-400 hover:bg-blue-500/10 transition-colors">
+                    Login
+                  </Link>
+                </>
+              )
+            )}
           </div>
         )}
       </div>
