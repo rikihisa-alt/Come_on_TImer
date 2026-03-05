@@ -34,7 +34,7 @@ export default function LoginPage() {
         return;
       }
 
-      router.push('/operator');
+      router.push('/');
       router.refresh();
     } catch {
       setError('予期せぬエラーが発生しました');

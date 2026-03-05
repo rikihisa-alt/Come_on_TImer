@@ -39,10 +39,10 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Logged in and on auth page → redirect to /operator
+  // Logged in and on auth page → redirect to Home
   if (user && isAuthPage) {
     const url = request.nextUrl.clone();
-    url.pathname = '/operator';
+    url.pathname = '/';
     return NextResponse.redirect(url);
   }
 
