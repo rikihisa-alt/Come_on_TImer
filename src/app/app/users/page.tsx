@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
 
 type UserProfile = {
   id: string;
@@ -50,13 +49,12 @@ export default function UsersPage() {
       setUsers(data.users);
       setCallerRole(data.callerRole);
 
-      // Employee cannot access this page
       if (data.callerRole !== 'owner') {
         router.push('/operator');
         return;
       }
     } catch {
-      setError('Failed to fetch users');
+      setError('従業員情報の取得に失敗しました');
     } finally {
       setLoading(false);
     }
@@ -85,7 +83,11 @@ export default function UsersPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setCreateError(data.error);
+        if (data.error?.includes('already been registered')) {
+          setCreateError('このメールアドレスは既に登録されています');
+        } else {
+          setCreateError(data.error || '作成に失敗しました');
+        }
         return;
       }
 
@@ -95,7 +97,7 @@ export default function UsersPage() {
       setCreateName('');
       fetchUsers();
     } catch {
-      setCreateError('Failed to create user');
+      setCreateError('従業員の作成に失敗しました');
     } finally {
       setCreateLoading(false);
     }
@@ -117,14 +119,14 @@ export default function UsersPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setResetError(data.error);
+        setResetError(data.error || 'パスワードリセットに失敗しました');
         return;
       }
 
       setResetTarget(null);
       setResetPassword('');
     } catch {
-      setResetError('Failed to reset password');
+      setResetError('パスワードリセットに失敗しました');
     } finally {
       setResetLoading(false);
     }
@@ -141,30 +143,23 @@ export default function UsersPage() {
 
       if (!res.ok) {
         const data = await res.json();
-        setError(data.error);
+        setError(data.error || '削除に失敗しました');
         return;
       }
 
       setDeleteTarget(null);
       fetchUsers();
     } catch {
-      setError('Failed to delete user');
+      setError('従業員の削除に失敗しました');
     } finally {
       setDeleteLoading(false);
     }
   };
 
-  const handleLogout = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push('/login');
-    router.refresh();
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-white/50">Loading...</div>
+        <div className="text-white/30 text-sm">読み込み中...</div>
       </div>
     );
   }
@@ -177,21 +172,21 @@ export default function UsersPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-white">Employee Management</h1>
-            <p className="text-white/30 text-sm mt-1">Manage team members</p>
+            <h1 className="text-2xl font-bold text-white">従業員管理</h1>
+            <p className="text-white/30 text-sm mt-1">チームメンバーの追加・管理</p>
           </div>
           <div className="flex gap-2">
             <button
-              onClick={() => router.push('/operator')}
+              onClick={() => router.back()}
               className="px-4 py-2 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.1] text-white/70 rounded-xl text-sm transition-colors"
             >
-              Back
+              戻る
             </button>
             <button
               onClick={() => setShowCreate(true)}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-xl text-sm transition-colors"
             >
-              + Add Employee
+              + 従業員追加
             </button>
           </div>
         </div>
@@ -207,10 +202,10 @@ export default function UsersPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-white/[0.06]">
-                <th className="text-left text-white/40 text-xs font-medium px-4 py-3">Name</th>
-                <th className="text-left text-white/40 text-xs font-medium px-4 py-3 hidden md:table-cell">Email</th>
-                <th className="text-left text-white/40 text-xs font-medium px-4 py-3">Role</th>
-                <th className="text-right text-white/40 text-xs font-medium px-4 py-3">Actions</th>
+                <th className="text-left text-white/40 text-xs font-medium px-4 py-3">名前</th>
+                <th className="text-left text-white/40 text-xs font-medium px-4 py-3 hidden md:table-cell">メール</th>
+                <th className="text-left text-white/40 text-xs font-medium px-4 py-3">ロール</th>
+                <th className="text-right text-white/40 text-xs font-medium px-4 py-3">操作</th>
               </tr>
             </thead>
             <tbody>
@@ -227,7 +222,7 @@ export default function UsersPage() {
                         ? 'bg-blue-500/20 text-blue-400'
                         : 'bg-white/[0.06] text-white/50'
                     }`}>
-                      {u.role}
+                      {u.role === 'owner' ? 'オーナー' : '従業員'}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right">
@@ -236,16 +231,16 @@ export default function UsersPage() {
                         <button
                           onClick={() => { setResetTarget(u); setResetPassword(''); setResetError(''); }}
                           className="px-2 py-1 text-xs text-yellow-400 hover:bg-yellow-500/10 rounded-lg transition-colors"
-                          title="Reset Password"
+                          title="パスワードリセット"
                         >
-                          Reset PW
+                          PW変更
                         </button>
                         <button
                           onClick={() => setDeleteTarget(u)}
                           className="px-2 py-1 text-xs text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                          title="Delete"
+                          title="削除"
                         >
-                          Delete
+                          削除
                         </button>
                       </div>
                     )}
@@ -255,7 +250,7 @@ export default function UsersPage() {
               {users.length === 0 && (
                 <tr>
                   <td colSpan={4} className="px-4 py-8 text-center text-white/30 text-sm">
-                    No employees yet. Click &quot;+ Add Employee&quot; to get started.
+                    従業員がいません。「+ 従業員追加」から追加してください。
                   </td>
                 </tr>
               )}
@@ -268,7 +263,7 @@ export default function UsersPage() {
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setShowCreate(false)}>
           <div className="g-card p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-bold text-white mb-4">Add Employee</h3>
+            <h3 className="text-lg font-bold text-white mb-4">従業員を追加</h3>
             <form onSubmit={handleCreate} className="space-y-3">
               {createError && (
                 <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-3 py-2 rounded-xl text-sm">
@@ -276,18 +271,18 @@ export default function UsersPage() {
                 </div>
               )}
               <div>
-                <label className="block text-white/50 text-xs font-medium mb-1">Display Name</label>
+                <label className="block text-white/50 text-xs font-medium mb-1">表示名</label>
                 <input
                   type="text"
                   value={createName}
                   onChange={e => setCreateName(e.target.value)}
                   required
                   className="w-full px-3 py-2 bg-white/[0.06] border border-white/[0.1] rounded-xl text-white text-sm placeholder-white/20 focus:outline-none focus:border-blue-500/50"
-                  placeholder="Employee Name"
+                  placeholder="従業員の名前"
                 />
               </div>
               <div>
-                <label className="block text-white/50 text-xs font-medium mb-1">Email</label>
+                <label className="block text-white/50 text-xs font-medium mb-1">メールアドレス</label>
                 <input
                   type="email"
                   value={createEmail}
@@ -298,7 +293,7 @@ export default function UsersPage() {
                 />
               </div>
               <div>
-                <label className="block text-white/50 text-xs font-medium mb-1">Password</label>
+                <label className="block text-white/50 text-xs font-medium mb-1">パスワード</label>
                 <input
                   type="password"
                   value={createPassword}
@@ -306,17 +301,17 @@ export default function UsersPage() {
                   required
                   minLength={6}
                   className="w-full px-3 py-2 bg-white/[0.06] border border-white/[0.1] rounded-xl text-white text-sm placeholder-white/20 focus:outline-none focus:border-blue-500/50"
-                  placeholder="6+ characters"
+                  placeholder="6文字以上"
                 />
               </div>
               <div className="flex gap-2 pt-2">
                 <button type="button" onClick={() => setShowCreate(false)}
                   className="flex-1 py-2 bg-white/[0.06] hover:bg-white/[0.1] text-white/70 rounded-xl text-sm transition-colors">
-                  Cancel
+                  キャンセル
                 </button>
                 <button type="submit" disabled={createLoading}
                   className="flex-1 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/50 text-white font-medium rounded-xl text-sm transition-colors">
-                  {createLoading ? 'Creating...' : 'Create'}
+                  {createLoading ? '作成中...' : '作成'}
                 </button>
               </div>
             </form>
@@ -328,9 +323,9 @@ export default function UsersPage() {
       {resetTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setResetTarget(null)}>
           <div className="g-card p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-bold text-white mb-2">Reset Password</h3>
+            <h3 className="text-lg font-bold text-white mb-2">パスワードリセット</h3>
             <p className="text-white/40 text-sm mb-4">
-              Set new password for <span className="text-white/70">{resetTarget.display_name}</span>
+              <span className="text-white/70">{resetTarget.display_name}</span> の新しいパスワードを設定
             </p>
             <form onSubmit={handleResetPassword} className="space-y-3">
               {resetError && (
@@ -339,7 +334,7 @@ export default function UsersPage() {
                 </div>
               )}
               <div>
-                <label className="block text-white/50 text-xs font-medium mb-1">New Password</label>
+                <label className="block text-white/50 text-xs font-medium mb-1">新しいパスワード</label>
                 <input
                   type="password"
                   value={resetPassword}
@@ -347,17 +342,17 @@ export default function UsersPage() {
                   required
                   minLength={6}
                   className="w-full px-3 py-2 bg-white/[0.06] border border-white/[0.1] rounded-xl text-white text-sm placeholder-white/20 focus:outline-none focus:border-blue-500/50"
-                  placeholder="6+ characters"
+                  placeholder="6文字以上"
                 />
               </div>
               <div className="flex gap-2 pt-2">
                 <button type="button" onClick={() => setResetTarget(null)}
                   className="flex-1 py-2 bg-white/[0.06] hover:bg-white/[0.1] text-white/70 rounded-xl text-sm transition-colors">
-                  Cancel
+                  キャンセル
                 </button>
                 <button type="submit" disabled={resetLoading}
                   className="flex-1 py-2 bg-yellow-600 hover:bg-yellow-500 disabled:bg-yellow-600/50 text-white font-medium rounded-xl text-sm transition-colors">
-                  {resetLoading ? 'Resetting...' : 'Reset Password'}
+                  {resetLoading ? '変更中...' : 'パスワード変更'}
                 </button>
               </div>
             </form>
@@ -369,19 +364,18 @@ export default function UsersPage() {
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setDeleteTarget(null)}>
           <div className="g-card p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-bold text-white mb-2">Delete Employee</h3>
+            <h3 className="text-lg font-bold text-white mb-2">従業員を削除</h3>
             <p className="text-white/40 text-sm mb-4">
-              Are you sure you want to delete <span className="text-white/70">{deleteTarget.display_name}</span>?
-              This action cannot be undone.
+              <span className="text-white/70">{deleteTarget.display_name}</span> を削除しますか？この操作は取り消せません。
             </p>
             <div className="flex gap-2">
               <button onClick={() => setDeleteTarget(null)}
                 className="flex-1 py-2 bg-white/[0.06] hover:bg-white/[0.1] text-white/70 rounded-xl text-sm transition-colors">
-                Cancel
+                キャンセル
               </button>
               <button onClick={handleDelete} disabled={deleteLoading}
                 className="flex-1 py-2 bg-red-600 hover:bg-red-500 disabled:bg-red-600/50 text-white font-medium rounded-xl text-sm transition-colors">
-                {deleteLoading ? 'Deleting...' : 'Delete'}
+                {deleteLoading ? '削除中...' : '削除する'}
               </button>
             </div>
           </div>
