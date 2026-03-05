@@ -99,6 +99,7 @@ export type Tournament = {
   rebuyChips: number;       // リバイ時のチップ数
   addonCount: number;
   addonChips: number;       // アドオン時のチップ数
+  eliminated: number;       // 脱落者数（アクティブ = entries + reEntries - eliminated）
   // 単価
   buyInAmount: number;
   reEntryAmount: number;

@@ -86,7 +86,7 @@ function mkTournament(name?: string, levels?: BlindLevel[]): Tournament {
     id: uid(), name: name || 'Tournament 1', levels: lvls, currentLevelIndex: 0,
     status: 'idle', timerStartedAt: null, remainingMs: lvls[0]?.duration ? lvls[0].duration * 1000 : 900000,
     startingChips: 10000,
-    initialEntries: 0, reEntryCount: 0, reEntryChips: 10000, rebuyCount: 0, rebuyChips: 10000, addonCount: 0, addonChips: 10000,
+    initialEntries: 0, reEntryCount: 0, reEntryChips: 10000, rebuyCount: 0, rebuyChips: 10000, addonCount: 0, addonChips: 10000, eliminated: 0,
     buyInAmount: 0, reEntryAmount: 0, rebuyAmount: 0, addonAmount: 0,
     earlyBirdCount: 0, earlyBirdBonus: 0,
     prizeStructure: [{ place: 1, label: '' }, { place: 2, label: '' }, { place: 3, label: '' }],
@@ -598,7 +598,7 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'come-on-timer-v3',
-      version: 20,
+      version: 21,
       migrate: (persisted: unknown, version: number) => {
         const state = persisted as Record<string, unknown>;
         if (version < 4) {
@@ -895,6 +895,13 @@ export const useStore = create<AppState>()(
             if (cdt) { cdt.showCashNextBlinds = cdt.showCashNextBlinds ?? true; }
             return c;
           });
+        }
+        if (version < 21) {
+          // Add eliminated field to tournaments
+          state.tournaments = (state.tournaments as Record<string, unknown>[]).map((t) => ({
+            ...t,
+            eliminated: (t as { eliminated?: number }).eliminated ?? 0,
+          }));
         }
         return state as unknown as AppState;
       },

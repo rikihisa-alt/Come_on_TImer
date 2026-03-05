@@ -195,7 +195,9 @@ function Inner() {
   const ttb = computeTimeToBreak(tournament.levels, tournament.currentLevelIndex, displayMs);
   const tte = computeTimeToEnd(tournament.levels, tournament.currentLevelIndex, displayMs);
   const regClose = computeRegCloseTime(tournament.levels, tournament.currentLevelIndex, displayMs, tournament.regCloseLevel);
-  const activePlayers = tournament.initialEntries + tournament.reEntryCount;
+  const elim = tournament.eliminated || 0;
+  const activePlayers = Math.max(0, tournament.initialEntries + tournament.reEntryCount - elim);
+  const totalEntries = tournament.initialEntries + tournament.reEntryCount + tournament.rebuyCount; // アドオン除外
   const totalChips = tournament.initialEntries * tournament.startingChips
     + tournament.reEntryCount * tournament.reEntryChips
     + tournament.rebuyCount * tournament.rebuyChips
@@ -269,12 +271,7 @@ function Inner() {
         {/* Left column sections */}
         {dt.showEntryCount && (
           <AbsoluteSection pos={layout.players}>
-            <GlassStat label="Players" value={`${activePlayers}`} accent textColor={layout.players.textColor} />
-          </AbsoluteSection>
-        )}
-        {dt.showEntryCount && (
-          <AbsoluteSection pos={layout.reEntry}>
-            <GlassStat label="Re-Entry" value={String(tournament.reEntryCount)} textColor={layout.reEntry.textColor} />
+            <GlassStat label="Players" value={`${activePlayers}/${totalEntries}`} accent textColor={layout.players.textColor} />
           </AbsoluteSection>
         )}
         {dt.showEntryCount && (
@@ -446,7 +443,7 @@ function Inner() {
           </div>
           {/* Mobile compact stats */}
           <div className="flex items-center gap-3 flex-wrap justify-center text-[10px] text-white/30 pt-1">
-            <span>Players <span className="text-white/50 font-bold">{activePlayers}</span></span>
+            <span>Players <span className="text-white/50 font-bold">{activePlayers}/{totalEntries}</span></span>
             <span>R <span className="text-white/50 font-bold">{tournament.rebuyCount}</span></span>
             <span>A <span className="text-white/50 font-bold">{tournament.addonCount}</span></span>
             {avg > 0 && <span>Avg <span className="text-white/50 font-bold">{formatChips(avg)}</span></span>}

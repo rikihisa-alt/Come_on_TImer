@@ -443,7 +443,9 @@ function TournamentTimer({ tournament: t }: { tournament: Tournament }) {
 function TournamentStats({ tournament: t }: { tournament: Tournament }) {
   const up = (p: Partial<Tournament>) => useStore.getState().updateTournament(t.id, p);
   const totalPlayLevels = t.levels.filter(l => l.type === 'play').length;
-  const activePlayers = t.initialEntries + t.reEntryCount;
+  const elim = t.eliminated || 0;
+  const activePlayers = Math.max(0, t.initialEntries + t.reEntryCount - elim);
+  const totalEntries = t.initialEntries + t.reEntryCount + t.rebuyCount; // アドオン除外
   const totalChips = t.initialEntries * t.startingChips
     + t.reEntryCount * t.reEntryChips
     + t.rebuyCount * t.rebuyChips
@@ -453,12 +455,12 @@ function TournamentStats({ tournament: t }: { tournament: Tournament }) {
 
   const CountRow = ({ label, count, countKey, chips, chipsKey }: { label: string; count: number; countKey: keyof Tournament; chips?: number; chipsKey?: keyof Tournament }) => (
     <div className="flex items-center gap-0.5">
-      <span className="text-xs text-white/30 w-11 shrink-0">{label}</span>
+      <span className="text-xs text-white/30 w-14 shrink-0">{label}</span>
       <button className="btn btn-ghost btn-sm px-1" onClick={() => up({ [countKey]: Math.max(0, count - 1) } as Partial<Tournament>)}>-</button>
-      <input type="text" inputMode="numeric" className="input input-sm flex-1 min-w-[5rem] text-center" value={count} onChange={e => { const v = toHalfWidthNumber(e.target.value); up({ [countKey]: Math.max(0, Number(v) || 0) } as Partial<Tournament>); }} />
+      <input type="text" inputMode="numeric" className="input input-sm flex-1 min-w-[4rem] text-center" value={count} onChange={e => { const v = toHalfWidthNumber(e.target.value); up({ [countKey]: Math.max(0, Number(v) || 0) } as Partial<Tournament>); }} />
       <button className="btn btn-ghost btn-sm px-1" onClick={() => up({ [countKey]: count + 1 } as Partial<Tournament>)}>+</button>
       {chipsKey && (
-        <input type="text" inputMode="numeric" className="input input-sm w-10 text-center px-0" value={chips || 0} placeholder="chips" onChange={e => { const v = toHalfWidthNumber(e.target.value); up({ [chipsKey]: Math.max(0, Number(v) || 0) } as Partial<Tournament>); }} />
+        <input type="text" inputMode="numeric" className="input input-sm w-14 text-center px-0" value={chips || 0} placeholder="chips" onChange={e => { const v = toHalfWidthNumber(e.target.value); up({ [chipsKey]: Math.max(0, Number(v) || 0) } as Partial<Tournament>); }} />
       )}
     </div>
   );
@@ -479,10 +481,25 @@ function TournamentStats({ tournament: t }: { tournament: Tournament }) {
         </div>
       </div>
 
-      {/* Entry / Re-Entry / Rebuy / Add-on カウント */}
+      {/* PLAYER 表示: active / total */}
+      <div className="border-t border-white/[0.06] pt-3">
+        <div className="flex items-center justify-center gap-2 py-2">
+          <span className="text-xs text-white/30 font-semibold uppercase">PLAYER</span>
+          <span className="text-2xl font-bold timer-font text-white">{activePlayers}<span className="text-white/30 mx-1">/</span>{totalEntries}</span>
+        </div>
+      </div>
+
+      {/* Entry / Re-Entry / Eliminated */}
       <div className="border-t border-white/[0.06] pt-3 space-y-2">
+        <div className="text-xs text-white/25 font-semibold mb-1">Entry</div>
         <CountRow label="Entry" count={t.initialEntries} countKey="initialEntries" />
         <CountRow label="Re-Entry" count={t.reEntryCount} countKey="reEntryCount" chips={t.reEntryChips} chipsKey="reEntryChips" />
+        <CountRow label="Eliminated" count={elim} countKey="eliminated" />
+      </div>
+
+      {/* Rebuy / Add-on */}
+      <div className="border-t border-white/[0.06] pt-3 space-y-2">
+        <div className="text-xs text-white/25 font-semibold mb-1">Rebuy / Add-on</div>
         <CountRow label="Rebuy" count={t.rebuyCount} countKey="rebuyCount" chips={t.rebuyChips} chipsKey="rebuyChips" />
         <CountRow label="Add-on" count={t.addonCount} countKey="addonCount" chips={t.addonChips} chipsKey="addonChips" />
       </div>
@@ -491,14 +508,14 @@ function TournamentStats({ tournament: t }: { tournament: Tournament }) {
       <div className="border-t border-white/[0.06] pt-3">
         <div className="text-xs text-white/25 font-semibold mb-2">Early Bird / 特典</div>
         <div className="flex items-center gap-0.5">
-          <span className="text-xs text-white/30 w-11 shrink-0">対象者</span>
+          <span className="text-xs text-white/30 w-14 shrink-0">対象者</span>
           <button className="btn btn-ghost btn-sm px-1" onClick={() => up({ earlyBirdCount: Math.max(0, t.earlyBirdCount - 1) })}>-</button>
-          <input type="text" inputMode="numeric" className="input input-sm flex-1 min-w-[5rem] text-center" value={t.earlyBirdCount} onChange={e => { const v = toHalfWidthNumber(e.target.value); up({ earlyBirdCount: Math.max(0, Number(v) || 0) }); }} />
+          <input type="text" inputMode="numeric" className="input input-sm flex-1 min-w-[4rem] text-center" value={t.earlyBirdCount} onChange={e => { const v = toHalfWidthNumber(e.target.value); up({ earlyBirdCount: Math.max(0, Number(v) || 0) }); }} />
           <button className="btn btn-ghost btn-sm px-1" onClick={() => up({ earlyBirdCount: t.earlyBirdCount + 1 })}>+</button>
-          <input type="text" inputMode="numeric" className="input input-sm w-10 text-center px-0" value={t.earlyBirdBonus} placeholder="chips" onChange={e => { const v = toHalfWidthNumber(e.target.value); up({ earlyBirdBonus: Math.max(0, Number(v) || 0) }); }} />
+          <input type="text" inputMode="numeric" className="input input-sm w-14 text-center px-0" value={t.earlyBirdBonus} placeholder="chips" onChange={e => { const v = toHalfWidthNumber(e.target.value); up({ earlyBirdBonus: Math.max(0, Number(v) || 0) }); }} />
         </div>
         {t.earlyBirdCount > 0 && t.earlyBirdBonus > 0 && (
-          <div className="text-xs text-white/20 mt-1 pl-11">合計 +{(t.earlyBirdCount * t.earlyBirdBonus).toLocaleString()} chips</div>
+          <div className="text-xs text-white/20 mt-1 pl-14">合計 +{(t.earlyBirdCount * t.earlyBirdBonus).toLocaleString()} chips</div>
         )}
       </div>
 
@@ -506,7 +523,7 @@ function TournamentStats({ tournament: t }: { tournament: Tournament }) {
       <div className="border-t border-white/[0.06] pt-3">
         <div className="text-xs text-white/25 font-semibold mb-2">Chip Summary</div>
         <div className="grid grid-cols-2 gap-1 text-xs">
-          <span className="text-white/30">Players (総数)</span><span className="text-white/50 font-bold text-right">{activePlayers}</span>
+          <span className="text-white/30">Active / Total</span><span className="text-white/50 font-bold text-right">{activePlayers} / {totalEntries}</span>
           <span className="text-white/30">Total Chips</span><span className="text-white/50 font-bold text-right">{totalChips.toLocaleString()}</span>
           <span className="text-white/30">Avg Stack</span><span className="text-white/50 font-bold text-right">{avg > 0 ? formatChips(avg) : '--'}</span>
         </div>
