@@ -5,27 +5,28 @@ import { useStore } from '@/stores/useStore';
 import { createClient } from '@/lib/supabase/client';
 import { isFirebaseAvailable, writeOrgState, onOrgStateChange } from '@/lib/firebase';
 
-const SUPABASE_DEBOUNCE_MS = 3000; // Supabase = persistence only, can be slower
-const FIREBASE_THROTTLE_MS = 300;  // Firebase = instant sync, throttle to max ~3 writes/sec
+const SUPABASE_DEBOUNCE_MS = 800;  // Supabase save debounce (fast for sync)
+const FIREBASE_THROTTLE_MS = 300;  // Firebase instant sync throttle
+const POLL_INTERVAL_MS = 2000;     // Polling fallback: every 2 seconds
 const PERSISTED_KEYS = ['tournaments', 'cashGames', 'displays', 'themes', 'sound', 'displayToggles', 'defaultThemeId', 'systemStyle', 'blindTemplates', 'tournamentPresets', 'cashPresets'] as const;
 
 /**
- * StoreSync: Headless component that syncs Zustand store across devices.
+ * StoreSync v89: Hybrid realtime sync
  *
- * Architecture (v88):
- *   Firebase RTDB  = instant cross-device sync (<100ms) via org-level channel
- *   Supabase       = persistent storage (debounced writes for durability)
+ * 3-layer sync architecture:
+ *   1. Firebase RTDB  (if configured) → instant <100ms
+ *   2. Supabase Realtime (always)     → near-instant when enabled
+ *   3. Polling fallback (always)      → guaranteed every 2s
  *
- * Flow:
- *   Local change → Firebase write (throttled 300ms) → other devices get instant update
- *   Local change → Supabase PUT (debounced 3s)      → durable persistence
- *   On login     → Supabase GET (initial state load) → hydrate store
+ * All 3 layers run simultaneously. Firebase is optional.
+ * Supabase Realtime needs: ALTER PUBLICATION supabase_realtime ADD TABLE org_store;
+ * Polling always works as guaranteed fallback.
  */
 export function StoreSync() {
   const isRemoteUpdate = useRef(false);
   const supabaseDebounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedJson = useRef<string>('');
-  const lastFirebaseJson = useRef<string>('');
+  const lastRemoteJson = useRef<string>('');
   const lastFirebaseWrite = useRef(0);
   const firebaseWriteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isAuthenticated = useRef(false);
@@ -33,15 +34,29 @@ export function StoreSync() {
   const isLoading = useRef(false);
   const orgId = useRef<string>('');
   const firebaseUnsub = useRef<(() => void) | null>(null);
+  const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const firebaseAvailable = isFirebaseAvailable();
 
-  // Save current state to Supabase (persistence layer)
+  // Apply remote data to store (shared logic)
+  const applyRemote = useCallback((data: Record<string, unknown>) => {
+    const json = JSON.stringify(data);
+    if (json === lastRemoteJson.current) return; // no change
+    lastRemoteJson.current = json;
+    lastSavedJson.current = json;
+
+    isRemoteUpdate.current = true;
+    useStore.getState()._hydrateFromRemote(data);
+    setTimeout(() => { isRemoteUpdate.current = false; }, 150);
+  }, []);
+
+  // Save to Supabase (persistence + triggers Realtime for other clients)
   const saveToSupabase = useCallback(async (storeData: Record<string, unknown>) => {
     if (!isAuthenticated.current) return;
 
     const json = JSON.stringify(storeData);
     if (json === lastSavedJson.current) return;
     lastSavedJson.current = json;
+    lastRemoteJson.current = json;
 
     try {
       const res = await fetch('/api/store', {
@@ -49,9 +64,7 @@ export function StoreSync() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ store_data: storeData }),
       });
-      if (!res.ok) {
-        console.error('[StoreSync] Supabase save failed:', res.status);
-      }
+      if (!res.ok) console.error('[StoreSync] Supabase save failed:', res.status);
     } catch (err) {
       console.error('[StoreSync] Supabase save error:', err);
     }
@@ -62,27 +75,26 @@ export function StoreSync() {
     if (!firebaseAvailable || !orgId.current) return;
 
     const json = JSON.stringify(storeData);
-    if (json === lastFirebaseJson.current) return;
-    lastFirebaseJson.current = json;
+    if (json === lastRemoteJson.current) return;
 
     const now = Date.now();
     const elapsed = now - lastFirebaseWrite.current;
 
-    if (elapsed >= FIREBASE_THROTTLE_MS) {
-      // Write immediately
-      lastFirebaseWrite.current = now;
+    const doWrite = () => {
+      lastFirebaseWrite.current = Date.now();
+      lastRemoteJson.current = JSON.stringify(storeData);
       writeOrgState(orgId.current, storeData).catch(() => {});
+    };
+
+    if (elapsed >= FIREBASE_THROTTLE_MS) {
+      doWrite();
     } else {
-      // Schedule write after throttle period
       if (firebaseWriteTimer.current) clearTimeout(firebaseWriteTimer.current);
-      firebaseWriteTimer.current = setTimeout(() => {
-        lastFirebaseWrite.current = Date.now();
-        writeOrgState(orgId.current, storeData).catch(() => {});
-      }, FIREBASE_THROTTLE_MS - elapsed);
+      firebaseWriteTimer.current = setTimeout(doWrite, FIREBASE_THROTTLE_MS - elapsed);
     }
   }, [firebaseAvailable]);
 
-  // Load initial state from Supabase + start Firebase listener
+  // Load initial state from Supabase + start all sync listeners
   const loadRemote = useCallback(async () => {
     if (isLoading.current) return;
     isLoading.current = true;
@@ -110,15 +122,15 @@ export function StoreSync() {
         useStore.getState()._hydrateFromRemote(store_data);
         const json = JSON.stringify(store_data);
         lastSavedJson.current = json;
-        lastFirebaseJson.current = json;
+        lastRemoteJson.current = json;
         setTimeout(() => { isRemoteUpdate.current = false; }, 100);
 
-        // Also push to Firebase so other connected devices get it
+        // Push to Firebase so connected devices get it
         if (firebaseAvailable && orgId.current) {
           writeOrgState(orgId.current, store_data).catch(() => {});
         }
       } else {
-        // No remote data — save current local state as initial
+        // No remote data — save current local state
         const currentState = useStore.getState()._getPersistedState();
         await saveToSupabase(currentState);
         if (firebaseAvailable && orgId.current) {
@@ -126,53 +138,51 @@ export function StoreSync() {
         }
       }
 
-      // 3. Start Firebase realtime listener for this org
+      // 3. Start Firebase realtime listener (Layer 1 - instant)
       if (firebaseAvailable && orgId.current) {
-        // Clean up any previous listener
         if (firebaseUnsub.current) firebaseUnsub.current();
-
         firebaseUnsub.current = onOrgStateChange(orgId.current, (state) => {
           if (!state) return;
-
-          const remoteJson = JSON.stringify(state);
-          // Skip if this matches what we just wrote (echo suppression)
-          if (remoteJson === lastFirebaseJson.current) return;
-          lastFirebaseJson.current = remoteJson;
-
-          // Apply remote changes instantly
-          isRemoteUpdate.current = true;
-          // Remove _ts before hydrating
           const { _ts, ...cleanState } = state;
-          void _ts; // unused
-          useStore.getState()._hydrateFromRemote(cleanState);
-          lastSavedJson.current = remoteJson;
-          setTimeout(() => { isRemoteUpdate.current = false; }, 150);
+          void _ts;
+          applyRemote(cleanState);
         });
       }
+
+      // 4. Start polling (Layer 3 - guaranteed fallback)
+      if (pollTimer.current) clearInterval(pollTimer.current);
+      pollTimer.current = setInterval(() => {
+        if (!isAuthenticated.current || !initialLoadDone.current || isLoading.current) return;
+
+        fetch('/api/store')
+          .then(r => r.ok ? r.json() : null)
+          .then(data => {
+            if (!data?.store_data) return;
+            applyRemote(data.store_data);
+          })
+          .catch(() => {});
+      }, POLL_INTERVAL_MS);
+
     } catch (err) {
       console.error('[StoreSync] Load error:', err);
     } finally {
       isLoading.current = false;
       initialLoadDone.current = true;
     }
-  }, [saveToSupabase, writeToFirebase, firebaseAvailable]);
+  }, [saveToSupabase, writeToFirebase, firebaseAvailable, applyRemote]);
 
-  // Session guard: auto-signout if "remember me" was NOT checked and browser was reopened
+  // Session guard
   useEffect(() => {
     if (typeof window === 'undefined') return;
-
     const noRemember = localStorage.getItem('come-on-no-remember');
     const sessionActive = sessionStorage.getItem('come-on-session');
-
     if (noRemember === 'true' && !sessionActive) {
       const supabase = createClient();
-      supabase.auth.signOut().then(() => {
-        window.location.href = '/login';
-      });
+      supabase.auth.signOut().then(() => { window.location.href = '/login'; });
     }
   }, []);
 
-  // Auth state listener — triggers loadRemote on sign-in
+  // Auth state listener
   useEffect(() => {
     const supabase = createClient();
 
@@ -186,39 +196,33 @@ export function StoreSync() {
         isAuthenticated.current = false;
         initialLoadDone.current = false;
         lastSavedJson.current = '';
-        lastFirebaseJson.current = '';
+        lastRemoteJson.current = '';
         orgId.current = '';
         isLoading.current = false;
-        // Clean up Firebase listener
-        if (firebaseUnsub.current) {
-          firebaseUnsub.current();
-          firebaseUnsub.current = null;
-        }
+        if (firebaseUnsub.current) { firebaseUnsub.current(); firebaseUnsub.current = null; }
+        if (pollTimer.current) { clearInterval(pollTimer.current); pollTimer.current = null; }
       }
     });
 
-    return () => {
-      subscription.unsubscribe();
-    };
+    return () => { subscription.unsubscribe(); };
   }, [loadRemote]);
 
-  // Subscribe to local store changes → write to Firebase (instant) + Supabase (debounced)
+  // Store change listener → Firebase (instant) + Supabase (debounced)
   useEffect(() => {
     const unsub = useStore.subscribe((state) => {
       if (isRemoteUpdate.current) return;
       if (!initialLoadDone.current) return;
       if (!isAuthenticated.current) return;
 
-      // Extract persisted state
       const persisted: Record<string, unknown> = {};
       for (const key of PERSISTED_KEYS) {
         persisted[key] = state[key];
       }
 
-      // Firebase: instant sync (throttled 300ms)
+      // Layer 1: Firebase instant sync (if available)
       writeToFirebase(persisted);
 
-      // Supabase: debounced persistence (3s)
+      // Layer 2+3: Supabase debounced save (triggers Realtime for other clients + persistence)
       if (supabaseDebounceTimer.current) clearTimeout(supabaseDebounceTimer.current);
       supabaseDebounceTimer.current = setTimeout(() => {
         saveToSupabase(persisted);
@@ -232,13 +236,31 @@ export function StoreSync() {
     };
   }, [saveToSupabase, writeToFirebase]);
 
-  // Clean up Firebase listener on unmount
+  // Supabase Realtime subscription (Layer 2 - near-instant when enabled)
+  useEffect(() => {
+    const supabase = createClient();
+
+    const channel = supabase
+      .channel('org_store_changes')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'org_store' },
+        (payload) => {
+          const newData = payload.new as { store_data?: Record<string, unknown> };
+          if (!newData.store_data) return;
+          applyRemote(newData.store_data);
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [applyRemote]);
+
+  // Cleanup
   useEffect(() => {
     return () => {
-      if (firebaseUnsub.current) {
-        firebaseUnsub.current();
-        firebaseUnsub.current = null;
-      }
+      if (firebaseUnsub.current) { firebaseUnsub.current(); firebaseUnsub.current = null; }
+      if (pollTimer.current) { clearInterval(pollTimer.current); pollTimer.current = null; }
     };
   }, []);
 
