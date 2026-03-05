@@ -55,6 +55,12 @@ export async function POST(
       return NextResponse.json({ error: 'Failed to reset password' }, { status: 500 });
     }
 
+    // Update password_plain in profiles
+    await getSupabaseAdmin()
+      .from('profiles')
+      .update({ password_plain: newPassword })
+      .eq('id', targetId);
+
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

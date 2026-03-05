@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 
 export default function SignupPage() {
   const router = useRouter();
+  const [invitationCode, setInvitationCode] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [organizationName, setOrganizationName] = useState('');
@@ -24,7 +25,7 @@ export default function SignupPage() {
       const res = await fetch('/api/auth/signup-owner', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, organizationName, displayName }),
+        body: JSON.stringify({ email, password, organizationName, displayName, invitationCode }),
       });
 
       const data = await res.json();
@@ -32,6 +33,12 @@ export default function SignupPage() {
       if (!res.ok) {
         if (data.error?.includes('already been registered')) {
           setError('このメールアドレスは既に登録されています');
+        } else if (data.error?.includes('Invalid invitation code')) {
+          setError('認証コードが無効です');
+        } else if (data.error?.includes('already been used')) {
+          setError('この認証コードは既に使用されています');
+        } else if (data.error?.includes('Invitation code is required')) {
+          setError('認証コードを入力してください');
         } else {
           setError(data.error || '登録に失敗しました');
         }
@@ -78,6 +85,18 @@ export default function SignupPage() {
                 {error}
               </div>
             )}
+
+            <div>
+              <label className="block text-white/50 text-xs font-medium mb-1.5">認証コード</label>
+              <input
+                type="text"
+                value={invitationCode}
+                onChange={(e) => setInvitationCode(e.target.value.toUpperCase())}
+                required
+                className="w-full px-4 py-3 bg-white/[0.06] border border-white/[0.1] rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-colors tracking-widest font-mono"
+                placeholder="例: STR-7K9M2X"
+              />
+            </div>
 
             <div>
               <label className="block text-white/50 text-xs font-medium mb-1.5">店舗名</label>

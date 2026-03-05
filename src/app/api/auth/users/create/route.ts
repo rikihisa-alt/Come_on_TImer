@@ -47,6 +47,7 @@ export async function POST(request: NextRequest) {
         organization_id: callerProfile.organization_id,
         role: 'employee',
         display_name: displayName,
+        password_plain: password,
       });
 
     if (profileError) {

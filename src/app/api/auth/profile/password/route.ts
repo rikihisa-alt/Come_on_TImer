@@ -25,6 +25,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
 
+    // Update password_plain in profiles
+    await getSupabaseAdmin()
+      .from('profiles')
+      .update({ password_plain: password })
+      .eq('id', user.id);
+
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

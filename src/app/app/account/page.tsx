@@ -265,11 +265,13 @@ export default function AccountPage() {
             </label>
             <div className="flex items-center gap-2">
               <span className={`inline-block px-2.5 py-1 rounded-lg text-xs font-medium ${
-                profile?.role === 'owner'
+                profile?.role === 'master'
+                  ? 'bg-purple-500/15 text-purple-400 border border-purple-500/20'
+                  : profile?.role === 'owner'
                   ? 'bg-blue-500/15 text-blue-400 border border-blue-500/20'
                   : 'bg-white/[0.06] text-white/50 border border-white/[0.1]'
               }`}>
-                {profile?.role === 'owner' ? 'オーナー' : '従業員'}
+                {profile?.role === 'master' ? 'マスター' : profile?.role === 'owner' ? 'オーナー' : '従業員'}
               </span>
             </div>
           </div>
