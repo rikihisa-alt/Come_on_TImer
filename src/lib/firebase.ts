@@ -92,3 +92,27 @@ export async function destroyRoom(code: string): Promise<void> {
   const roomRef = ref(database, `rooms/${code}`);
   await remove(roomRef);
 }
+
+/* ══════════════════════════════════════════════════
+   Organization-level Realtime Sync via Firebase
+   Same org members share state instantly (<100ms)
+   ══════════════════════════════════════════════════ */
+
+/** Write org state to Firebase */
+export async function writeOrgState(orgId: string, state: Record<string, unknown>): Promise<void> {
+  const database = getDb();
+  if (!database) return;
+  const stateRef = ref(database, `orgs/${orgId}/state`);
+  await set(stateRef, { ...state, _ts: Date.now() });
+}
+
+/** Listen for org state changes in Firebase (realtime) */
+export function onOrgStateChange(orgId: string, cb: (state: Record<string, unknown> | null) => void): () => void {
+  const database = getDb();
+  if (!database) return () => {};
+  const stateRef = ref(database, `orgs/${orgId}/state`);
+  const handler = onValue(stateRef, (snapshot) => {
+    cb(snapshot.val() as Record<string, unknown> | null);
+  });
+  return () => off(stateRef, 'value', handler);
+}
