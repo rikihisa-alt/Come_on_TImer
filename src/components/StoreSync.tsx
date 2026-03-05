@@ -5,46 +5,47 @@ import { useStore } from '@/stores/useStore';
 import { createClient } from '@/lib/supabase/client';
 import { isFirebaseAvailable, writeOrgState, onOrgStateChange } from '@/lib/firebase';
 
-const SUPABASE_DEBOUNCE_MS = 500;  // Fast debounce for responsive sync
+const SUPABASE_DEBOUNCE_MS = 500;
 const FIREBASE_THROTTLE_MS = 300;
-const POLL_INTERVAL_MS = 2000;
+const POLL_INTERVAL_MS = 3000;
+const FLUSH_COOLDOWN_MS = 1500;  // Ignore remote echoes for 1.5s after own write
 const PERSISTED_KEYS = ['tournaments', 'cashGames', 'displays', 'themes', 'sound', 'displayToggles', 'defaultThemeId', 'systemStyle', 'blindTemplates', 'tournamentPresets', 'cashPresets'] as const;
 
 /**
- * StoreSync v90: Optimized hybrid realtime sync
+ * StoreSync v91: Fix snap-back on local changes
  *
- * Optimizations:
- *   - Dirty flag instead of JSON.stringify on every store change
- *   - Batched saves with short debounce (500ms)
- *   - Lightweight change detection for incoming data
+ * Key fixes:
+ *   - Skip remote updates while local changes are pending (isDirty guard)
+ *   - Cooldown period after flush to avoid echo snap-back
+ *   - Full JSON hash to catch ALL field changes (blinds, themes, etc.)
+ *   - Polling only when no pending local changes
  */
 export function StoreSync() {
   const isRemoteUpdate = useRef(false);
   const supabaseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const firebaseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastFirebaseWrite = useRef(0);
-  const lastSavedHash = useRef('');
-  const lastRemoteHash = useRef('');
+  const lastSavedJson = useRef('');
   const isAuthenticated = useRef(false);
   const initialLoadDone = useRef(false);
   const isLoading = useRef(false);
   const isDirty = useRef(false);
+  const lastFlushTime = useRef(0);
   const orgId = useRef('');
   const firebaseUnsub = useRef<(() => void) | null>(null);
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const firebaseAvailable = isFirebaseAvailable();
 
-  // Fast hash: use only key fields for comparison instead of full JSON.stringify
-  const quickHash = useCallback((data: Record<string, unknown>): string => {
-    const t = data.tournaments as Array<{ id: string; status: string; remainingMs: number; currentLevelIndex: number; timerStartedAt: number | null }> | undefined;
-    const c = data.cashGames as Array<{ id: string; status: string }> | undefined;
-    // Hash based on tournament/cash states + a sample of settings
-    const tHash = t ? t.map(x => `${x.id}:${x.status}:${x.currentLevelIndex}:${x.remainingMs}:${x.timerStartedAt}`).join('|') : '';
-    const cHash = c ? c.map(x => `${x.id}:${x.status}`).join('|') : '';
-    return `${tHash}#${cHash}#${data.defaultThemeId}`;
+  // Full JSON hash for reliable comparison (catches ALL field changes)
+  const stableHash = useCallback((data: Record<string, unknown>): string => {
+    try {
+      return JSON.stringify(data);
+    } catch {
+      return '';
+    }
   }, []);
 
-  // Get persisted state (lightweight - no serialization)
+  // Get persisted state
   const getPersistedState = useCallback((): Record<string, unknown> => {
     const state = useStore.getState();
     const persisted: Record<string, unknown> = {};
@@ -54,28 +55,34 @@ export function StoreSync() {
     return persisted;
   }, []);
 
-  // Apply remote data
+  // Apply remote data — with guards against snap-back
   const applyRemote = useCallback((data: Record<string, unknown>) => {
-    const hash = quickHash(data);
-    if (hash === lastRemoteHash.current) return;
-    lastRemoteHash.current = hash;
-    lastSavedHash.current = hash;
+    // Guard 1: Skip if we have unsaved local changes
+    if (isDirty.current) return;
+
+    // Guard 2: Skip during cooldown after our own flush (echo protection)
+    if (Date.now() - lastFlushTime.current < FLUSH_COOLDOWN_MS) return;
+
+    // Guard 3: Skip if data is identical to what we last saved
+    const json = stableHash(data);
+    if (!json || json === lastSavedJson.current) return;
+    lastSavedJson.current = json;
 
     isRemoteUpdate.current = true;
     useStore.getState()._hydrateFromRemote(data);
     setTimeout(() => { isRemoteUpdate.current = false; }, 150);
-  }, [quickHash]);
+  }, [stableHash]);
 
-  // Flush: actually send data to Supabase + Firebase
+  // Flush: send data to Supabase + Firebase
   const flush = useCallback(async () => {
     if (!isAuthenticated.current || !isDirty.current) return;
     isDirty.current = false;
 
     const persisted = getPersistedState();
-    const hash = quickHash(persisted);
-    if (hash === lastSavedHash.current) return;
-    lastSavedHash.current = hash;
-    lastRemoteHash.current = hash;
+    const json = stableHash(persisted);
+    if (!json || json === lastSavedJson.current) return;
+    lastSavedJson.current = json;
+    lastFlushTime.current = Date.now();  // Start echo cooldown
 
     // Firebase: instant
     if (firebaseAvailable && orgId.current) {
@@ -102,7 +109,7 @@ export function StoreSync() {
         body: JSON.stringify({ store_data: persisted }),
       });
     } catch { /* ignore */ }
-  }, [getPersistedState, quickHash, firebaseAvailable]);
+  }, [getPersistedState, stableHash, firebaseAvailable]);
 
   // Load initial state
   const loadRemote = useCallback(async () => {
@@ -123,9 +130,7 @@ export function StoreSync() {
       if (store_data && typeof store_data === 'object' && Object.keys(store_data).length > 0) {
         isRemoteUpdate.current = true;
         useStore.getState()._hydrateFromRemote(store_data);
-        const hash = quickHash(store_data);
-        lastSavedHash.current = hash;
-        lastRemoteHash.current = hash;
+        lastSavedJson.current = stableHash(store_data);
         setTimeout(() => { isRemoteUpdate.current = false; }, 100);
 
         if (firebaseAvailable && orgId.current) {
@@ -138,6 +143,7 @@ export function StoreSync() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ store_data: current }),
         });
+        lastSavedJson.current = stableHash(current);
         if (firebaseAvailable && orgId.current) {
           writeOrgState(orgId.current, current).catch(() => {});
         }
@@ -154,10 +160,13 @@ export function StoreSync() {
         });
       }
 
-      // Polling fallback
+      // Polling fallback — skips when dirty or in cooldown (applyRemote guards handle it)
       if (pollTimer.current) clearInterval(pollTimer.current);
       pollTimer.current = setInterval(() => {
         if (!isAuthenticated.current || !initialLoadDone.current || isLoading.current) return;
+        // Don't poll if we have pending local changes or just flushed
+        if (isDirty.current) return;
+        if (Date.now() - lastFlushTime.current < FLUSH_COOLDOWN_MS) return;
         fetch('/api/store')
           .then(r => r.ok ? r.json() : null)
           .then(data => { if (data?.store_data) applyRemote(data.store_data); })
@@ -170,7 +179,7 @@ export function StoreSync() {
       isLoading.current = false;
       initialLoadDone.current = true;
     }
-  }, [getPersistedState, quickHash, applyRemote, firebaseAvailable, flush]);
+  }, [getPersistedState, stableHash, applyRemote, firebaseAvailable, flush]);
 
   // Session guard
   useEffect(() => {
@@ -195,8 +204,8 @@ export function StoreSync() {
       } else if (event === 'SIGNED_OUT') {
         isAuthenticated.current = false;
         initialLoadDone.current = false;
-        lastSavedHash.current = '';
-        lastRemoteHash.current = '';
+        lastSavedJson.current = '';
+        lastFlushTime.current = 0;
         orgId.current = '';
         isDirty.current = false;
         isLoading.current = false;
