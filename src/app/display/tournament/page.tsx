@@ -86,12 +86,12 @@ function PrizeTable({ tournament, primaryColor, textColor, format }: { tournamen
         style={{ fontSize: 'calc(var(--sfs, 1) * 0.6rem)', ...(textColor ? { color: textColor, opacity: 0.5 } : {}) }}>Prize</div>
       <div className="flex-1 flex flex-col justify-evenly min-h-0">
         {prizes.map((p) => (
-          <div key={p.place} className="flex items-center justify-between gap-2 px-1">
-            <span className={`shrink-0 ${textColor ? '' : 'text-white/40'}`}
+          <div key={p.place} className="grid grid-cols-[auto_1fr] items-center gap-2 px-1">
+            <span className={`shrink-0 text-left ${textColor ? '' : 'text-white/40'}`}
               style={{ fontSize: 'calc(var(--sfs, 1) * 0.75rem)', ...(textColor ? { color: textColor, opacity: 0.5 } : {}) }}>
               {fmt === 'ordinal' ? ordinalLabel(p.place) : `${p.place}位`}
             </span>
-            <span className="font-bold timer-font text-right truncate"
+            <span className="font-bold timer-font text-center truncate"
               style={{ fontSize: 'calc(var(--sfs, 1) * 0.85rem)', color: textColor || (p.place === 1 ? primaryColor : 'rgba(255,255,255,0.5)') }}>
               {p.label}
             </span>

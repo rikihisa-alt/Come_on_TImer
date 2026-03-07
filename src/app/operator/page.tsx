@@ -1832,6 +1832,8 @@ function SplitTab() {
   ];
   const [leftId, setLeftId] = useState(allTimers[0]?.id || '');
   const [rightId, setRightId] = useState(allTimers[1]?.id || allTimers[0]?.id || '');
+  const [editMode, setEditMode] = useState(false);
+  const [editPanel, setEditPanel] = useState<'left' | 'right'>('left');
 
   // Get theme for preview
   const leftTimer = tournaments.find(t => t.id === leftId) || cashGames.find(c => c.id === leftId);
@@ -1843,6 +1845,43 @@ function SplitTab() {
   const rightThemeId = rightTimer?.themeId || store.defaultThemeId || 'come-on-blue';
 
   const splitPath = `/display/split?left=${leftId}&right=${rightId}&leftTheme=${leftThemeId}&rightTheme=${rightThemeId}`;
+
+  // Layout editor: determine which timer is being edited
+  const editTimerId = editPanel === 'left' ? leftId : rightId;
+  const editTimerT = tournaments.find(t => t.id === editTimerId);
+  const editTimerC = cashGames.find(c => c.id === editTimerId);
+  const isEditingTournament = !!editTimerT;
+
+  // Layout editor hooks (always called — React rules of hooks)
+  const dummyT = { id: '', name: '', displayToggles: DEFAULT_DISPLAY_TOGGLES } as unknown as Tournament;
+  const dummyC = { id: '', name: '', displayToggles: DEFAULT_DISPLAY_TOGGLES } as unknown as CashGame;
+  const tEditor = useTournamentLayoutEditor(editTimerT || (tournaments[0] || dummyT));
+  const cEditor = useCashLayoutEditor(editTimerC || (cashGames[0] || dummyC));
+  const editor = isEditingTournament ? tEditor : cEditor;
+
+  // Force split mode for layout editors
+  useEffect(() => {
+    tEditor.setLayoutMode('split');
+    cEditor.setLayoutMode('split');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Preview scaling
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(0.25);
+  const [iframeKey, setIframeKey] = useState(0);
+
+  useEffect(() => {
+    const update = () => {
+      if (containerRef.current) setScale(containerRef.current.offsetWidth / 1280);
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
+  // Refresh iframe when timer selection changes
+  useEffect(() => { setIframeKey(k => k + 1); }, [leftId, rightId]);
 
   if (allTimers.length < 2) {
     return (
@@ -1893,14 +1932,106 @@ function SplitTab() {
         </div>
       </div>
 
-      {/* Split Preview */}
-      <DisplayPreview
-        route="split"
-        displayId=""
-        targetName={`${leftTimer?.name || '左'} | ${rightTimer?.name || '右'}`}
-        themeLabel={themeName}
-        overridePath={splitPath}
-      />
+      {/* Split Preview with Layout Editor */}
+      <div className="space-y-0">
+        {/* Toolbar */}
+        <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-2 bg-white/[0.03] rounded-t-xl border border-white/[0.08] border-b-0">
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md shrink-0 bg-purple-500/20 text-purple-400">Split View</span>
+          <span className="text-xs text-white/40 truncate min-w-0">{leftTimer?.name || '左'} | {rightTimer?.name || '右'}</span>
+          <span className="text-xs text-white/20 shrink-0 hidden sm:inline">{themeName}</span>
+          <div className="ml-auto flex items-center gap-1">
+            <button onClick={() => setEditMode(!editMode)}
+              className={`px-2 py-1 rounded-lg text-[10px] font-semibold transition-all ${editMode ? 'bg-blue-500/25 text-blue-400 border border-blue-500/30' : 'bg-white/[0.05] text-white/30 hover:text-white/60 hover:bg-white/[0.1] border border-transparent'}`}
+              title={editMode ? 'Exit layout edit' : 'Edit split layout'}>
+              <svg className="w-3.5 h-3.5 inline-block mr-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+              </svg>
+              Layout
+            </button>
+            <button onClick={() => setIframeKey(k => k + 1)}
+              className="p-1.5 rounded-lg hover:bg-white/[0.08] text-white/25 hover:text-white/60 transition-colors" title="Refresh">
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182" />
+              </svg>
+            </button>
+            <button onClick={() => window.open(splitPath, '_blank')}
+              className="p-1.5 rounded-lg hover:bg-white/[0.08] text-white/25 hover:text-white/60 transition-colors" title="Open in new tab">
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Edit mode: Left/Right panel toggle + Reset */}
+        {editMode && (
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-white/[0.02] border-x border-white/[0.08]">
+            <div className="flex gap-1">
+              <button onClick={() => setEditPanel('left')}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all ${editPanel === 'left' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'text-white/25 border border-white/[0.06]'}`}>
+                ◀ Left
+              </button>
+              <button onClick={() => setEditPanel('right')}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all ${editPanel === 'right' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' : 'text-white/25 border border-white/[0.06]'}`}>
+                Right ▶
+              </button>
+            </div>
+            <span className="text-[10px] text-white/20 truncate">
+              {editPanel === 'left' ? leftTimer?.name : rightTimer?.name} ({isEditingTournament ? 'Tournament' : 'Cash'})
+            </span>
+            <div className="ml-auto flex gap-1">
+              {editor.showUndo && <button className="text-[10px] px-2 py-1 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30 animate-pulse" onClick={editor.handleUndo}>↩ Undo</button>}
+              <button className="text-[10px] px-2 py-1 rounded-lg bg-white/[0.05] text-white/30 hover:text-white/60 border border-white/[0.06]" onClick={editor.handleReset}>Reset</button>
+            </div>
+          </div>
+        )}
+
+        {/* Preview area: iframe + overlay */}
+        <div ref={containerRef} className="rounded-b-xl overflow-hidden border border-white/[0.08] border-t-0 bg-black/40 relative"
+          style={{ height: `${Math.round(scale * 720)}px` }}>
+          <iframe
+            key={iframeKey}
+            src={splitPath}
+            style={{
+              position: 'absolute', top: 0, left: 0,
+              width: '1280px', height: '720px',
+              transform: `scale(${scale})`, transformOrigin: 'top left',
+              border: 'none', pointerEvents: editMode ? 'none' : 'auto',
+            }}
+          />
+          {/* Draggable overlay (edit mode only) */}
+          {editMode && (
+            <div className="absolute z-10 select-none" style={{
+              top: '6.7%',
+              left: editPanel === 'right' ? '50.2%' : 0,
+              width: '49.8%',
+              height: '93.3%',
+            }}>
+              {editor.overlay}
+            </div>
+          )}
+          {/* LIVE / EDIT indicator */}
+          {!editMode && (
+            <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/50 backdrop-blur-sm z-20">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+              <span className="text-[9px] text-white/40 font-semibold">LIVE</span>
+            </div>
+          )}
+          {editMode && (
+            <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/20 backdrop-blur-sm z-20 border border-blue-500/30">
+              <span className="text-[9px] text-blue-400 font-semibold">EDIT MODE — {editPanel === 'left' ? 'LEFT' : 'RIGHT'}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Properties panel (edit mode) */}
+        {editMode && editor.propertiesPanel && (
+          <div className="mt-2">
+            {editor.propertiesPanel}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -2411,11 +2542,503 @@ function SystemStyleEditor() {
   );
 }
 
+/* ── Accordion Section ── */
+function AccordionSection({ title, defaultOpen = false, children }: { title: string; defaultOpen?: boolean; children: React.ReactNode }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="g-card overflow-hidden">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between p-4">
+        <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--sys-text-secondary)' }}>{title}</span>
+        <svg className={`w-4 h-4 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+          style={{ color: 'var(--sys-text-muted)' }}
+          fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {open && <div className="px-4 pb-4 space-y-5 fade-in">{children}</div>}
+    </div>
+  );
+}
+
+/* ── Settings: Theme Presets ── */
+function SettingsThemePresets() {
+  const systemStyle = useStore(s => s.systemStyle) || DEFAULT_SYSTEM_STYLE;
+  const applyUnifiedPreset = useStore(s => s.applyUnifiedPreset);
+  const activePreset = UNIFIED_PRESETS.find(p => p.id === systemStyle.unifiedPresetId);
+  return (
+    <>
+      <p className="text-xs" style={{ color: 'var(--sys-text-muted)' }}>ワンタップで全カラーを一括設定。選択後、カラー設定で個別編集も可能です。</p>
+      {(['dark', 'light'] as const).map(mode => (
+        <div key={mode}>
+          <div className="text-[9px] font-bold uppercase tracking-widest mb-1.5 mt-2" style={{ color: 'var(--sys-text-muted)' }}>
+            {mode === 'dark' ? 'Dark Themes' : 'Light Themes'}
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {UNIFIED_PRESETS.filter(p => p.mode === mode).map(p => (
+              <button key={p.id}
+                onClick={() => applyUnifiedPreset(p.id)}
+                className={`p-2 rounded-xl border transition-all text-left ${
+                  systemStyle.unifiedPresetId === p.id
+                    ? 'border-[var(--ui-accent)] ring-2 ring-[var(--ui-accent)]/30'
+                    : 'border-[var(--sys-input-border)] hover:border-[var(--sys-glass-border)]'
+                }`}>
+                <div className="w-full h-6 rounded-lg mb-1.5 relative overflow-hidden"
+                  style={{ background: `linear-gradient(135deg, ${p.tokens['timer.background']}, ${p.tokens['timer.backgroundTo']})` }}>
+                  <span className="absolute right-1.5 top-0.5 text-[10px] font-bold tracking-wider" style={{ color: p.tokens['timer.text'] }}>12:34</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded-full shrink-0" style={{ background: p.tokens['theme.primary'] }} />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[10px] font-semibold truncate" style={{ color: 'var(--sys-text)' }}>{p.name}</div>
+                    <div className="text-[9px] truncate" style={{ color: 'var(--sys-text-muted)' }}>{p.description}</div>
+                  </div>
+                  {systemStyle.unifiedPresetId === p.id && <span className="text-[10px]">✓</span>}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
+      {activePreset && (
+        <div className="mt-3 rounded-xl overflow-hidden border" style={{ borderColor: activePreset.tokens['ui.border'] }}>
+          <div className="p-3" style={{ background: `linear-gradient(135deg, ${activePreset.tokens['timer.background']}, ${activePreset.tokens['timer.backgroundTo']})` }}>
+            <div className="text-[9px] font-semibold mb-1" style={{ color: activePreset.tokens['text.secondary'] }}>Timer Preview — {activePreset.name}</div>
+            <div className="text-center text-2xl font-bold tracking-wider timer-font" style={{ color: activePreset.tokens['timer.text'] }}>12:34</div>
+            <div className="text-center text-xs mt-1" style={{ color: activePreset.tokens['timer.text'] + 'aa' }}>100/200 (Ante 25)</div>
+          </div>
+          <div className="p-2 flex gap-1" style={{ background: activePreset.tokens['tab.background'] }}>
+            {['Tournament', 'Cash', 'Settings'].map((l, i) => (
+              <div key={l} className="flex-1 py-1 rounded text-[8px] font-semibold text-center"
+                style={i === 0
+                  ? { background: activePreset.tokens['tab.activeBackground'], color: activePreset.tokens['tab.activeText'] }
+                  : { color: activePreset.tokens['tab.inactiveText'] }}>
+                {l}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+/* ── Settings: Fonts ── */
+function SettingsFonts() {
+  const systemStyle = useStore(s => s.systemStyle) || DEFAULT_SYSTEM_STYLE;
+  const updateSystemStyle = useStore(s => s.updateSystemStyle);
+  return (
+    <>
+      <div>
+        <label className="text-xs block mb-1" style={{ color: 'var(--sys-text-muted)' }}>Font (フォント)</label>
+        <select className="input input-sm" value={systemStyle.fontFamily}
+          onChange={e => updateSystemStyle({ fontFamily: e.target.value })}>
+          <optgroup label="Sans-serif">
+            {FONT_OPTIONS.filter(f => f.category === 'sans').map(f => (
+              <option key={f.id} value={f.id}>{f.label}</option>
+            ))}
+          </optgroup>
+          <optgroup label="Display">
+            {FONT_OPTIONS.filter(f => f.category === 'display').map(f => (
+              <option key={f.id} value={f.id}>{f.label}</option>
+            ))}
+          </optgroup>
+          <optgroup label="Monospace">
+            {FONT_OPTIONS.filter(f => f.category === 'mono').map(f => (
+              <option key={f.id} value={f.id}>{f.label}</option>
+            ))}
+          </optgroup>
+        </select>
+      </div>
+      <div>
+        <label className="text-xs block mb-1" style={{ color: 'var(--sys-text-muted)' }}>Timer Font (タイマーフォント)</label>
+        <p className="text-[9px] mb-1" style={{ color: 'var(--sys-text-muted)' }}>タイマー数字だけ別フォントを指定。空でメインフォント使用。</p>
+        <select className="input input-sm"
+          value={systemStyle.timerFontFamily || ''}
+          onChange={e => updateSystemStyle({ timerFontFamily: e.target.value || undefined })}>
+          <option value="">メインフォントと同じ</option>
+          <optgroup label="Sans-serif">
+            {FONT_OPTIONS.filter(f => f.category === 'sans').map(f => (
+              <option key={f.id} value={f.id}>{f.label}</option>
+            ))}
+          </optgroup>
+          <optgroup label="Display">
+            {FONT_OPTIONS.filter(f => f.category === 'display').map(f => (
+              <option key={f.id} value={f.id}>{f.label}</option>
+            ))}
+          </optgroup>
+          <optgroup label="Monospace">
+            {FONT_OPTIONS.filter(f => f.category === 'mono').map(f => (
+              <option key={f.id} value={f.id}>{f.label}</option>
+            ))}
+          </optgroup>
+        </select>
+      </div>
+      <div className="g-card-inner p-3 space-y-1">
+        <div className="text-[10px]" style={{ color: 'var(--sys-text-muted)' }}>プレビュー</div>
+        <div style={{ fontFamily: (FONT_OPTIONS.find(f => f.id === systemStyle.fontFamily) || FONT_OPTIONS[0]).value }}>
+          <div className="text-sm" style={{ color: 'var(--sys-text)' }}>ABCDEFabcdef 01234 あいうえお</div>
+          <div className="text-xl font-black timer-font" style={{ color: 'var(--sys-text-secondary)' }}>12:34:56</div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* ── Settings: Colors ── */
+function SettingsColors() {
+  const systemStyle = useStore(s => s.systemStyle) || DEFAULT_SYSTEM_STYLE;
+  const updateSystemStyle = useStore(s => s.updateSystemStyle);
+  const hsl = hexToHsl(systemStyle.uiAccentColor || '#3b82f6');
+  const setHsl = (h: number, s: number, l: number) => {
+    updateSystemStyle({ uiAccentColor: hslToHex(h, s, l) });
+  };
+  return (
+    <>
+      {/* System Theme Picker */}
+      <div>
+        <label className="text-xs block mb-2" style={{ color: 'var(--sys-text-muted)' }}>System Theme (システムテーマ)</label>
+        <div className="grid grid-cols-3 gap-2">
+          {SYSTEM_THEMES.map(t => (
+            <button key={t.id}
+              onClick={() => updateSystemStyle({ systemThemeId: t.id as SystemThemeId })}
+              className={`p-2 rounded-xl border transition-all ${
+                (systemStyle.systemThemeId || 'bright-blue') === t.id
+                  ? 'border-[var(--ui-accent)] ring-2 ring-[var(--ui-accent)]/30'
+                  : 'border-[var(--sys-input-border)] hover:border-[var(--sys-glass-border)]'
+              }`}>
+              <div className="w-full h-8 rounded-lg mb-1.5"
+                style={{ background: `linear-gradient(135deg, ${t.bgFrom}, ${t.bgTo})` }} />
+              <div className="text-[10px] font-medium truncate" style={{ color: 'var(--sys-text)' }}>{t.name}</div>
+              <div className="text-[9px] truncate" style={{ color: 'var(--sys-text-muted)' }}>{t.nameJa}</div>
+            </button>
+          ))}
+          <button
+            onClick={() => updateSystemStyle({ systemThemeId: 'custom' })}
+            className={`p-2 rounded-xl border transition-all ${
+              systemStyle.systemThemeId === 'custom'
+                ? 'border-[var(--ui-accent)] ring-2 ring-[var(--ui-accent)]/30'
+                : 'border-[var(--sys-input-border)] hover:border-[var(--sys-glass-border)]'
+            }`}>
+            <div className="w-full h-8 rounded-lg mb-1.5 flex items-center justify-center text-[16px]"
+              style={{ background: systemStyle.systemThemeId === 'custom'
+                ? `linear-gradient(135deg, ${systemStyle.customBgFrom || '#0e1c36'}, ${systemStyle.customBgTo || '#1c3d6e'})`
+                : 'var(--sys-glass-inner-bg)' }}>
+              🎨
+            </div>
+            <div className="text-[10px] font-medium truncate" style={{ color: 'var(--sys-text)' }}>Custom</div>
+            <div className="text-[9px] truncate" style={{ color: 'var(--sys-text-muted)' }}>カスタム</div>
+          </button>
+        </div>
+        {systemStyle.systemThemeId === 'custom' && (
+          <div className="grid grid-cols-2 gap-3 mt-3 g-card-inner p-3">
+            <div>
+              <label className="text-[10px] block mb-1" style={{ color: 'var(--sys-text-muted)' }}>Gradient Start</label>
+              <div className="flex items-center gap-2">
+                <input type="color" value={systemStyle.customBgFrom || '#0e1c36'} className="w-8 h-8 rounded cursor-pointer border-0 p-0"
+                  onChange={e => updateSystemStyle({ customBgFrom: e.target.value })} />
+                <input className="input input-sm flex-1 font-mono text-xs" value={systemStyle.customBgFrom || '#0e1c36'}
+                  onChange={e => { if (/^#[0-9a-fA-F]{6}$/.test(e.target.value)) updateSystemStyle({ customBgFrom: e.target.value }); }} />
+              </div>
+            </div>
+            <div>
+              <label className="text-[10px] block mb-1" style={{ color: 'var(--sys-text-muted)' }}>Gradient End</label>
+              <div className="flex items-center gap-2">
+                <input type="color" value={systemStyle.customBgTo || '#1c3d6e'} className="w-8 h-8 rounded cursor-pointer border-0 p-0"
+                  onChange={e => updateSystemStyle({ customBgTo: e.target.value })} />
+                <input className="input input-sm flex-1 font-mono text-xs" value={systemStyle.customBgTo || '#1c3d6e'}
+                  onChange={e => { if (/^#[0-9a-fA-F]{6}$/.test(e.target.value)) updateSystemStyle({ customBgTo: e.target.value }); }} />
+              </div>
+            </div>
+          </div>
+        )}
+        {(() => {
+          const previewTheme = getSystemTheme(systemStyle.systemThemeId || 'bright-blue', systemStyle.customBgFrom, systemStyle.customBgTo);
+          return (
+            <div className="mt-3 rounded-xl overflow-hidden border" style={{ borderColor: previewTheme.glassBorder }}>
+              <div className="p-3 space-y-2" style={{ background: `linear-gradient(135deg, ${previewTheme.bgFrom}, ${previewTheme.bgTo})` }}>
+                <div className="text-[9px] font-semibold" style={{ color: previewTheme.textMuted }}>テーマプレビュー</div>
+                <div className="rounded-lg p-2 space-y-1.5" style={{ background: previewTheme.glassBg, borderWidth: 1, borderColor: previewTheme.glassBorder }}>
+                  <div className="text-[10px] font-bold" style={{ color: previewTheme.textPrimary }}>カードサンプル</div>
+                  <div className="rounded-md px-2 py-1" style={{ background: previewTheme.inputBg, borderWidth: 1, borderColor: previewTheme.inputBorder }}>
+                    <span className="text-[9px]" style={{ color: previewTheme.textSecondary }}>入力欄サンプル</span>
+                  </div>
+                  <div className="rounded-md p-1.5" style={{ background: previewTheme.glassInnerBg }}>
+                    <span className="text-[9px]" style={{ color: previewTheme.textMuted }}>カード内カード</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+      </div>
+
+      {/* Text Color Override */}
+      <div>
+        <label className="text-xs block mb-1" style={{ color: 'var(--sys-text-muted)' }}>Text Color (文字色)</label>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl border border-white/10 shrink-0"
+            style={{ background: systemStyle.customTextColor || getSystemTheme(systemStyle.systemThemeId || 'bright-blue', systemStyle.customBgFrom, systemStyle.customBgTo).textPrimary }} />
+          <input className="input input-sm flex-1 font-mono text-xs"
+            value={systemStyle.customTextColor || ''}
+            placeholder={getSystemTheme(systemStyle.systemThemeId || 'bright-blue', systemStyle.customBgFrom, systemStyle.customBgTo).textPrimary}
+            onChange={e => {
+              const v = e.target.value;
+              if (v === '') { updateSystemStyle({ customTextColor: undefined }); }
+              else if (/^#[0-9a-fA-F]{6}$/.test(v)) { updateSystemStyle({ customTextColor: v }); }
+            }} />
+          <input type="color"
+            value={systemStyle.customTextColor || getSystemTheme(systemStyle.systemThemeId || 'bright-blue', systemStyle.customBgFrom, systemStyle.customBgTo).textPrimary}
+            className="w-8 h-8 rounded cursor-pointer border-0 p-0 shrink-0"
+            onChange={e => updateSystemStyle({ customTextColor: e.target.value })} />
+          {systemStyle.customTextColor && (
+            <button className="btn btn-sm btn-ghost text-[10px] shrink-0"
+              onClick={() => updateSystemStyle({ customTextColor: undefined })}>
+              リセット
+            </button>
+          )}
+        </div>
+        <p className="text-xs mt-1" style={{ color: 'var(--sys-text-muted)' }}>空欄でテーマデフォルトの文字色を使用します</p>
+        <div className="g-card-inner p-2.5 mt-2 space-y-1">
+          <div className="text-[10px] font-bold" style={{ color: systemStyle.customTextColor || getSystemTheme(systemStyle.systemThemeId || 'bright-blue', systemStyle.customBgFrom, systemStyle.customBgTo).textPrimary }}>
+            見出しテキスト — Heading Text
+          </div>
+          <div className="text-[9px]" style={{ color: systemStyle.customTextColor ? `${systemStyle.customTextColor}99` : getSystemTheme(systemStyle.systemThemeId || 'bright-blue', systemStyle.customBgFrom, systemStyle.customBgTo).textSecondary }}>
+            説明テキスト — Description sample text
+          </div>
+        </div>
+      </div>
+
+      {/* UI Accent Color — Slider */}
+      <div className="space-y-3">
+        <label className="text-xs block" style={{ color: 'var(--sys-text-muted)' }}>UI Accent Color (アクセントカラー)</label>
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-10 h-10 rounded-xl border border-white/10 shrink-0" style={{ background: systemStyle.uiAccentColor }} />
+          <input className="input input-sm flex-1 font-mono text-xs" value={systemStyle.uiAccentColor}
+            onChange={e => { if (/^#[0-9a-fA-F]{6}$/.test(e.target.value)) updateSystemStyle({ uiAccentColor: e.target.value }); }} />
+        </div>
+        <div>
+          <div className="flex justify-between mb-1">
+            <span className="text-xs" style={{ color: 'var(--sys-text-muted)' }}>色相 (Hue)</span>
+            <span className="text-xs" style={{ color: 'var(--sys-text-muted)' }}>{hsl.h}°</span>
+          </div>
+          <input type="range" min={0} max={360} value={hsl.h}
+            onChange={e => setHsl(+e.target.value, hsl.s, hsl.l)}
+            className="w-full h-6 rounded-full cursor-pointer appearance-none"
+            style={{ background: 'linear-gradient(to right, hsl(0,100%,50%), hsl(60,100%,50%), hsl(120,100%,50%), hsl(180,100%,50%), hsl(240,100%,50%), hsl(300,100%,50%), hsl(360,100%,50%))' }} />
+        </div>
+        <div>
+          <div className="flex justify-between mb-1">
+            <span className="text-xs" style={{ color: 'var(--sys-text-muted)' }}>彩度 (Saturation)</span>
+            <span className="text-xs" style={{ color: 'var(--sys-text-muted)' }}>{hsl.s}%</span>
+          </div>
+          <input type="range" min={10} max={100} value={hsl.s}
+            onChange={e => setHsl(hsl.h, +e.target.value, hsl.l)}
+            className="w-full h-6 rounded-full cursor-pointer appearance-none"
+            style={{ background: `linear-gradient(to right, hsl(${hsl.h},10%,${hsl.l}%), hsl(${hsl.h},100%,${hsl.l}%))` }} />
+        </div>
+        <div>
+          <div className="flex justify-between mb-1">
+            <span className="text-xs" style={{ color: 'var(--sys-text-muted)' }}>明るさ (Lightness)</span>
+            <span className="text-xs" style={{ color: 'var(--sys-text-muted)' }}>{hsl.l}%</span>
+          </div>
+          <input type="range" min={15} max={85} value={hsl.l}
+            onChange={e => setHsl(hsl.h, hsl.s, +e.target.value)}
+            className="w-full h-6 rounded-full cursor-pointer appearance-none"
+            style={{ background: `linear-gradient(to right, hsl(${hsl.h},${hsl.s}%,15%), hsl(${hsl.h},${hsl.s}%,50%), hsl(${hsl.h},${hsl.s}%,85%))` }} />
+        </div>
+        <div className="g-card-inner p-2.5 flex items-center gap-2">
+          <div className="text-[9px]" style={{ color: 'var(--sys-text-muted)' }}>プレビュー</div>
+          <button className="px-3 py-1 rounded-lg text-[10px] font-bold text-white" style={{ background: systemStyle.uiAccentColor }}>ボタン</button>
+          <span className="text-[10px] font-semibold" style={{ color: systemStyle.uiAccentColor }}>リンクテキスト</span>
+          <div className="w-4 h-4 rounded border-2 flex items-center justify-center" style={{ borderColor: systemStyle.uiAccentColor }}>
+            <svg className="w-2.5 h-2.5" style={{ color: systemStyle.uiAccentColor }} fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+          </div>
+          <div className="flex-1 h-1.5 rounded-full bg-white/10 overflow-hidden">
+            <div className="h-full rounded-full w-2/3" style={{ background: systemStyle.uiAccentColor }} />
+          </div>
+        </div>
+      </div>
+
+      {/* Tab Bar Colors */}
+      <div className="space-y-3 border-t border-white/[0.06] pt-5">
+        <label className="text-xs block" style={{ color: 'var(--sys-text-muted)' }}>Tab Bar Colors (タブバーカラー)</label>
+        <div>
+          <label className="text-[10px] block mb-1" style={{ color: 'var(--sys-text-muted)' }}>タブバー背景色</label>
+          <div className="flex items-center gap-2">
+            <input type="color" value={systemStyle.tabBgColor || '#0e1c36'} className="w-8 h-8 rounded cursor-pointer border-0 p-0 shrink-0"
+              onChange={e => updateSystemStyle({ tabBgColor: e.target.value })} />
+            <input className="input input-sm flex-1 font-mono text-xs" value={systemStyle.tabBgColor || ''}
+              placeholder="transparent"
+              onChange={e => { const v = e.target.value; if (v === '') updateSystemStyle({ tabBgColor: undefined }); else if (/^#[0-9a-fA-F]{6}$/.test(v)) updateSystemStyle({ tabBgColor: v }); }} />
+            {systemStyle.tabBgColor && <button className="btn btn-sm btn-ghost text-[10px] shrink-0" onClick={() => updateSystemStyle({ tabBgColor: undefined })}>リセット</button>}
+          </div>
+        </div>
+        <div>
+          <label className="text-[10px] block mb-1" style={{ color: 'var(--sys-text-muted)' }}>アクティブタブ色</label>
+          <div className="flex items-center gap-2">
+            <input type="color" value={systemStyle.tabActiveColor || systemStyle.uiAccentColor || '#3b82f6'} className="w-8 h-8 rounded cursor-pointer border-0 p-0 shrink-0"
+              onChange={e => updateSystemStyle({ tabActiveColor: e.target.value })} />
+            <input className="input input-sm flex-1 font-mono text-xs" value={systemStyle.tabActiveColor || ''}
+              placeholder={systemStyle.uiAccentColor || '#3b82f6'}
+              onChange={e => { const v = e.target.value; if (v === '') updateSystemStyle({ tabActiveColor: undefined }); else if (/^#[0-9a-fA-F]{6}$/.test(v)) updateSystemStyle({ tabActiveColor: v }); }} />
+            {systemStyle.tabActiveColor && <button className="btn btn-sm btn-ghost text-[10px] shrink-0" onClick={() => updateSystemStyle({ tabActiveColor: undefined })}>リセット</button>}
+          </div>
+        </div>
+        <div>
+          <label className="text-[10px] block mb-1" style={{ color: 'var(--sys-text-muted)' }}>タブ文字色</label>
+          <div className="flex items-center gap-2">
+            <input type="color" value={systemStyle.tabTextColor || '#999999'} className="w-8 h-8 rounded cursor-pointer border-0 p-0 shrink-0"
+              onChange={e => updateSystemStyle({ tabTextColor: e.target.value })} />
+            <input className="input input-sm flex-1 font-mono text-xs" value={systemStyle.tabTextColor || ''}
+              placeholder="テーマデフォルト"
+              onChange={e => { const v = e.target.value; if (v === '') updateSystemStyle({ tabTextColor: undefined }); else if (/^#[0-9a-fA-F]{6}$/.test(v)) updateSystemStyle({ tabTextColor: v }); }} />
+            {systemStyle.tabTextColor && <button className="btn btn-sm btn-ghost text-[10px] shrink-0" onClick={() => updateSystemStyle({ tabTextColor: undefined })}>リセット</button>}
+          </div>
+        </div>
+        <div className="rounded-xl p-2 flex gap-1" style={{ background: systemStyle.tabBgColor || 'var(--sys-glass-inner-bg)' }}>
+          {['Tournaments', 'Ring Games', 'Split', 'Settings'].map((label, i) => (
+            <div key={label} className="flex-1 py-1.5 rounded-lg text-[9px] font-semibold text-center border transition-all"
+              style={i === 0
+                ? { background: `rgba(var(--tab-active-rgb), 0.2)`, color: 'var(--tab-active)', borderColor: `rgba(var(--tab-active-rgb), 0.3)` }
+                : { color: 'var(--tab-text, var(--sys-text-muted))', borderColor: 'transparent' }}>
+              {label}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* UI Colors */}
+      <div className="space-y-3 border-t border-white/[0.06] pt-5">
+        <label className="text-xs block" style={{ color: 'var(--sys-text-muted)' }}>UI Colors (UIカラー)</label>
+        <div>
+          <label className="text-[10px] block mb-1" style={{ color: 'var(--sys-text-muted)' }}>カード背景色</label>
+          <div className="flex items-center gap-2">
+            <input type="color" value={systemStyle.cardBgColor || '#ffffff'} className="w-8 h-8 rounded cursor-pointer border-0 p-0 shrink-0"
+              onChange={e => updateSystemStyle({ cardBgColor: e.target.value })} />
+            <input className="input input-sm flex-1 font-mono text-xs" value={systemStyle.cardBgColor || ''}
+              placeholder="テーマデフォルト"
+              onChange={e => { const v = e.target.value; if (v === '') updateSystemStyle({ cardBgColor: undefined }); else if (/^#[0-9a-fA-F]{6}$/.test(v)) updateSystemStyle({ cardBgColor: v }); }} />
+            {systemStyle.cardBgColor && <button className="btn btn-sm btn-ghost text-[10px] shrink-0" onClick={() => updateSystemStyle({ cardBgColor: undefined })}>リセット</button>}
+          </div>
+        </div>
+        <div>
+          <label className="text-[10px] block mb-1" style={{ color: 'var(--sys-text-muted)' }}>カードボーダー色</label>
+          <div className="flex items-center gap-2">
+            <input type="color" value={systemStyle.cardBorderColor || '#ffffff'} className="w-8 h-8 rounded cursor-pointer border-0 p-0 shrink-0"
+              onChange={e => updateSystemStyle({ cardBorderColor: e.target.value })} />
+            <input className="input input-sm flex-1 font-mono text-xs" value={systemStyle.cardBorderColor || ''}
+              placeholder="テーマデフォルト"
+              onChange={e => { const v = e.target.value; if (v === '') updateSystemStyle({ cardBorderColor: undefined }); else if (/^#[0-9a-fA-F]{6}$/.test(v)) updateSystemStyle({ cardBorderColor: v }); }} />
+            {systemStyle.cardBorderColor && <button className="btn btn-sm btn-ghost text-[10px] shrink-0" onClick={() => updateSystemStyle({ cardBorderColor: undefined })}>リセット</button>}
+          </div>
+        </div>
+        <div>
+          <label className="text-[10px] block mb-1" style={{ color: 'var(--sys-text-muted)' }}>入力欄背景色</label>
+          <div className="flex items-center gap-2">
+            <input type="color" value={systemStyle.inputBgColor || '#ffffff'} className="w-8 h-8 rounded cursor-pointer border-0 p-0 shrink-0"
+              onChange={e => updateSystemStyle({ inputBgColor: e.target.value })} />
+            <input className="input input-sm flex-1 font-mono text-xs" value={systemStyle.inputBgColor || ''}
+              placeholder="テーマデフォルト"
+              onChange={e => { const v = e.target.value; if (v === '') updateSystemStyle({ inputBgColor: undefined }); else if (/^#[0-9a-fA-F]{6}$/.test(v)) updateSystemStyle({ inputBgColor: v }); }} />
+            {systemStyle.inputBgColor && <button className="btn btn-sm btn-ghost text-[10px] shrink-0" onClick={() => updateSystemStyle({ inputBgColor: undefined })}>リセット</button>}
+          </div>
+        </div>
+        <div>
+          <label className="text-[10px] block mb-1" style={{ color: 'var(--sys-text-muted)' }}>入力欄ボーダー色</label>
+          <div className="flex items-center gap-2">
+            <input type="color" value={systemStyle.inputBorderColor || '#ffffff'} className="w-8 h-8 rounded cursor-pointer border-0 p-0 shrink-0"
+              onChange={e => updateSystemStyle({ inputBorderColor: e.target.value })} />
+            <input className="input input-sm flex-1 font-mono text-xs" value={systemStyle.inputBorderColor || ''}
+              placeholder="テーマデフォルト"
+              onChange={e => { const v = e.target.value; if (v === '') updateSystemStyle({ inputBorderColor: undefined }); else if (/^#[0-9a-fA-F]{6}$/.test(v)) updateSystemStyle({ inputBorderColor: v }); }} />
+            {systemStyle.inputBorderColor && <button className="btn btn-sm btn-ghost text-[10px] shrink-0" onClick={() => updateSystemStyle({ inputBorderColor: undefined })}>リセット</button>}
+          </div>
+        </div>
+        <div className="g-card p-3 space-y-2">
+          <div className="text-[10px]" style={{ color: 'var(--sys-text-muted)' }}>プレビュー</div>
+          <input className="input input-sm text-xs" value="入力サンプル" readOnly />
+          <div className="g-card-inner p-2 text-[10px]" style={{ color: 'var(--sys-text-secondary)' }}>カード内カード</div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* ── Settings: Display ── */
+function SettingsDisplay() {
+  const systemStyle = useStore(s => s.systemStyle) || DEFAULT_SYSTEM_STYLE;
+  const updateSystemStyle = useStore(s => s.updateSystemStyle);
+  const currentFont = FONT_OPTIONS.find(f => f.id === systemStyle.fontFamily) || FONT_OPTIONS[0];
+  return (
+    <>
+      <div>
+        <label className="text-xs block mb-2" style={{ color: 'var(--sys-text-muted)' }}>Display Aspect Ratio (ディスプレイ比率)</label>
+        <div className="grid grid-cols-2 gap-2">
+          {ASPECT_RATIO_OPTIONS.map(opt => (
+            <button key={opt.id}
+              className={`px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 border ${
+                systemStyle.displayAspectRatio === opt.id
+                  ? 'border-[var(--ui-accent)] bg-[rgba(var(--ui-accent-rgb),0.2)] text-white'
+                  : 'border-white/[0.08] bg-white/[0.04] text-white/40 hover:bg-white/[0.08]'
+              }`}
+              onClick={() => updateSystemStyle({ displayAspectRatio: opt.id as AspectRatioMode })}>
+              <div>{opt.label}</div>
+              <div className="text-[9px] text-white/20 mt-0.5">{opt.desc}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+      <div>
+        <div className="flex justify-between mb-1">
+          <label className="text-xs" style={{ color: 'var(--sys-text-muted)' }}>Display Font Size (文字サイズ)</label>
+          <span className="text-xs font-mono" style={{ color: 'var(--sys-text-muted)' }}>{Math.round((systemStyle.displayFontScale || 1) * 100)}%</span>
+        </div>
+        <input type="range" min={50} max={200} step={5}
+          value={Math.round((systemStyle.displayFontScale || 1) * 100)}
+          onChange={e => updateSystemStyle({ displayFontScale: +e.target.value / 100 })}
+          className="w-full h-3 rounded-full cursor-pointer appearance-none bg-white/10" />
+        <div className="flex justify-between text-[9px] mt-1" style={{ color: 'var(--sys-text-muted)' }}>
+          <span>50%</span><span>100%</span><span>200%</span>
+        </div>
+      </div>
+      <div className="g-card-inner p-4 space-y-2">
+        <div className="text-xs mb-2" style={{ color: 'var(--sys-text-muted)' }}>Preview</div>
+        <div style={{ fontFamily: currentFont.value, fontSize: `${(systemStyle.displayFontScale || 1) * 100}%` }}>
+          <div className="text-lg font-bold" style={{ color: systemStyle.uiAccentColor }}>
+            COME ON Timer
+          </div>
+          <div className="text-sm text-white/50">
+            The quick brown fox jumps over the lazy dog
+          </div>
+          <div className="text-2xl font-black timer-font text-white/70 mt-1">
+            12:34
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
 function SettingsTab() {
   return (
-    <div className="space-y-6 fade-in">
-      <SystemStyleEditor />
-      <ThemePicker />
+    <div className="space-y-4 fade-in">
+      <AccordionSection title="テーマプリセット" defaultOpen>
+        <SettingsThemePresets />
+      </AccordionSection>
+      <AccordionSection title="フォント設定">
+        <SettingsFonts />
+      </AccordionSection>
+      <AccordionSection title="カラー設定">
+        <SettingsColors />
+      </AccordionSection>
+      <AccordionSection title="ディスプレイ設定">
+        <SettingsDisplay />
+      </AccordionSection>
+      <AccordionSection title="テーマ管理">
+        <ThemePicker />
+      </AccordionSection>
     </div>
   );
 }

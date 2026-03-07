@@ -263,13 +263,13 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
               style={{ fontSize: 'calc(var(--sfs, 1) * 0.45rem)', ...(layout.prizeTable.textColor ? { color: layout.prizeTable.textColor, opacity: 0.5 } : {}) }}>Prize</div>
             <div className="flex-1 flex flex-col justify-evenly min-h-0">
               {tournament.prizeStructure.filter(p => p.label).map(p => (
-                <div key={p.place} className="flex items-center justify-between gap-1 px-1"
+                <div key={p.place} className="grid grid-cols-[auto_1fr] items-center gap-1 px-1"
                   style={{ fontSize: 'calc(var(--sfs, 1) * 0.6rem)' }}>
-                  <span className={`shrink-0 ${layout.prizeTable.textColor ? '' : 'text-white/40'}`}
+                  <span className={`shrink-0 text-left ${layout.prizeTable.textColor ? '' : 'text-white/40'}`}
                     style={layout.prizeTable.textColor ? { color: layout.prizeTable.textColor, opacity: 0.5 } : undefined}>
                     {(dt.prizeLabelFormat || 'jp') === 'ordinal' ? ordinalLabel(p.place) : `${p.place}位`}
                   </span>
-                  <span className="font-bold timer-font truncate" style={{ color: layout.prizeTable.textColor || (p.place === 1 ? pc : 'rgba(255,255,255,0.5)') }}>
+                  <span className="font-bold timer-font text-center truncate" style={{ color: layout.prizeTable.textColor || (p.place === 1 ? pc : 'rgba(255,255,255,0.5)') }}>
                     {p.label}
                   </span>
                 </div>
