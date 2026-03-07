@@ -1193,8 +1193,10 @@ function GenericLayoutEditor<T extends string>({
   const resizeStartRef = useRef<{ mx: number; my: number; orig: SectionPosition } | null>(null);
   const cachedRectRef = useRef<DOMRect | null>(null);
   const latestPosRef = useRef<Record<T, SectionPosition>>(layout);
+  const interactingRef = useRef(false);
 
-  useEffect(() => { setLocalPositions(layout); latestPosRef.current = layout; }, [layout]);
+  // Sync from store — but skip during active drag/resize to prevent snap-back
+  useEffect(() => { if (interactingRef.current) return; setLocalPositions(layout); latestPosRef.current = layout; }, [layout]);
 
   const handlePointerDown = (e: React.PointerEvent, sectionId: T) => {
     e.preventDefault(); e.stopPropagation();
@@ -1202,6 +1204,7 @@ function GenericLayoutEditor<T extends string>({
     cachedRectRef.current = canvasRef.current?.getBoundingClientRect() || null;
     const pos = latestPosRef.current[sectionId];
     dragStartRef.current = { mx: e.clientX, my: e.clientY, ox: pos.x, oy: pos.y, w: pos.w, h: pos.h };
+    interactingRef.current = true;
     setDragging(sectionId); setSelected(sectionId);
   };
 
@@ -1210,6 +1213,7 @@ function GenericLayoutEditor<T extends string>({
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
     cachedRectRef.current = canvasRef.current?.getBoundingClientRect() || null;
     resizeStartRef.current = { mx: e.clientX, my: e.clientY, orig: { ...latestPosRef.current[sectionId] } };
+    interactingRef.current = true;
     setResizing({ sectionId, handle }); setSelected(sectionId);
   };
 
@@ -1250,6 +1254,7 @@ function GenericLayoutEditor<T extends string>({
 
   const handlePointerUp = () => {
     cachedRectRef.current = null;
+    interactingRef.current = false;
     if (resizing) { onUpdatePosition(resizing.sectionId, latestPosRef.current[resizing.sectionId]); setResizing(null); resizeStartRef.current = null; onBroadcast(); return; }
     if (dragging) { onUpdatePosition(dragging, latestPosRef.current[dragging]); onBroadcast(); }
     setDragging(null); dragStartRef.current = null;
@@ -1447,9 +1452,9 @@ function GenericLayoutEditor<T extends string>({
 }
 
 /* Hook for tournament layout editor — supports Single/Split toggle */
-function useTournamentLayoutEditor(t: Tournament) {
+function useTournamentLayoutEditor(t: Tournament, initialLayoutMode: 'single' | 'split' = 'single') {
   const store = useStore();
-  const [layoutMode, setLayoutMode] = useState<'single' | 'split'>('single');
+  const [layoutMode, setLayoutMode] = useState<'single' | 'split'>(initialLayoutMode);
   const layout = layoutMode === 'split'
     ? (t.splitSectionLayout || DEFAULT_SECTION_LAYOUT)
     : (t.sectionLayout || DEFAULT_SECTION_LAYOUT);
@@ -1466,9 +1471,9 @@ function useTournamentLayoutEditor(t: Tournament) {
 }
 
 /* Hook for cash layout editor — supports Single/Split toggle */
-function useCashLayoutEditor(c: CashGame) {
+function useCashLayoutEditor(c: CashGame, initialLayoutMode: 'single' | 'split' = 'single') {
   const store = useStore();
-  const [layoutMode, setLayoutMode] = useState<'single' | 'split'>('single');
+  const [layoutMode, setLayoutMode] = useState<'single' | 'split'>(initialLayoutMode);
   const layout = layoutMode === 'split'
     ? (c.splitSectionLayout || DEFAULT_CASH_SECTION_LAYOUT)
     : (c.sectionLayout || DEFAULT_CASH_SECTION_LAYOUT);
@@ -1834,38 +1839,38 @@ function SplitTab() {
   const [leftId, setLeftId] = useState(allTimers[0]?.id || '');
   const [rightId, setRightId] = useState(allTimers[1]?.id || allTimers[0]?.id || '');
   const [editMode, setEditMode] = useState(false);
-  const [editPanel, setEditPanel] = useState<'left' | 'right'>('left');
+  const [activePanel, setActivePanel] = useState<'left' | 'right'>('left');
 
-  // Get theme for preview
-  const leftTimer = tournaments.find(t => t.id === leftId) || cashGames.find(c => c.id === leftId);
+  // Resolve timer objects for each panel
+  const leftTimerT = tournaments.find(t => t.id === leftId);
+  const leftTimerC = cashGames.find(c => c.id === leftId);
+  const rightTimerT = tournaments.find(t => t.id === rightId);
+  const rightTimerC = cashGames.find(c => c.id === rightId);
+  const leftTimer = leftTimerT || leftTimerC;
+  const rightTimer = rightTimerT || rightTimerC;
+  const leftIsTournament = !!leftTimerT;
+  const rightIsTournament = !!rightTimerT;
+
+  // Theme info
   const leftThemeId = leftTimer?.themeId || store.defaultThemeId || 'come-on-blue';
-  const themeName = store.themes.find(th => th.id === leftThemeId)?.name || '';
-
-  // F7: Per-panel themes
-  const rightTimer = tournaments.find(t => t.id === rightId) || cashGames.find(c => c.id === rightId);
   const rightThemeId = rightTimer?.themeId || store.defaultThemeId || 'come-on-blue';
+  const themeName = store.themes.find(th => th.id === leftThemeId)?.name || '';
 
   const splitPath = `/display/split?left=${leftId}&right=${rightId}&leftTheme=${leftThemeId}&rightTheme=${rightThemeId}`;
 
-  // Layout editor: determine which timer is being edited
-  const editTimerId = editPanel === 'left' ? leftId : rightId;
-  const editTimerT = tournaments.find(t => t.id === editTimerId);
-  const editTimerC = cashGames.find(c => c.id === editTimerId);
-  const isEditingTournament = !!editTimerT;
-
-  // Layout editor hooks (always called — React rules of hooks)
+  // 4 layout editor hooks — always called (React rules of hooks)
+  // Each starts in 'split' mode so no need for force-split useEffect
   const dummyT = { id: '', name: '', displayToggles: DEFAULT_DISPLAY_TOGGLES } as unknown as Tournament;
   const dummyC = { id: '', name: '', displayToggles: DEFAULT_DISPLAY_TOGGLES } as unknown as CashGame;
-  const tEditor = useTournamentLayoutEditor(editTimerT || (tournaments[0] || dummyT));
-  const cEditor = useCashLayoutEditor(editTimerC || (cashGames[0] || dummyC));
-  const editor = isEditingTournament ? tEditor : cEditor;
+  const leftTEditor = useTournamentLayoutEditor(leftTimerT || dummyT, 'split');
+  const leftCEditor = useCashLayoutEditor(leftTimerC || dummyC, 'split');
+  const rightTEditor = useTournamentLayoutEditor(rightTimerT || dummyT, 'split');
+  const rightCEditor = useCashLayoutEditor(rightTimerC || dummyC, 'split');
 
-  // Force split mode for layout editors
-  useEffect(() => {
-    tEditor.setLayoutMode('split');
-    cEditor.setLayoutMode('split');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Active editor per panel
+  const leftEditor = leftIsTournament ? leftTEditor : leftCEditor;
+  const rightEditor = rightIsTournament ? rightTEditor : rightCEditor;
+  const activeEditor = activePanel === 'left' ? leftEditor : rightEditor;
 
   // Preview scaling
   const containerRef = useRef<HTMLDivElement>(null);
@@ -1965,30 +1970,28 @@ function SplitTab() {
           </div>
         </div>
 
-        {/* Edit mode: Left/Right panel toggle + Reset */}
+        {/* Edit mode: Reset controls for active panel */}
         {editMode && (
           <div className="flex items-center gap-2 px-3 py-1.5 bg-white/[0.02] border-x border-white/[0.08]">
             <div className="flex gap-1">
-              <button onClick={() => setEditPanel('left')}
-                className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all ${editPanel === 'left' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'text-white/25 border border-white/[0.06]'}`}>
+              <span className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold ${activePanel === 'left' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'text-white/25 border border-white/[0.06]'}`}>
                 ◀ Left
-              </button>
-              <button onClick={() => setEditPanel('right')}
-                className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all ${editPanel === 'right' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' : 'text-white/25 border border-white/[0.06]'}`}>
+              </span>
+              <span className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold ${activePanel === 'right' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' : 'text-white/25 border border-white/[0.06]'}`}>
                 Right ▶
-              </button>
+              </span>
             </div>
             <span className="text-[10px] text-white/20 truncate">
-              {editPanel === 'left' ? leftTimer?.name : rightTimer?.name} ({isEditingTournament ? 'Tournament' : 'Cash'})
+              {activePanel === 'left' ? leftTimer?.name : rightTimer?.name} ({activePanel === 'left' ? (leftIsTournament ? 'Tournament' : 'Cash') : (rightIsTournament ? 'Tournament' : 'Cash')})
             </span>
             <div className="ml-auto flex gap-1">
-              {editor.showUndo && <button className="text-[10px] px-2 py-1 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30 animate-pulse" onClick={editor.handleUndo}>↩ Undo</button>}
-              <button className="text-[10px] px-2 py-1 rounded-lg bg-white/[0.05] text-white/30 hover:text-white/60 border border-white/[0.06]" onClick={editor.handleReset}>Reset</button>
+              {activeEditor.showUndo && <button className="text-[10px] px-2 py-1 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30 animate-pulse" onClick={activeEditor.handleUndo}>↩ Undo</button>}
+              <button className="text-[10px] px-2 py-1 rounded-lg bg-white/[0.05] text-white/30 hover:text-white/60 border border-white/[0.06]" onClick={activeEditor.handleReset}>Reset</button>
             </div>
           </div>
         )}
 
-        {/* Preview area: iframe + overlay */}
+        {/* Preview area: iframe + dual overlays */}
         <div ref={containerRef} className="rounded-b-xl overflow-hidden border border-white/[0.08] border-t-0 bg-black/40 relative"
           style={{ height: `${Math.round(scale * 720)}px` }}>
           <iframe
@@ -2001,16 +2004,29 @@ function SplitTab() {
               border: 'none', pointerEvents: editMode ? 'none' : 'auto',
             }}
           />
-          {/* Draggable overlay (edit mode only) */}
+          {/* Dual draggable overlays (edit mode) — both panels at once */}
           {editMode && (
-            <div className="absolute z-10 select-none" style={{
-              top: '6.7%',
-              left: editPanel === 'right' ? '50.2%' : 0,
-              width: '49.8%',
-              height: '93.3%',
-            }}>
-              {editor.overlay}
-            </div>
+            <>
+              {/* Left panel overlay */}
+              <div className="absolute z-10 select-none" style={{
+                top: '6.7%', left: 0, width: '49.8%', height: '93.3%',
+              }} onPointerDown={() => setActivePanel('left')}>
+                {leftEditor.overlay}
+              </div>
+              {/* Right panel overlay */}
+              <div className="absolute z-10 select-none" style={{
+                top: '6.7%', left: '50.2%', width: '49.8%', height: '93.3%',
+              }} onPointerDown={() => setActivePanel('right')}>
+                {rightEditor.overlay}
+              </div>
+              {/* Panel border labels */}
+              <div className="absolute z-20 pointer-events-none" style={{ top: '1%', left: '1%' }}>
+                <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400/60 border border-blue-500/20">LEFT</span>
+              </div>
+              <div className="absolute z-20 pointer-events-none" style={{ top: '1%', right: '1%' }}>
+                <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-400/60 border border-purple-500/20">RIGHT</span>
+              </div>
+            </>
           )}
           {/* LIVE / EDIT indicator */}
           {!editMode && (
@@ -2020,16 +2036,19 @@ function SplitTab() {
             </div>
           )}
           {editMode && (
-            <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/20 backdrop-blur-sm z-20 border border-blue-500/30">
-              <span className="text-[9px] text-blue-400 font-semibold">EDIT MODE — {editPanel === 'left' ? 'LEFT' : 'RIGHT'}</span>
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/20 backdrop-blur-sm z-20 border border-blue-500/30">
+              <span className="text-[9px] text-blue-400 font-semibold">EDIT MODE — 両パネル編集可</span>
             </div>
           )}
         </div>
 
-        {/* Properties panel (edit mode) */}
-        {editMode && editor.propertiesPanel && (
+        {/* Properties panel (edit mode) — shows active panel's selection */}
+        {editMode && activeEditor.propertiesPanel && (
           <div className="mt-2">
-            {editor.propertiesPanel}
+            <div className="text-[10px] text-white/25 mb-1 px-1">
+              {activePanel === 'left' ? '◀ Left' : 'Right ▶'}: {activePanel === 'left' ? leftTimer?.name : rightTimer?.name}
+            </div>
+            {activeEditor.propertiesPanel}
           </div>
         )}
       </div>
