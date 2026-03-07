@@ -1434,8 +1434,8 @@ function GenericLayoutEditor<T extends string>({
               <label className="text-xs text-white/20 block mb-0.5">Ante Opacity (0-100)</label>
               <div className="flex items-center gap-2">
                 <input type="range" min={0} max={100} step={5} className="flex-1 accent-blue-500"
-                  value={localPositions[selected!].anteOpacity ?? 40} onChange={e => updateField('anteOpacity', +e.target.value)} />
-                <span className="text-xs text-white/40 w-8 text-right">{localPositions[selected!].anteOpacity ?? 40}%</span>
+                  value={localPositions[selected!].anteOpacity ?? 100} onChange={e => updateField('anteOpacity', +e.target.value)} />
+                <span className="text-xs text-white/40 w-8 text-right">{localPositions[selected!].anteOpacity ?? 100}%</span>
               </div>
             </div>
           </div>

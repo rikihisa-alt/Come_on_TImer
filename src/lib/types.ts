@@ -66,7 +66,7 @@ export type SectionPosition = {
   timerDigitScale?: number;
   blindsScale?: number;
   anteScale?: number;
-  anteOpacity?: number;  // 0〜100 (default 40)
+  anteOpacity?: number;  // 0〜100 (default 100 = ブラインドと同じ)
   textColor?: string;
   // F2: フレーム（枠）カスタマイズ
   frameColor?: string;      // 枠の色 (hex e.g. '#ff0000')

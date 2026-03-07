@@ -343,7 +343,7 @@ function Inner() {
                   <div className="font-black timer-font" style={{ color: tc || pc, fontSize: `${3.5 * bds}vw` }}>
                     {cur.smallBlind.toLocaleString()}/{cur.bigBlind.toLocaleString()}
                     {cur.ante > 0 && (
-                      <span style={tc ? { color: tc, opacity: (timerPos.anteOpacity ?? 40) / 100 } : { opacity: (timerPos.anteOpacity ?? 40) / 100 }} className={tc ? 'ml-1' : 'text-white ml-1'}>(Ante {cur.ante.toLocaleString()})</span>
+                      <span style={tc ? { color: tc, opacity: (timerPos.anteOpacity ?? 100) / 100 } : { opacity: (timerPos.anteOpacity ?? 100) / 100 }} className={tc ? 'ml-1' : 'text-white ml-1'}>(Ante {cur.ante.toLocaleString()})</span>
                     )}
                   </div>
                 </div>
@@ -362,7 +362,7 @@ function Inner() {
               <span className={`text-lg font-bold timer-font ${layout.nextLevel.textColor ? '' : 'text-white/50'}`}
                 style={layout.nextLevel.textColor ? { color: layout.nextLevel.textColor } : undefined}>
                 {nextPlay.smallBlind.toLocaleString()}/{nextPlay.bigBlind.toLocaleString()}
-                {nextPlay.ante > 0 && <span className="ml-1" style={{ opacity: (timerPos.anteOpacity ?? 40) / 100 }}>(Ante {nextPlay.ante.toLocaleString()})</span>}
+                {nextPlay.ante > 0 && <span className="ml-1" style={{ opacity: (timerPos.anteOpacity ?? 100) / 100 }}>(Ante {nextPlay.ante.toLocaleString()})</span>}
               </span>
             </div>
           </AbsoluteSection>

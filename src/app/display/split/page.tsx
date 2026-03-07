@@ -192,7 +192,7 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
               <div className="mt-1 font-black timer-font whitespace-nowrap" style={{ color: tc || pc, fontSize: `${1.8 * bds}vw` }}>
                 {cur.smallBlind.toLocaleString()}/{cur.bigBlind.toLocaleString()}
                 {cur.ante > 0 && (
-                  <span style={tc ? { color: tc, opacity: (timerPos.anteOpacity ?? 40) / 100 } : { opacity: (timerPos.anteOpacity ?? 40) / 100 }} className={tc ? 'ml-0.5' : 'text-white ml-0.5'}>(Ante {cur.ante.toLocaleString()})</span>
+                  <span style={tc ? { color: tc, opacity: (timerPos.anteOpacity ?? 100) / 100 } : { opacity: (timerPos.anteOpacity ?? 100) / 100 }} className={tc ? 'ml-0.5' : 'text-white ml-0.5'}>(Ante {cur.ante.toLocaleString()})</span>
                 )}
               </div>
             )}
@@ -210,7 +210,7 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
             <span className={`text-[10px] lg:text-xs font-bold timer-font ${layout.nextLevel.textColor ? '' : 'text-white/40'}`}
               style={layout.nextLevel.textColor ? { color: layout.nextLevel.textColor } : undefined}>
               {nextPlay.smallBlind.toLocaleString()}/{nextPlay.bigBlind.toLocaleString()}
-              {nextPlay.ante > 0 && <span className="ml-0.5" style={{ opacity: (timerPos.anteOpacity ?? 40) / 100 }}>(Ante {nextPlay.ante.toLocaleString()})</span>}
+              {nextPlay.ante > 0 && <span className="ml-0.5" style={{ opacity: (timerPos.anteOpacity ?? 100) / 100 }}>(Ante {nextPlay.ante.toLocaleString()})</span>}
             </span>
           </div>
         </AbsoluteSection>
