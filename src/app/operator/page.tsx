@@ -1364,8 +1364,10 @@ function GenericLayoutEditor<T extends string>({
               { label: 'Ante', field: 'anteScale' as const },
             ] as const).map(({ label, field }) => (
               <div key={field} className="flex items-center gap-1">
-                <label className="text-[10px] text-white/25 shrink-0 w-9 text-right">{label}</label>
-                <input type="number" step={0.1} min={0} max={10} className="input input-sm text-center w-11 shrink-0 px-0.5"
+                <label className="text-[10px] text-white/25 shrink-0 text-right" style={{ width: '2.2rem' }}>{label}</label>
+                <input type="number" step={0.1} min={0} max={10}
+                  className="bg-white/5 border border-white/10 rounded text-center text-xs text-white/80 shrink-0"
+                  style={{ width: '2.8rem', height: '1.5rem', padding: '0 2px' }}
                   value={localPositions[selected!][field] ?? 1.0} onChange={e => updateField(field, +e.target.value)} />
                 <input type="range" min={0} max={10} step={0.1}
                   value={(localPositions[selected!][field] ?? 1.0) as number}
@@ -1375,19 +1377,21 @@ function GenericLayoutEditor<T extends string>({
               </div>
             ))}
             <div className="flex items-center gap-1">
-              <label className="text-[10px] text-white/25 shrink-0 w-9 text-right">Ante α</label>
+              <label className="text-[10px] text-white/25 shrink-0 text-right" style={{ width: '2.2rem' }}>Ante α</label>
               <input type="range" min={0} max={100} step={5}
                 value={localPositions[selected!].anteOpacity ?? 100}
                 onChange={e => updateField('anteOpacity', +e.target.value)}
                 className="flex-1 min-w-0 h-1.5 rounded-full appearance-none accent-blue-500"
                 style={{ background: 'linear-gradient(to right, rgba(255,255,255,0.08), rgba(96,165,250,0.4))' }} />
-              <span className="text-[10px] text-white/30 w-7 text-right shrink-0">{localPositions[selected!].anteOpacity ?? 100}%</span>
+              <span className="text-[10px] text-white/30 text-right shrink-0" style={{ width: '1.8rem' }}>{localPositions[selected!].anteOpacity ?? 100}%</span>
             </div>
           </div>
         ) : (
           <div className="flex items-center gap-1">
-            <label className="text-[10px] text-white/25 shrink-0 w-9 text-right">Font</label>
-            <input type="number" step={0.1} min={0} max={10} className="input input-sm text-center w-11 shrink-0 px-0.5"
+            <label className="text-[10px] text-white/25 shrink-0 text-right" style={{ width: '2.2rem' }}>Font</label>
+            <input type="number" step={0.1} min={0} max={10}
+              className="bg-white/5 border border-white/10 rounded text-center text-xs text-white/80 shrink-0"
+              style={{ width: '2.8rem', height: '1.5rem', padding: '0 2px' }}
               value={localPositions[selected!].fontSize ?? 1.0} onChange={e => updateField('fontSize', +e.target.value)} />
             <input type="range" min={0} max={10} step={0.1}
               value={localPositions[selected!].fontSize ?? 1.0}
