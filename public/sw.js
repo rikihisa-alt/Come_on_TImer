@@ -1,4 +1,4 @@
-const CACHE_NAME = 'come-on-timer-v105';
+const CACHE_NAME = 'come-on-timer-v106';
 const PRECACHE = ['/', '/operator', '/display/tournament', '/display/cash', '/display/split'];
 
 self.addEventListener('install', (event) => {

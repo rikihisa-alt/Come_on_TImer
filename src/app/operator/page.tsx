@@ -1355,16 +1355,44 @@ function GenericLayoutEditor<T extends string>({
             </div>
           ))}
         </div>
-        {/* Font size: hidden for timer (timer uses Sub-Elements controls instead) */}
-        {selected !== 'timer' && selected !== ('timer' as T) && (
-          <div className="flex items-center gap-2">
-            <label className="text-xs text-white/25 shrink-0">Font</label>
-            <input type="number" step={0.1} min={0} max={10} className="input input-sm text-center w-16 shrink-0"
+        {/* Font Size Controls — unified for ALL sections */}
+        {selected === 'timer' || selected === ('timer' as T) ? (
+          <div className="space-y-1">
+            {([
+              { label: 'Digit', field: 'timerDigitScale' as const },
+              { label: 'Blinds', field: 'blindsScale' as const },
+              { label: 'Ante', field: 'anteScale' as const },
+            ] as const).map(({ label, field }) => (
+              <div key={field} className="flex items-center gap-1">
+                <label className="text-[10px] text-white/25 shrink-0 w-9 text-right">{label}</label>
+                <input type="number" step={0.1} min={0} max={10} className="input input-sm text-center w-11 shrink-0 px-0.5"
+                  value={localPositions[selected!][field] ?? 1.0} onChange={e => updateField(field, +e.target.value)} />
+                <input type="range" min={0} max={10} step={0.1}
+                  value={(localPositions[selected!][field] ?? 1.0) as number}
+                  onChange={e => updateField(field, +e.target.value)}
+                  className="flex-1 min-w-0 h-1.5 rounded-full appearance-none accent-blue-500"
+                  style={{ background: 'linear-gradient(to right, rgba(255,255,255,0.08), rgba(96,165,250,0.4))' }} />
+              </div>
+            ))}
+            <div className="flex items-center gap-1">
+              <label className="text-[10px] text-white/25 shrink-0 w-9 text-right">Ante α</label>
+              <input type="range" min={0} max={100} step={5}
+                value={localPositions[selected!].anteOpacity ?? 100}
+                onChange={e => updateField('anteOpacity', +e.target.value)}
+                className="flex-1 min-w-0 h-1.5 rounded-full appearance-none accent-blue-500"
+                style={{ background: 'linear-gradient(to right, rgba(255,255,255,0.08), rgba(96,165,250,0.4))' }} />
+              <span className="text-[10px] text-white/30 w-7 text-right shrink-0">{localPositions[selected!].anteOpacity ?? 100}%</span>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1">
+            <label className="text-[10px] text-white/25 shrink-0 w-9 text-right">Font</label>
+            <input type="number" step={0.1} min={0} max={10} className="input input-sm text-center w-11 shrink-0 px-0.5"
               value={localPositions[selected!].fontSize ?? 1.0} onChange={e => updateField('fontSize', +e.target.value)} />
             <input type="range" min={0} max={10} step={0.1}
               value={localPositions[selected!].fontSize ?? 1.0}
               onChange={e => updateField('fontSize', +e.target.value)}
-              className="flex-1 h-1.5 rounded-full appearance-none accent-blue-500"
+              className="flex-1 min-w-0 h-1.5 rounded-full appearance-none accent-blue-500"
               style={{ background: 'linear-gradient(to right, rgba(255,255,255,0.08), rgba(96,165,250,0.4))' }} />
           </div>
         )}
@@ -1414,36 +1442,7 @@ function GenericLayoutEditor<T extends string>({
               className="text-[10px] text-white/30 hover:text-white/60 underline mt-1">Reset Frame</button>
           )}
         </div>
-        {(selected === 'timer' || selected === ('timer' as T)) && (
-          <div className="border-t border-white/[0.06] pt-2 mt-2">
-            <div className="text-xs text-white/30 font-semibold mb-1.5">Timer Sub-Elements Font Size</div>
-            <div className="grid grid-cols-3 gap-2">
-              <div>
-                <label className="text-xs text-white/20 block mb-0.5">Timer Digit</label>
-                <input type="number" step={0.1} min={0} max={10} className="input input-sm text-center"
-                  value={localPositions[selected!].timerDigitScale ?? 1.0} onChange={e => updateField('timerDigitScale', +e.target.value)} />
-              </div>
-              <div>
-                <label className="text-xs text-white/20 block mb-0.5">Blinds</label>
-                <input type="number" step={0.1} min={0} max={10} className="input input-sm text-center"
-                  value={localPositions[selected!].blindsScale ?? 1.0} onChange={e => updateField('blindsScale', +e.target.value)} />
-              </div>
-              <div>
-                <label className="text-xs text-white/20 block mb-0.5">Ante</label>
-                <input type="number" step={0.1} min={0} max={10} className="input input-sm text-center"
-                  value={localPositions[selected!].anteScale ?? 1.0} onChange={e => updateField('anteScale', +e.target.value)} />
-              </div>
-            </div>
-            <div className="mt-2">
-              <label className="text-xs text-white/20 block mb-0.5">Ante Opacity (0-100)</label>
-              <div className="flex items-center gap-2">
-                <input type="range" min={0} max={100} step={5} className="flex-1 accent-blue-500"
-                  value={localPositions[selected!].anteOpacity ?? 100} onChange={e => updateField('anteOpacity', +e.target.value)} />
-                <span className="text-xs text-white/40 w-8 text-right">{localPositions[selected!].anteOpacity ?? 100}%</span>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Timer Sub-Elements now integrated into Font Controls above */}
       </div>
     ) : null,
   };
