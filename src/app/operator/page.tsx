@@ -1193,10 +1193,20 @@ function GenericLayoutEditor<T extends string>({
   const resizeStartRef = useRef<{ mx: number; my: number; orig: SectionPosition } | null>(null);
   const cachedRectRef = useRef<DOMRect | null>(null);
   const latestPosRef = useRef<Record<T, SectionPosition>>(layout);
-  const interactingRef = useRef(false);
 
-  // Sync from store — but skip during active drag/resize to prevent snap-back
-  useEffect(() => { if (interactingRef.current) return; setLocalPositions(layout); latestPosRef.current = layout; }, [layout]);
+  // Sync from store — skip if values haven't actually changed (prevents snap-back after own writes)
+  useEffect(() => {
+    const lp = latestPosRef.current;
+    const same = Object.keys(layout).every(k => {
+      const a = layout[k as T], b = lp[k as T];
+      if (!a || !b) return a === b;
+      return a.x === b.x && a.y === b.y && a.w === b.w && a.h === b.h
+        && (a.fontSize ?? 1) === (b.fontSize ?? 1) && a.textColor === b.textColor
+        && a.frameColor === b.frameColor && (a.frameVisibility ?? 50) === (b.frameVisibility ?? 50);
+    });
+    if (same) return;
+    setLocalPositions(layout); latestPosRef.current = layout;
+  }, [layout]);
 
   const handlePointerDown = (e: React.PointerEvent, sectionId: T) => {
     e.preventDefault(); e.stopPropagation();
@@ -1204,7 +1214,6 @@ function GenericLayoutEditor<T extends string>({
     cachedRectRef.current = canvasRef.current?.getBoundingClientRect() || null;
     const pos = latestPosRef.current[sectionId];
     dragStartRef.current = { mx: e.clientX, my: e.clientY, ox: pos.x, oy: pos.y, w: pos.w, h: pos.h };
-    interactingRef.current = true;
     setDragging(sectionId); setSelected(sectionId);
   };
 
@@ -1213,7 +1222,6 @@ function GenericLayoutEditor<T extends string>({
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
     cachedRectRef.current = canvasRef.current?.getBoundingClientRect() || null;
     resizeStartRef.current = { mx: e.clientX, my: e.clientY, orig: { ...latestPosRef.current[sectionId] } };
-    interactingRef.current = true;
     setResizing({ sectionId, handle }); setSelected(sectionId);
   };
 
@@ -1254,7 +1262,6 @@ function GenericLayoutEditor<T extends string>({
 
   const handlePointerUp = () => {
     cachedRectRef.current = null;
-    interactingRef.current = false;
     if (resizing) { onUpdatePosition(resizing.sectionId, latestPosRef.current[resizing.sectionId]); setResizing(null); resizeStartRef.current = null; onBroadcast(); return; }
     if (dragging) { onUpdatePosition(dragging, latestPosRef.current[dragging]); onBroadcast(); }
     setDragging(null); dragStartRef.current = null;
@@ -1366,9 +1373,19 @@ function GenericLayoutEditor<T extends string>({
           ))}
           <div>
             <label className="text-xs text-white/25 block mb-1">Font</label>
-            <input type="number" step={0.1} min={0.3} max={3.0} className="input input-sm text-center"
+            <input type="number" step={0.1} min={0} max={10} className="input input-sm text-center"
               value={localPositions[selected!].fontSize ?? 1.0} onChange={e => updateField('fontSize', +e.target.value)} />
           </div>
+        </div>
+        {/* Font size slider for visual feedback */}
+        <div className="flex items-center gap-2">
+          <label className="text-xs text-white/25 shrink-0 w-10">Size</label>
+          <input type="range" min={0} max={10} step={0.1}
+            value={localPositions[selected!].fontSize ?? 1.0}
+            onChange={e => updateField('fontSize', +e.target.value)}
+            className="flex-1 h-1.5 rounded-full appearance-none accent-blue-500"
+            style={{ background: 'linear-gradient(to right, rgba(255,255,255,0.08), rgba(96,165,250,0.4))' }} />
+          <span className="text-[10px] text-white/30 w-8 text-right font-mono">{localPositions[selected!].fontSize ?? 1.0}</span>
         </div>
         {/* Text Color */}
         <div className="flex items-center gap-2 mt-1">
@@ -1422,17 +1439,17 @@ function GenericLayoutEditor<T extends string>({
             <div className="grid grid-cols-3 gap-2">
               <div>
                 <label className="text-xs text-white/20 block mb-0.5">Timer Digit</label>
-                <input type="number" step={0.1} min={0.3} max={3.0} className="input input-sm text-center"
+                <input type="number" step={0.1} min={0} max={10} className="input input-sm text-center"
                   value={localPositions[selected!].timerDigitScale ?? 1.0} onChange={e => updateField('timerDigitScale', +e.target.value)} />
               </div>
               <div>
                 <label className="text-xs text-white/20 block mb-0.5">Blinds</label>
-                <input type="number" step={0.1} min={0.3} max={3.0} className="input input-sm text-center"
+                <input type="number" step={0.1} min={0} max={10} className="input input-sm text-center"
                   value={localPositions[selected!].blindsScale ?? 1.0} onChange={e => updateField('blindsScale', +e.target.value)} />
               </div>
               <div>
                 <label className="text-xs text-white/20 block mb-0.5">Ante</label>
-                <input type="number" step={0.1} min={0.3} max={3.0} className="input input-sm text-center"
+                <input type="number" step={0.1} min={0} max={10} className="input input-sm text-center"
                   value={localPositions[selected!].anteScale ?? 1.0} onChange={e => updateField('anteScale', +e.target.value)} />
               </div>
             </div>
@@ -2005,17 +2022,18 @@ function SplitTab() {
             }}
           />
           {/* Dual draggable overlays (edit mode) — both panels at once */}
+          {/* Split display layout: header ~52px/720px=7.2%, panels 92.8%, divider 2px/1280=0.16% */}
           {editMode && (
             <>
               {/* Left panel overlay */}
               <div className="absolute z-10 select-none" style={{
-                top: '6.7%', left: 0, width: '49.8%', height: '93.3%',
+                top: '7.2%', left: 0, width: '49.9%', height: '92.8%',
               }} onPointerDown={() => setActivePanel('left')}>
                 {leftEditor.overlay}
               </div>
               {/* Right panel overlay */}
               <div className="absolute z-10 select-none" style={{
-                top: '6.7%', left: '50.2%', width: '49.8%', height: '93.3%',
+                top: '7.2%', left: '50.1%', width: '49.9%', height: '92.8%',
               }} onPointerDown={() => setActivePanel('right')}>
                 {rightEditor.overlay}
               </div>
