@@ -192,8 +192,8 @@ function CashDisplayInner() {
         </div>
       </div>
 
-      {/* Fullscreen button (below top bar, right) */}
-      <div className="absolute top-14 right-3 z-20">
+      {/* Fullscreen button — z-50 to stay above pre-level/idle/pause overlays (z-40) */}
+      <div className="absolute top-14 right-3 z-50">
         <FullscreenButton />
       </div>
 
