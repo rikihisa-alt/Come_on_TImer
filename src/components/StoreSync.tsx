@@ -8,7 +8,7 @@ import { isFirebaseAvailable, writeOrgState, onOrgStateChange } from '@/lib/fire
 const SUPABASE_DEBOUNCE_MS = 500;
 const FIREBASE_THROTTLE_MS = 300;
 const POLL_INTERVAL_MS = 3000;
-const FLUSH_COOLDOWN_MS = 1500;  // Ignore remote echoes for 1.5s after own write
+const FLUSH_COOLDOWN_MS = 5000;  // Ignore remote echoes for 5s after own write (must be > POLL_INTERVAL_MS)
 const PERSISTED_KEYS = ['tournaments', 'cashGames', 'displays', 'themes', 'sound', 'displayToggles', 'defaultThemeId', 'systemStyle', 'blindTemplates', 'tournamentPresets', 'cashPresets'] as const;
 
 /**

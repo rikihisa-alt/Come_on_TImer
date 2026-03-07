@@ -18,13 +18,12 @@ export function AbsoluteSection({ pos, children }: { pos: SectionPosition; child
     <div className="absolute overflow-hidden" style={{
       left: `${pos.x}%`, top: `${pos.y}%`,
       width: `${pos.w}%`, height: `${pos.h}%`,
+      '--sfs': sfs,
       ...(pos.textColor ? { '--section-text-color': pos.textColor } : {}),
       ...(frameRgb ? { '--frame-rgb': frameRgb } : {}),
       ...(frameVis !== undefined ? { '--frame-vis': String(frameVis) } : {}),
     } as React.CSSProperties}>
-      <div className="w-full h-full origin-center" style={{
-        transform: sfs !== 1 ? `scale(${sfs})` : undefined,
-      }}>
+      <div className="w-full h-full">
         {children}
       </div>
     </div>

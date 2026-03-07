@@ -14,9 +14,11 @@ import { DisplayWrapper } from '@/components/DisplayWrapper';
 
 function GlassStat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
-    <div className="g-card-inner p-3 lg:p-4 h-full flex flex-col items-center justify-center text-center">
-      <div className="text-[9px] lg:text-[11px] text-white/35 uppercase tracking-wider font-semibold mb-1.5">{label}</div>
-      <div className={`text-base lg:text-xl xl:text-2xl font-bold timer-font leading-tight ${accent ? 'text-blue-400' : 'text-white/75'}`}>{value}</div>
+    <div className="g-card-inner p-3 lg:p-4 h-full flex flex-col items-center justify-center text-center overflow-hidden">
+      <div className="text-white/35 uppercase tracking-wider font-semibold mb-1.5"
+        style={{ fontSize: 'calc(var(--sfs, 1) * 0.65rem)' }}>{label}</div>
+      <div className={`font-bold timer-font leading-tight ${accent ? 'text-blue-400' : 'text-white/75'}`}
+        style={{ fontSize: 'calc(var(--sfs, 1) * 1.4rem)' }}>{value}</div>
     </div>
   );
 }
@@ -209,8 +211,8 @@ function CashDisplayInner() {
         {/* Rate */}
         {dt.showCashRate && (
           <AbsoluteSection pos={layout.rate}>
-            <div className="g-card h-full flex flex-col items-center justify-center p-4">
-              <div className="text-5xl lg:text-7xl font-black leading-none tracking-tight" style={{ color: primaryColor }}>
+            <div className="g-card h-full flex flex-col items-center justify-center p-4 overflow-hidden">
+              <div className="font-black leading-none tracking-tight" style={{ fontSize: 'calc(var(--sfs, 1) * 3.5rem)', color: primaryColor }}>
                 {cashGame.smallBlind.toLocaleString()}/{cashGame.bigBlind.toLocaleString()}
                 {cashGame.ante > 0 && (
                   <span className="text-white/40 ml-1">(Ante {cashGame.ante.toLocaleString()})</span>
@@ -223,9 +225,9 @@ function CashDisplayInner() {
         {/* Next Blinds */}
         {dt.showCashNextBlinds && (cashGame.nextSmallBlind > 0 || cashGame.nextBigBlind > 0) && (
           <AbsoluteSection pos={layout.nextBlinds}>
-            <div className="g-card-inner h-full flex items-center justify-center gap-3 px-4">
-              <span className="text-xs text-white/25 uppercase font-bold tracking-wider">Next</span>
-              <span className="text-lg lg:text-2xl font-bold text-white/40 timer-font">
+            <div className="g-card-inner h-full flex items-center justify-center gap-3 px-4 overflow-hidden">
+              <span className="text-white/25 uppercase font-bold tracking-wider" style={{ fontSize: 'calc(var(--sfs, 1) * 0.7rem)' }}>Next</span>
+              <span className="font-bold text-white/40 timer-font" style={{ fontSize: 'calc(var(--sfs, 1) * 1.3rem)' }}>
                 {cashGame.nextSmallBlind.toLocaleString()}/{cashGame.nextBigBlind.toLocaleString()}
                 {cashGame.nextAnte > 0 && <span className="ml-1">(Ante {cashGame.nextAnte.toLocaleString()})</span>}
               </span>
@@ -236,8 +238,8 @@ function CashDisplayInner() {
         {/* Memo */}
         {dt.showCashMemo && cashGame.memo && (
           <AbsoluteSection pos={layout.memo}>
-            <div className="g-card-inner h-full flex items-center justify-center px-4">
-              <span className="text-base text-white/40 font-medium text-center">{cashGame.memo}</span>
+            <div className="g-card-inner h-full flex items-center justify-center px-4 overflow-hidden">
+              <span className="text-white/40 font-medium text-center" style={{ fontSize: 'calc(var(--sfs, 1) * 1rem)' }}>{cashGame.memo}</span>
             </div>
           </AbsoluteSection>
         )}
@@ -245,11 +247,12 @@ function CashDisplayInner() {
         {/* Timer */}
         {dt.showCashTimer && (
           <AbsoluteSection pos={layout.timer}>
-            <div className="g-card h-full flex flex-col items-center justify-center p-4">
-              <div className="text-[10px] text-white/25 uppercase tracking-widest font-semibold mb-2">
+            <div className="g-card h-full flex flex-col items-center justify-center p-4 overflow-hidden">
+              <div className="text-white/25 uppercase tracking-widest font-semibold mb-2" style={{ fontSize: 'calc(var(--sfs, 1) * 0.6rem)' }}>
                 {cashGame.countdownMode ? 'Remaining' : 'Session Time'}
               </div>
-              <div className={`text-4xl lg:text-6xl font-black timer-font leading-none transition-colors duration-300 ${isCountdownWarning ? 'text-amber-400 warning-pulse' : 'text-white/50'}`}>
+              <div className={`font-black timer-font leading-none transition-colors duration-300 ${isCountdownWarning ? 'text-amber-400 warning-pulse' : 'text-white/50'}`}
+                style={{ fontSize: 'calc(var(--sfs, 1) * 3rem)' }}>
                 {cashGame.countdownMode ? formatTimerHMS(countdown) : formatTimerHMS(elapsed)}
               </div>
             </div>
@@ -260,22 +263,22 @@ function CashDisplayInner() {
         {dt.showCashRate && (
           <>
             <AbsoluteSection pos={layout.sbCard}>
-              <div className="g-card-inner h-full flex flex-col items-center justify-center">
-                <div className="text-[9px] text-white/30 uppercase tracking-wider font-semibold mb-1">SB</div>
-                <div className="text-lg lg:text-2xl font-bold text-white/70 timer-font">{cashGame.smallBlind.toLocaleString()}</div>
+              <div className="g-card-inner h-full flex flex-col items-center justify-center overflow-hidden">
+                <div className="text-white/30 uppercase tracking-wider font-semibold mb-1" style={{ fontSize: 'calc(var(--sfs, 1) * 0.55rem)' }}>SB</div>
+                <div className="font-bold text-white/70 timer-font" style={{ fontSize: 'calc(var(--sfs, 1) * 1.3rem)' }}>{cashGame.smallBlind.toLocaleString()}</div>
               </div>
             </AbsoluteSection>
             <AbsoluteSection pos={layout.bbCard}>
-              <div className="g-card-inner h-full flex flex-col items-center justify-center">
-                <div className="text-[9px] text-white/30 uppercase tracking-wider font-semibold mb-1">BB</div>
-                <div className="text-lg lg:text-2xl font-bold text-blue-400 timer-font">{cashGame.bigBlind.toLocaleString()}</div>
+              <div className="g-card-inner h-full flex flex-col items-center justify-center overflow-hidden">
+                <div className="text-white/30 uppercase tracking-wider font-semibold mb-1" style={{ fontSize: 'calc(var(--sfs, 1) * 0.55rem)' }}>BB</div>
+                <div className="font-bold text-blue-400 timer-font" style={{ fontSize: 'calc(var(--sfs, 1) * 1.3rem)' }}>{cashGame.bigBlind.toLocaleString()}</div>
               </div>
             </AbsoluteSection>
             {cashGame.ante > 0 && (
               <AbsoluteSection pos={layout.anteCard}>
-                <div className="g-card-inner h-full flex flex-col items-center justify-center">
-                  <div className="text-[9px] text-white/30 uppercase tracking-wider font-semibold mb-1">Ante</div>
-                  <div className="text-lg lg:text-2xl font-bold text-white/70 timer-font">{cashGame.ante.toLocaleString()}</div>
+                <div className="g-card-inner h-full flex flex-col items-center justify-center overflow-hidden">
+                  <div className="text-white/30 uppercase tracking-wider font-semibold mb-1" style={{ fontSize: 'calc(var(--sfs, 1) * 0.55rem)' }}>Ante</div>
+                  <div className="font-bold text-white/70 timer-font" style={{ fontSize: 'calc(var(--sfs, 1) * 1.3rem)' }}>{cashGame.ante.toLocaleString()}</div>
                 </div>
               </AbsoluteSection>
             )}

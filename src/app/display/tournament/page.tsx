@@ -60,11 +60,11 @@ function TimerSelector({ selectedId, onSelect, tournaments }: {
 /* ── Glass Stat Card ── */
 function GlassStat({ label, value, accent, textColor }: { label: string; value: string; accent?: boolean; textColor?: string }) {
   return (
-    <div className="g-card-inner p-3 lg:p-4 h-full flex flex-col items-center justify-center text-center">
-      <div className={`text-[9px] lg:text-[11px] uppercase tracking-wider font-semibold mb-1.5 ${textColor ? '' : 'text-white/35'}`}
-        style={textColor ? { color: textColor, opacity: 0.5 } : undefined}>{label}</div>
-      <div className={`text-base lg:text-xl xl:text-2xl font-bold timer-font leading-tight ${textColor ? '' : (accent ? 'text-blue-400' : 'text-white/75')}`}
-        style={textColor ? { color: textColor } : undefined}>{value}</div>
+    <div className="g-card-inner p-2 lg:p-3 h-full flex flex-col items-center justify-center text-center overflow-hidden">
+      <div className={`uppercase tracking-wider font-semibold ${textColor ? '' : 'text-white/35'}`}
+        style={{ fontSize: 'calc(var(--sfs, 1) * 0.65rem)', ...(textColor ? { color: textColor, opacity: 0.5 } : {}) }}>{label}</div>
+      <div className={`font-bold timer-font leading-tight ${textColor ? '' : (accent ? 'text-blue-400' : 'text-white/75')}`}
+        style={{ fontSize: 'calc(var(--sfs, 1) * 1.4rem)', ...(textColor ? { color: textColor } : {}) }}>{value}</div>
     </div>
   );
 }
@@ -81,16 +81,18 @@ function PrizeTable({ tournament, primaryColor, textColor, format }: { tournamen
   if (prizes.length === 0) return null;
   const fmt = format || 'jp';
   return (
-    <div className="g-card-inner p-3 lg:p-4 h-full flex flex-col">
-      <div className={`text-[9px] lg:text-[11px] uppercase tracking-wider font-semibold mb-2 text-center shrink-0 ${textColor ? '' : 'text-white/35'}`}
-        style={textColor ? { color: textColor, opacity: 0.5 } : undefined}>Prize</div>
+    <div className="g-card-inner p-2 lg:p-3 h-full flex flex-col overflow-hidden">
+      <div className={`uppercase tracking-wider font-semibold mb-1 text-center shrink-0 ${textColor ? '' : 'text-white/35'}`}
+        style={{ fontSize: 'calc(var(--sfs, 1) * 0.6rem)', ...(textColor ? { color: textColor, opacity: 0.5 } : {}) }}>Prize</div>
       <div className="flex-1 flex flex-col justify-evenly min-h-0">
         {prizes.map((p) => (
           <div key={p.place} className="flex items-center justify-between gap-2 px-1">
-            <span className={`shrink-0 ${textColor ? '' : 'text-white/40'}`} style={textColor ? { color: textColor, opacity: 0.5 } : undefined}>
+            <span className={`shrink-0 ${textColor ? '' : 'text-white/40'}`}
+              style={{ fontSize: 'calc(var(--sfs, 1) * 0.75rem)', ...(textColor ? { color: textColor, opacity: 0.5 } : {}) }}>
               {fmt === 'ordinal' ? ordinalLabel(p.place) : `${p.place}位`}
             </span>
-            <span className="font-bold timer-font text-right truncate" style={{ color: textColor || (p.place === 1 ? primaryColor : 'rgba(255,255,255,0.5)') }}>
+            <span className="font-bold timer-font text-right truncate"
+              style={{ fontSize: 'calc(var(--sfs, 1) * 0.85rem)', color: textColor || (p.place === 1 ? primaryColor : 'rgba(255,255,255,0.5)') }}>
               {p.label}
             </span>
           </div>
@@ -313,10 +315,10 @@ function Inner() {
               {dt.showLevelInfo && (
                 <div className="text-center">
                   {isBrk ? (
-                    <span className="text-green-400 text-3xl lg:text-4xl font-black tracking-[0.15em]">BREAK</span>
+                    <span className="text-green-400 font-black tracking-[0.15em]" style={{ fontSize: `${2.5 * tds}vw` }}>BREAK</span>
                   ) : (
-                    <span className={`text-2xl lg:text-3xl font-black tracking-[0.2em] ${tc ? '' : 'text-white/60'}`}
-                      style={tc ? { color: tc } : undefined}>Level {cur?.level || '-'}</span>
+                    <span className={`font-black tracking-[0.2em] ${tc ? '' : 'text-white/60'}`}
+                      style={{ fontSize: `${2.2 * tds}vw`, ...(tc ? { color: tc } : {}) }}>Level {cur?.level || '-'}</span>
                   )}
                 </div>
               )}
@@ -361,18 +363,18 @@ function Inner() {
         {/* Center: Next Level */}
         {dt.showNextLevel && (
           <AbsoluteSection pos={layout.nextLevel}>
-            <div className="g-card-inner h-full flex items-center justify-center gap-3 px-4">
-              <span className={`text-xs uppercase tracking-wider font-semibold ${layout.nextLevel.textColor ? '' : 'text-white/30'}`}
-                style={layout.nextLevel.textColor ? { color: layout.nextLevel.textColor, opacity: 0.5 } : undefined}>Next</span>
+            <div className="g-card-inner h-full flex items-center justify-center gap-3 px-4 overflow-hidden">
+              <span className={`uppercase tracking-wider font-semibold ${layout.nextLevel.textColor ? '' : 'text-white/30'}`}
+                style={{ fontSize: 'calc(var(--sfs, 1) * 0.7rem)', ...(layout.nextLevel.textColor ? { color: layout.nextLevel.textColor, opacity: 0.5 } : {}) }}>Next</span>
               {nextPlay ? (
-                <span className={`text-lg font-bold timer-font ${layout.nextLevel.textColor ? '' : 'text-white/50'}`}
-                  style={layout.nextLevel.textColor ? { color: layout.nextLevel.textColor } : undefined}>
+                <span className={`font-bold timer-font ${layout.nextLevel.textColor ? '' : 'text-white/50'}`}
+                  style={{ fontSize: 'calc(var(--sfs, 1) * 1.1rem)', ...(layout.nextLevel.textColor ? { color: layout.nextLevel.textColor } : {}) }}>
                   {nextPlay.smallBlind.toLocaleString()}/{nextPlay.bigBlind.toLocaleString()}
                   {nextPlay.ante > 0 && <span className="ml-1" style={{ opacity: (timerPos.anteOpacity ?? 100) / 100 }}>(Ante {nextPlay.ante.toLocaleString()})</span>}
                 </span>
               ) : (
-                <span className={`text-lg font-bold timer-font ${layout.nextLevel.textColor ? '' : 'text-white/20'}`}
-                  style={layout.nextLevel.textColor ? { color: layout.nextLevel.textColor, opacity: 0.3 } : undefined}>--</span>
+                <span className={`font-bold timer-font ${layout.nextLevel.textColor ? '' : 'text-white/20'}`}
+                  style={{ fontSize: 'calc(var(--sfs, 1) * 1.1rem)', ...(layout.nextLevel.textColor ? { color: layout.nextLevel.textColor, opacity: 0.3 } : {}) }}>--</span>
               )}
             </div>
           </AbsoluteSection>
@@ -403,8 +405,8 @@ function Inner() {
           <AbsoluteSection pos={layout.ticker}>
             <div className="g-ticker h-full flex items-center overflow-hidden">
               <div className="ticker-container">
-                <span className={`ticker-scroll text-lg lg:text-xl font-semibold px-4 ${layout.ticker.textColor ? '' : 'text-white/40'}`}
-                  style={{ animationDuration: `${tickerSpeed}s`, ...(layout.ticker.textColor ? { color: layout.ticker.textColor } : {}) }}>{dt.tickerText}</span>
+                <span className={`ticker-scroll font-semibold px-4 ${layout.ticker.textColor ? '' : 'text-white/40'}`}
+                  style={{ fontSize: 'calc(var(--sfs, 1) * 1.1rem)', animationDuration: `${tickerSpeed}s`, ...(layout.ticker.textColor ? { color: layout.ticker.textColor } : {}) }}>{dt.tickerText}</span>
               </div>
             </div>
           </AbsoluteSection>
