@@ -249,6 +249,7 @@ export type DisplayToggles = {
   showPrizeStructure: boolean;
   showEntryCount: boolean;
   showChipInfo: boolean;
+  showRegClose: boolean;
   showFooter: boolean;
   showCashName: boolean;
   showCashRate: boolean;

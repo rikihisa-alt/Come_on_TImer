@@ -234,6 +234,7 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
       )}
 
       {/* Reg Close */}
+      {dt.showRegClose !== false && (
       <AbsoluteSection pos={layout.regClose}>
         <div className="g-card-inner h-full flex flex-col items-center justify-center p-1 overflow-hidden">
           <div className={`uppercase tracking-wider font-semibold ${layout.regClose.textColor ? '' : 'text-white/30'}`}
@@ -242,6 +243,7 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
             style={{ fontSize: 'calc(var(--sfs, 1) * 1rem)', ...(layout.regClose.textColor ? { color: layout.regClose.textColor } : {}) }}>{regClose !== null ? formatTimer(regClose) : 'N/A'}</div>
         </div>
       </AbsoluteSection>
+      )}
 
       {/* Next Break */}
       {dt.showTimeToBreak && (

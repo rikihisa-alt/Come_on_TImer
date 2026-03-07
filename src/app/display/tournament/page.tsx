@@ -386,9 +386,11 @@ function Inner() {
             <GlassStat label="Corner Time" value={formatTimerHMS(tte)} textColor={layout.cornerTime.textColor} />
           </AbsoluteSection>
         )}
+        {dt.showRegClose !== false && (
         <AbsoluteSection pos={layout.regClose}>
           <GlassStat label={tournament.regCloseLevel ? `Reg Close Lv${tournament.regCloseLevel}` : 'Reg Close'} value={regClose !== null ? formatTimer(regClose) : 'N/A'} textColor={layout.regClose.textColor} />
         </AbsoluteSection>
+        )}
         {dt.showTimeToBreak && (
           <AbsoluteSection pos={layout.nextBreak}>
             <GlassStat label="Next Break" value={ttb !== null ? formatTimerHMS(ttb) : '--:--:--'} textColor={layout.nextBreak.textColor} />

@@ -221,7 +221,7 @@ export const DEFAULT_SYSTEM_STYLE: SystemStyle = {
 export const DEFAULT_DISPLAY_TOGGLES: DisplayToggles = {
   showTournamentName: true, showLevelInfo: true, showBlinds: true, showTimer: true,
   showProgressBar: true, showNextLevel: true, showTimeToBreak: true, showTimeToEnd: true,
-  showPrizeStructure: true, showEntryCount: true, showChipInfo: true, showFooter: true,
+  showPrizeStructure: true, showEntryCount: true, showChipInfo: true, showRegClose: true, showFooter: true,
   showCashName: true, showCashRate: true, showCashMemo: true, showCashTimer: true,
   showCashPlayers: false, showCashChipInfo: false, showCashNextBlinds: true,
   tickerText: '', tickerSpeed: 25, backgroundImageUrl: '',

@@ -642,7 +642,8 @@ function TogglesPanel({ timerId, timerType }: { timerId: string; timerType: 'tou
     { key: 'showProgressBar', label: 'Progress Bar' }, { key: 'showNextLevel', label: 'Next Level' },
     { key: 'showTimeToBreak', label: 'Time to Break' }, { key: 'showTimeToEnd', label: 'Time to End' },
     { key: 'showPrizeStructure', label: 'Prize Structure' }, { key: 'showEntryCount', label: 'Entry Count' },
-    { key: 'showChipInfo', label: 'Chip Info' }, { key: 'showFooter', label: 'Footer' },
+    { key: 'showChipInfo', label: 'Chip Info' }, { key: 'showRegClose', label: 'Reg Close' },
+    { key: 'showFooter', label: 'Footer' },
   ];
   const cashItems: { key: keyof DisplayToggles; label: string }[] = [
     { key: 'showCashName', label: 'Game Name' }, { key: 'showCashRate', label: 'Rate' },
@@ -1133,10 +1134,10 @@ function isSectionVisible(id: TournamentSectionId, dt: DisplayToggles): boolean 
   switch (id) {
     case 'players': case 'reEntry': case 'rebuy': case 'addon': return dt.showEntryCount;
     case 'avgStack': return dt.showChipInfo;
-    case 'timer': return true;
+    case 'timer': return dt.showTimer;
     case 'nextLevel': return dt.showNextLevel;
     case 'cornerTime': return dt.showTimeToEnd;
-    case 'regClose': return true;
+    case 'regClose': return dt.showRegClose !== false;
     case 'nextBreak': return dt.showTimeToBreak;
     case 'prizeTable': return dt.showPrizeStructure;
     case 'ticker': return !!dt.tickerText;
