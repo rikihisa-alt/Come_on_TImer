@@ -634,8 +634,6 @@ function TogglesPanel({ timerId, timerType }: { timerId: string; timerType: 'tou
     if (timerType === 'tournament') store.updateTournamentToggles(timerId, partial);
     else store.updateCashToggles(timerId, partial);
   };
-  const fontScale = store.systemStyle?.displayFontScale || 1.0;
-
   const tournamentItems: { key: keyof DisplayToggles; label: string }[] = [
     { key: 'showTournamentName', label: 'Tournament Name' }, { key: 'showLevelInfo', label: 'Level Info' },
     { key: 'showBlinds', label: 'Blinds' }, { key: 'showTimer', label: 'Timer' },
@@ -664,21 +662,6 @@ function TogglesPanel({ timerId, timerType }: { timerId: string; timerType: 'tou
             <div className={`toggle ${dt[key] ? 'on' : ''}`} onClick={() => up({ [key]: !dt[key] })} />
           </div>
         ))}
-      </div>
-
-      {/* 文字サイズ調整 */}
-      <div className="border-t border-white/[0.06] pt-3">
-        <div className="text-xs text-white/30 font-semibold uppercase tracking-wider mb-2">Display Font Size</div>
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-white/20">小</span>
-          <input type="range" className="flex-1 accent-blue-500" min={0.5} max={2.0} step={0.05} value={fontScale}
-            onChange={e => store.updateSystemStyle({ displayFontScale: +e.target.value })} />
-          <span className="text-xs text-white/20">大</span>
-          <span className="text-xs text-white/40 font-mono w-10 text-center">{fontScale.toFixed(2)}</span>
-          {fontScale !== 1.0 && (
-            <button className="btn btn-ghost btn-sm text-[10px]" onClick={() => store.updateSystemStyle({ displayFontScale: 1.0 })}>Reset</button>
-          )}
-        </div>
       </div>
 
       {/* プライズ表記フォーマット */}
@@ -1363,7 +1346,7 @@ function GenericLayoutEditor<T extends string>({
     propertiesPanel: selected && localPositions[selected] ? (
       <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] space-y-2 fade-in">
         <div className="text-xs text-white/40 font-semibold">{labels[selected]} — Position & Size</div>
-        <div className="grid grid-cols-5 gap-2">
+        <div className="grid grid-cols-4 gap-2">
           {(['x', 'y', 'w', 'h'] as const).map(f => (
             <div key={f}>
               <label className="text-xs text-white/25 block mb-1 uppercase">{f} (%)</label>
@@ -1371,21 +1354,17 @@ function GenericLayoutEditor<T extends string>({
                 value={localPositions[selected!][f]} onChange={e => updateField(f, +e.target.value)} />
             </div>
           ))}
-          <div>
-            <label className="text-xs text-white/25 block mb-1">Font</label>
-            <input type="number" step={0.1} min={0} max={10} className="input input-sm text-center"
-              value={localPositions[selected!].fontSize ?? 1.0} onChange={e => updateField('fontSize', +e.target.value)} />
-          </div>
         </div>
-        {/* Font size slider for visual feedback */}
+        {/* Font size: label + number + slider on one line */}
         <div className="flex items-center gap-2">
-          <label className="text-xs text-white/25 shrink-0 w-10">Size</label>
+          <label className="text-xs text-white/25 shrink-0">Font</label>
+          <input type="number" step={0.1} min={0} max={10} className="input input-sm text-center w-16 shrink-0"
+            value={localPositions[selected!].fontSize ?? 1.0} onChange={e => updateField('fontSize', +e.target.value)} />
           <input type="range" min={0} max={10} step={0.1}
             value={localPositions[selected!].fontSize ?? 1.0}
             onChange={e => updateField('fontSize', +e.target.value)}
             className="flex-1 h-1.5 rounded-full appearance-none accent-blue-500"
             style={{ background: 'linear-gradient(to right, rgba(255,255,255,0.08), rgba(96,165,250,0.4))' }} />
-          <span className="text-[10px] text-white/30 w-8 text-right font-mono">{localPositions[selected!].fontSize ?? 1.0}</span>
         </div>
         {/* Text Color */}
         <div className="flex items-center gap-2 mt-1">
@@ -2546,25 +2525,10 @@ function SystemStyleEditor() {
         </div>
       </div>
 
-      {/* Display Font Size */}
-      <div>
-        <div className="flex justify-between mb-1">
-          <label className="text-xs text-white/25">Display Font Size (文字サイズ)</label>
-          <span className="text-xs text-white/30 font-mono">{Math.round((systemStyle.displayFontScale || 1) * 100)}%</span>
-        </div>
-        <input type="range" min={50} max={200} step={5}
-          value={Math.round((systemStyle.displayFontScale || 1) * 100)}
-          onChange={e => updateSystemStyle({ displayFontScale: +e.target.value / 100 })}
-          className="w-full h-3 rounded-full cursor-pointer appearance-none bg-white/10" />
-        <div className="flex justify-between text-[9px] text-white/15 mt-1">
-          <span>50%</span><span>100%</span><span>200%</span>
-        </div>
-      </div>
-
       {/* Preview */}
       <div className="g-card-inner p-4 space-y-2">
         <div className="text-xs text-white/25 mb-2">Preview</div>
-        <div style={{ fontFamily: currentFont.value, fontSize: `${(systemStyle.displayFontScale || 1) * 100}%` }}>
+        <div style={{ fontFamily: currentFont.value }}>
           <div className="text-lg font-bold" style={{ color: systemStyle.uiAccentColor }}>
             COME ON Timer
           </div>
@@ -3028,22 +2992,9 @@ function SettingsDisplay() {
           ))}
         </div>
       </div>
-      <div>
-        <div className="flex justify-between mb-1">
-          <label className="text-xs" style={{ color: 'var(--sys-text-muted)' }}>Display Font Size (文字サイズ)</label>
-          <span className="text-xs font-mono" style={{ color: 'var(--sys-text-muted)' }}>{Math.round((systemStyle.displayFontScale || 1) * 100)}%</span>
-        </div>
-        <input type="range" min={50} max={200} step={5}
-          value={Math.round((systemStyle.displayFontScale || 1) * 100)}
-          onChange={e => updateSystemStyle({ displayFontScale: +e.target.value / 100 })}
-          className="w-full h-3 rounded-full cursor-pointer appearance-none bg-white/10" />
-        <div className="flex justify-between text-[9px] mt-1" style={{ color: 'var(--sys-text-muted)' }}>
-          <span>50%</span><span>100%</span><span>200%</span>
-        </div>
-      </div>
       <div className="g-card-inner p-4 space-y-2">
         <div className="text-xs mb-2" style={{ color: 'var(--sys-text-muted)' }}>Preview</div>
-        <div style={{ fontFamily: currentFont.value, fontSize: `${(systemStyle.displayFontScale || 1) * 100}%` }}>
+        <div style={{ fontFamily: currentFont.value }}>
           <div className="text-lg font-bold" style={{ color: systemStyle.uiAccentColor }}>
             COME ON Timer
           </div>
