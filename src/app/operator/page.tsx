@@ -1355,17 +1355,19 @@ function GenericLayoutEditor<T extends string>({
             </div>
           ))}
         </div>
-        {/* Font size: label + number + slider on one line */}
-        <div className="flex items-center gap-2">
-          <label className="text-xs text-white/25 shrink-0">Font</label>
-          <input type="number" step={0.1} min={0} max={10} className="input input-sm text-center w-16 shrink-0"
-            value={localPositions[selected!].fontSize ?? 1.0} onChange={e => updateField('fontSize', +e.target.value)} />
-          <input type="range" min={0} max={10} step={0.1}
-            value={localPositions[selected!].fontSize ?? 1.0}
-            onChange={e => updateField('fontSize', +e.target.value)}
-            className="flex-1 h-1.5 rounded-full appearance-none accent-blue-500"
-            style={{ background: 'linear-gradient(to right, rgba(255,255,255,0.08), rgba(96,165,250,0.4))' }} />
-        </div>
+        {/* Font size: hidden for timer (timer uses Sub-Elements controls instead) */}
+        {selected !== 'timer' && selected !== ('timer' as T) && (
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-white/25 shrink-0">Font</label>
+            <input type="number" step={0.1} min={0} max={10} className="input input-sm text-center w-16 shrink-0"
+              value={localPositions[selected!].fontSize ?? 1.0} onChange={e => updateField('fontSize', +e.target.value)} />
+            <input type="range" min={0} max={10} step={0.1}
+              value={localPositions[selected!].fontSize ?? 1.0}
+              onChange={e => updateField('fontSize', +e.target.value)}
+              className="flex-1 h-1.5 rounded-full appearance-none accent-blue-500"
+              style={{ background: 'linear-gradient(to right, rgba(255,255,255,0.08), rgba(96,165,250,0.4))' }} />
+          </div>
+        )}
         {/* Text Color */}
         <div className="flex items-center gap-2 mt-1">
           <label className="text-xs text-white/25 shrink-0">Color</label>
