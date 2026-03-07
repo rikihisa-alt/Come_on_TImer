@@ -94,13 +94,14 @@ body { min-height: 100dvh; min-height: -webkit-fill-available; }
 .scale-in { animation: scaleIn 0.3s ease-out; }
 
 @keyframes ticker {
-  0% { transform: translateX(100%); }
+  0% { transform: translateX(0); }
   100% { transform: translateX(-100%); }
 }
 .ticker-scroll {
   display: inline-block;
-  animation: ticker 25s linear infinite;
   white-space: nowrap;
+  padding-left: 100%;
+  animation: ticker 25s linear infinite;
 }
 
 @keyframes shimmer {

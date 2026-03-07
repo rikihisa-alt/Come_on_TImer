@@ -284,6 +284,11 @@ function Inner() {
           </AbsoluteSection>
         )}
         {dt.showEntryCount && (
+          <AbsoluteSection pos={layout.reEntry}>
+            <GlassStat label="Re-Entry" value={String(tournament.reEntryCount)} textColor={layout.reEntry.textColor} />
+          </AbsoluteSection>
+        )}
+        {dt.showEntryCount && (
           <AbsoluteSection pos={layout.rebuy}>
             <GlassStat label="Rebuy" value={String(tournament.rebuyCount)} textColor={layout.rebuy.textColor} />
           </AbsoluteSection>
@@ -354,16 +359,21 @@ function Inner() {
         </AbsoluteSection>
 
         {/* Center: Next Level */}
-        {dt.showNextLevel && nextPlay && (
+        {dt.showNextLevel && (
           <AbsoluteSection pos={layout.nextLevel}>
             <div className="g-card-inner h-full flex items-center justify-center gap-3 px-4">
               <span className={`text-xs uppercase tracking-wider font-semibold ${layout.nextLevel.textColor ? '' : 'text-white/30'}`}
                 style={layout.nextLevel.textColor ? { color: layout.nextLevel.textColor, opacity: 0.5 } : undefined}>Next</span>
-              <span className={`text-lg font-bold timer-font ${layout.nextLevel.textColor ? '' : 'text-white/50'}`}
-                style={layout.nextLevel.textColor ? { color: layout.nextLevel.textColor } : undefined}>
-                {nextPlay.smallBlind.toLocaleString()}/{nextPlay.bigBlind.toLocaleString()}
-                {nextPlay.ante > 0 && <span className="ml-1" style={{ opacity: (timerPos.anteOpacity ?? 100) / 100 }}>(Ante {nextPlay.ante.toLocaleString()})</span>}
-              </span>
+              {nextPlay ? (
+                <span className={`text-lg font-bold timer-font ${layout.nextLevel.textColor ? '' : 'text-white/50'}`}
+                  style={layout.nextLevel.textColor ? { color: layout.nextLevel.textColor } : undefined}>
+                  {nextPlay.smallBlind.toLocaleString()}/{nextPlay.bigBlind.toLocaleString()}
+                  {nextPlay.ante > 0 && <span className="ml-1" style={{ opacity: (timerPos.anteOpacity ?? 100) / 100 }}>(Ante {nextPlay.ante.toLocaleString()})</span>}
+                </span>
+              ) : (
+                <span className={`text-lg font-bold timer-font ${layout.nextLevel.textColor ? '' : 'text-white/20'}`}
+                  style={layout.nextLevel.textColor ? { color: layout.nextLevel.textColor, opacity: 0.3 } : undefined}>--</span>
+              )}
             </div>
           </AbsoluteSection>
         )}
@@ -460,13 +470,17 @@ function Inner() {
         </div>
 
         {/* Next Level */}
-        {dt.showNextLevel && nextPlay && (
+        {dt.showNextLevel && (
           <div className="g-card-inner flex items-center justify-center gap-3 px-4 py-2">
             <span className="text-[10px] text-white/30 uppercase tracking-wider font-semibold">Next</span>
-            <span className="text-sm font-bold text-white/50 timer-font">
-              {nextPlay.smallBlind.toLocaleString()}/{nextPlay.bigBlind.toLocaleString()}
-              {nextPlay.ante > 0 && <span className="text-white/30 ml-1">(Ante {nextPlay.ante.toLocaleString()})</span>}
-            </span>
+            {nextPlay ? (
+              <span className="text-sm font-bold text-white/50 timer-font">
+                {nextPlay.smallBlind.toLocaleString()}/{nextPlay.bigBlind.toLocaleString()}
+                {nextPlay.ante > 0 && <span className="text-white/30 ml-1">(Ante {nextPlay.ante.toLocaleString()})</span>}
+              </span>
+            ) : (
+              <span className="text-sm font-bold text-white/20 timer-font">--</span>
+            )}
           </div>
         )}
 

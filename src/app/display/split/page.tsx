@@ -202,16 +202,21 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
       </AbsoluteSection>
 
       {/* Next Level */}
-      {dt.showNextLevel && nextPlay && (
+      {dt.showNextLevel && (
         <AbsoluteSection pos={layout.nextLevel}>
           <div className="g-card-inner h-full flex items-center justify-center gap-2 px-2">
             <span className={`text-[8px] uppercase tracking-wider font-semibold ${layout.nextLevel.textColor ? '' : 'text-white/25'}`}
               style={layout.nextLevel.textColor ? { color: layout.nextLevel.textColor, opacity: 0.5 } : undefined}>Next</span>
-            <span className={`text-[10px] lg:text-xs font-bold timer-font ${layout.nextLevel.textColor ? '' : 'text-white/40'}`}
-              style={layout.nextLevel.textColor ? { color: layout.nextLevel.textColor } : undefined}>
-              {nextPlay.smallBlind.toLocaleString()}/{nextPlay.bigBlind.toLocaleString()}
-              {nextPlay.ante > 0 && <span className="ml-0.5" style={{ opacity: (timerPos.anteOpacity ?? 100) / 100 }}>(Ante {nextPlay.ante.toLocaleString()})</span>}
-            </span>
+            {nextPlay ? (
+              <span className={`text-[10px] lg:text-xs font-bold timer-font ${layout.nextLevel.textColor ? '' : 'text-white/40'}`}
+                style={layout.nextLevel.textColor ? { color: layout.nextLevel.textColor } : undefined}>
+                {nextPlay.smallBlind.toLocaleString()}/{nextPlay.bigBlind.toLocaleString()}
+                {nextPlay.ante > 0 && <span className="ml-0.5" style={{ opacity: (timerPos.anteOpacity ?? 100) / 100 }}>(Ante {nextPlay.ante.toLocaleString()})</span>}
+              </span>
+            ) : (
+              <span className={`text-[10px] lg:text-xs font-bold timer-font ${layout.nextLevel.textColor ? '' : 'text-white/20'}`}
+                style={layout.nextLevel.textColor ? { color: layout.nextLevel.textColor, opacity: 0.3 } : undefined}>--</span>
+            )}
           </div>
         </AbsoluteSection>
       )}
