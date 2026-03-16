@@ -6,7 +6,7 @@ import { useStore } from '@/stores/useStore';
 import { onSync } from '@/lib/sync';
 import { unlockAudio, playSound, playWarningBeep } from '@/lib/audio';
 import { formatTimer, formatChips, formatTimerHMS, computeTimeToBreak, computeTimeToEnd, computeRegCloseTime } from '@/lib/utils';
-import { Tournament, CashGame, ThemeConfig, DisplayToggles, SoundSettings, SectionLayout } from '@/lib/types';
+import { Tournament, CashGame, ThemeConfig, DisplayToggles, SoundSettings, SectionLayout, SectionPosition } from '@/lib/types';
 import { DEFAULT_SECTION_LAYOUT, DEFAULT_CASH_SECTION_LAYOUT } from '@/lib/presets';
 import { computeBgStyle, computeTextEffectStyle, hasBgImage, getBgOverlayOpacity, ordinalLabel } from '@/lib/display-utils';
 import { FullscreenButton } from '@/components/FullscreenButton';
@@ -93,7 +93,7 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
         <AbsoluteSection pos={layout.tournamentName}>
           <div className="h-full flex items-center justify-center">
             <span className={`font-black tracking-wide truncate ${layout.tournamentName.textColor ? '' : 'text-white/60'}`}
-              style={{ fontSize: '1.5em', ...(layout.tournamentName.textColor ? { color: layout.tournamentName.textColor } : {}) }}>{tournament.name}</span>
+              style={{ fontSize: 'calc(var(--sfs, 1) * 1.5em)', ...(layout.tournamentName.textColor ? { color: layout.tournamentName.textColor } : {}) }}>{tournament.name}</span>
           </div>
         </AbsoluteSection>
       )}
@@ -282,8 +282,8 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
         <AbsoluteSection pos={layout.ticker}>
           <div className="g-ticker h-full flex items-center overflow-hidden">
             <div className="ticker-container">
-              <span className={`ticker-scroll text-xs font-semibold px-2 ${layout.ticker.textColor ? '' : 'text-white/35'}`}
-                style={{ animationDuration: `${tickerSpeed}s`, ...(layout.ticker.textColor ? { color: layout.ticker.textColor } : {}) }}>{dt.tickerText}</span>
+              <span className={`ticker-scroll font-semibold px-2 ${layout.ticker.textColor ? '' : 'text-white/35'}`}
+                style={{ fontSize: 'calc(var(--sfs, 1) * 0.7rem)', animationDuration: `${tickerSpeed}s`, ...(layout.ticker.textColor ? { color: layout.ticker.textColor } : {}) }}>{dt.tickerText}</span>
             </div>
           </div>
         </AbsoluteSection>
@@ -362,13 +362,27 @@ function CashPanel({ cashGame, theme, displayToggles: dt }: {
 
   const textEffectStyle = computeTextEffectStyle(dt);
 
+  // Helper: label + value card with textColor support
+  const StatCard = ({ pos, label, value, accentColor }: { pos: SectionPosition; label: string; value: string | number; accentColor?: string }) => {
+    const tc = pos.textColor;
+    return (
+      <div className="g-card-inner h-full flex flex-col items-center justify-center p-1 overflow-hidden">
+        <div className={`uppercase tracking-wider font-semibold ${tc ? '' : 'text-white/30'}`}
+          style={{ fontSize: 'calc(var(--sfs, 1) * 0.5rem)', ...(tc ? { color: tc, opacity: 0.5 } : {}) }}>{label}</div>
+        <div className={`font-bold timer-font ${tc ? '' : (accentColor ? '' : 'text-white/65')}`}
+          style={{ fontSize: 'calc(var(--sfs, 1) * 1rem)', ...(tc ? { color: tc } : accentColor ? { color: accentColor } : {}) }}>{value}</div>
+      </div>
+    );
+  };
+
   return (
     <div className="flex-1 relative overflow-hidden" style={dt.backgroundImageUrl ? textEffectStyle : undefined}>
       {/* Cash Name */}
       {dt.showCashName !== false && (
         <AbsoluteSection pos={layout.cashName}>
           <div className="h-full flex items-center justify-center">
-            <span className="font-black text-white/60 tracking-wide truncate" style={{ fontSize: '1.5em' }}>{cashGame.name}</span>
+            <span className={`font-black tracking-wide truncate ${layout.cashName.textColor ? '' : 'text-white/60'}`}
+              style={{ fontSize: 'calc(var(--sfs, 1) * 1.5em)', ...(layout.cashName.textColor ? { color: layout.cashName.textColor } : {}) }}>{cashGame.name}</span>
           </div>
         </AbsoluteSection>
       )}
@@ -377,11 +391,9 @@ function CashPanel({ cashGame, theme, displayToggles: dt }: {
       {dt.showCashRate && (
         <AbsoluteSection pos={layout.rate}>
           <div className="g-card h-full flex flex-col items-center justify-center p-2 overflow-hidden">
-            <div className="font-black leading-none tracking-tight whitespace-nowrap" style={{ fontSize: 'calc(var(--sfs, 1) * 1.8rem)', color: pc }}>
+            <div className="font-black leading-none tracking-tight whitespace-nowrap" style={{ fontSize: 'calc(var(--sfs, 1) * 1.8rem)', color: layout.rate.textColor || pc }}>
               {cashGame.smallBlind.toLocaleString()}/{cashGame.bigBlind.toLocaleString()}
-              {cashGame.ante > 0 && (
-                <span className="text-white/35 ml-1">(Ante {cashGame.ante.toLocaleString()})</span>
-              )}
+              {cashGame.ante > 0 && <span style={{ opacity: 0.5 }} className="ml-1">(Ante {cashGame.ante.toLocaleString()})</span>}
             </div>
           </div>
         </AbsoluteSection>
@@ -391,8 +403,10 @@ function CashPanel({ cashGame, theme, displayToggles: dt }: {
       {dt.showCashNextBlinds && (cashGame.nextSmallBlind > 0 || cashGame.nextBigBlind > 0) && (
         <AbsoluteSection pos={layout.nextBlinds}>
           <div className="g-card-inner h-full flex items-center justify-center gap-2 px-2 overflow-hidden">
-            <span className="text-white/25 uppercase font-bold" style={{ fontSize: 'calc(var(--sfs, 1) * 0.45rem)' }}>Next</span>
-            <span className="font-bold text-white/40 timer-font" style={{ fontSize: 'calc(var(--sfs, 1) * 0.7rem)' }}>
+            <span className={`uppercase font-bold ${layout.nextBlinds.textColor ? '' : 'text-white/25'}`}
+              style={{ fontSize: 'calc(var(--sfs, 1) * 0.45rem)', ...(layout.nextBlinds.textColor ? { color: layout.nextBlinds.textColor, opacity: 0.5 } : {}) }}>Next</span>
+            <span className={`font-bold timer-font ${layout.nextBlinds.textColor ? '' : 'text-white/40'}`}
+              style={{ fontSize: 'calc(var(--sfs, 1) * 0.7rem)', ...(layout.nextBlinds.textColor ? { color: layout.nextBlinds.textColor } : {}) }}>
               {cashGame.nextSmallBlind.toLocaleString()}/{cashGame.nextBigBlind.toLocaleString()}
               {cashGame.nextAnte > 0 && <span className="ml-1">(Ante {cashGame.nextAnte.toLocaleString()})</span>}
             </span>
@@ -404,7 +418,8 @@ function CashPanel({ cashGame, theme, displayToggles: dt }: {
       {dt.showCashMemo && cashGame.memo && (
         <AbsoluteSection pos={layout.memo}>
           <div className="g-card-inner h-full flex items-center justify-center px-2 overflow-hidden">
-            <span className="text-white/40 font-medium text-center" style={{ fontSize: 'calc(var(--sfs, 1) * 0.7rem)' }}>{cashGame.memo}</span>
+            <span className={`font-medium text-center ${layout.memo.textColor ? '' : 'text-white/40'}`}
+              style={{ fontSize: 'calc(var(--sfs, 1) * 0.7rem)', ...(layout.memo.textColor ? { color: layout.memo.textColor } : {}) }}>{cashGame.memo}</span>
           </div>
         </AbsoluteSection>
       )}
@@ -413,11 +428,12 @@ function CashPanel({ cashGame, theme, displayToggles: dt }: {
       {dt.showCashTimer && (
         <AbsoluteSection pos={layout.timer}>
           <div className="g-card h-full flex flex-col items-center justify-center p-2 overflow-hidden">
-            <div className="text-white/20 uppercase tracking-widest font-semibold mb-1" style={{ fontSize: 'calc(var(--sfs, 1) * 0.45rem)' }}>
+            <div className={`uppercase tracking-widest font-semibold mb-1 ${layout.timer.textColor ? '' : 'text-white/20'}`}
+              style={{ fontSize: 'calc(var(--sfs, 1) * 0.45rem)', ...(layout.timer.textColor ? { color: layout.timer.textColor, opacity: 0.5 } : {}) }}>
               {cashGame.countdownMode ? 'Remaining' : 'Session'}
             </div>
-            <div className={`font-black timer-font leading-none ${isWarn ? 'text-amber-400 warning-pulse' : 'text-white/40'}`}
-              style={{ fontSize: 'calc(var(--sfs, 1) * 1.6rem)' }}>
+            <div className={`font-black timer-font leading-none ${layout.timer.textColor ? '' : (isWarn ? 'text-amber-400 warning-pulse' : 'text-white/40')}`}
+              style={{ fontSize: 'calc(var(--sfs, 1) * 1.6rem)', ...(layout.timer.textColor ? { color: layout.timer.textColor } : {}) }}>
               {cashGame.countdownMode ? formatTimerHMS(countdown) : formatTimerHMS(elapsed)}
             </div>
           </div>
@@ -428,23 +444,14 @@ function CashPanel({ cashGame, theme, displayToggles: dt }: {
       {dt.showCashRate && (
         <>
           <AbsoluteSection pos={layout.sbCard}>
-            <div className="g-card-inner h-full flex flex-col items-center justify-center p-1 overflow-hidden">
-              <div className="text-white/30 uppercase tracking-wider font-semibold" style={{ fontSize: 'calc(var(--sfs, 1) * 0.45rem)' }}>SB</div>
-              <div className="font-bold text-white/65 timer-font" style={{ fontSize: 'calc(var(--sfs, 1) * 0.85rem)' }}>{cashGame.smallBlind.toLocaleString()}</div>
-            </div>
+            <StatCard pos={layout.sbCard} label="SB" value={cashGame.smallBlind.toLocaleString()} />
           </AbsoluteSection>
           <AbsoluteSection pos={layout.bbCard}>
-            <div className="g-card-inner h-full flex flex-col items-center justify-center p-1 overflow-hidden">
-              <div className="text-white/30 uppercase tracking-wider font-semibold" style={{ fontSize: 'calc(var(--sfs, 1) * 0.45rem)' }}>BB</div>
-              <div className="font-bold text-blue-400 timer-font" style={{ fontSize: 'calc(var(--sfs, 1) * 0.85rem)' }}>{cashGame.bigBlind.toLocaleString()}</div>
-            </div>
+            <StatCard pos={layout.bbCard} label="BB" value={cashGame.bigBlind.toLocaleString()} accentColor={layout.bbCard.textColor ? undefined : '#60a5fa'} />
           </AbsoluteSection>
           {cashGame.ante > 0 && (
             <AbsoluteSection pos={layout.anteCard}>
-              <div className="g-card-inner h-full flex flex-col items-center justify-center p-1 overflow-hidden">
-                <div className="text-white/30 uppercase tracking-wider font-semibold" style={{ fontSize: 'calc(var(--sfs, 1) * 0.45rem)' }}>Ante</div>
-                <div className="font-bold text-white/65 timer-font" style={{ fontSize: 'calc(var(--sfs, 1) * 0.85rem)' }}>{cashGame.ante.toLocaleString()}</div>
-              </div>
+              <StatCard pos={layout.anteCard} label="Ante" value={cashGame.ante.toLocaleString()} />
             </AbsoluteSection>
           )}
         </>
@@ -453,38 +460,15 @@ function CashPanel({ cashGame, theme, displayToggles: dt }: {
       {/* Player / Re-Entry / Rebuy / Add-on / Avg Stack */}
       {dt.showCashPlayers && (
         <>
-          <AbsoluteSection pos={layout.players}>
-            <div className="g-card-inner h-full flex flex-col items-center justify-center p-1 overflow-hidden">
-              <div className="text-white/30 uppercase tracking-wider font-semibold" style={{ fontSize: 'calc(var(--sfs, 1) * 0.5rem)' }}>Players</div>
-              <div className="font-bold text-white/65 timer-font" style={{ fontSize: 'calc(var(--sfs, 1) * 1rem)' }}>{activePlayers}</div>
-            </div>
-          </AbsoluteSection>
-          <AbsoluteSection pos={layout.reEntry}>
-            <div className="g-card-inner h-full flex flex-col items-center justify-center p-1 overflow-hidden">
-              <div className="text-white/30 uppercase tracking-wider font-semibold" style={{ fontSize: 'calc(var(--sfs, 1) * 0.5rem)' }}>Re-Entry</div>
-              <div className="font-bold text-white/65 timer-font" style={{ fontSize: 'calc(var(--sfs, 1) * 1rem)' }}>{cashGame.reEntryCount}</div>
-            </div>
-          </AbsoluteSection>
-          <AbsoluteSection pos={layout.rebuy}>
-            <div className="g-card-inner h-full flex flex-col items-center justify-center p-1 overflow-hidden">
-              <div className="text-white/30 uppercase tracking-wider font-semibold" style={{ fontSize: 'calc(var(--sfs, 1) * 0.5rem)' }}>Rebuy</div>
-              <div className="font-bold text-white/65 timer-font" style={{ fontSize: 'calc(var(--sfs, 1) * 1rem)' }}>{cashGame.rebuyCount}</div>
-            </div>
-          </AbsoluteSection>
-          <AbsoluteSection pos={layout.addon}>
-            <div className="g-card-inner h-full flex flex-col items-center justify-center p-1 overflow-hidden">
-              <div className="text-white/30 uppercase tracking-wider font-semibold" style={{ fontSize: 'calc(var(--sfs, 1) * 0.5rem)' }}>Add-on</div>
-              <div className="font-bold text-white/65 timer-font" style={{ fontSize: 'calc(var(--sfs, 1) * 1rem)' }}>{cashGame.addonCount}</div>
-            </div>
-          </AbsoluteSection>
+          <AbsoluteSection pos={layout.players}><StatCard pos={layout.players} label="Players" value={activePlayers} /></AbsoluteSection>
+          <AbsoluteSection pos={layout.reEntry}><StatCard pos={layout.reEntry} label="Re-Entry" value={cashGame.reEntryCount} /></AbsoluteSection>
+          <AbsoluteSection pos={layout.rebuy}><StatCard pos={layout.rebuy} label="Rebuy" value={cashGame.rebuyCount} /></AbsoluteSection>
+          <AbsoluteSection pos={layout.addon}><StatCard pos={layout.addon} label="Add-on" value={cashGame.addonCount} /></AbsoluteSection>
         </>
       )}
       {dt.showCashChipInfo && (
         <AbsoluteSection pos={layout.avgStack}>
-          <div className="g-card-inner h-full flex flex-col items-center justify-center p-1 overflow-hidden">
-            <div className="text-white/30 uppercase tracking-wider font-semibold" style={{ fontSize: 'calc(var(--sfs, 1) * 0.5rem)' }}>Avg Stack</div>
-            <div className="font-bold text-white/65 timer-font" style={{ fontSize: 'calc(var(--sfs, 1) * 1rem)' }}>{avgStack > 0 ? formatChips(avgStack) : '--'}</div>
-          </div>
+          <StatCard pos={layout.avgStack} label="Avg Stack" value={avgStack > 0 ? formatChips(avgStack) : '--'} />
         </AbsoluteSection>
       )}
 
@@ -493,7 +477,8 @@ function CashPanel({ cashGame, theme, displayToggles: dt }: {
         <AbsoluteSection pos={layout.ticker}>
           <div className="g-ticker h-full flex items-center overflow-hidden">
             <div className="ticker-container">
-              <span className="ticker-scroll text-xs font-semibold text-white/35 px-2" style={{ animationDuration: `${tickerSpeed}s` }}>{dt.tickerText}</span>
+              <span className={`ticker-scroll font-semibold px-2 ${layout.ticker.textColor ? '' : 'text-white/35'}`}
+                style={{ fontSize: 'calc(var(--sfs, 1) * 0.7rem)', animationDuration: `${tickerSpeed}s`, ...(layout.ticker.textColor ? { color: layout.ticker.textColor } : {}) }}>{dt.tickerText}</span>
             </div>
           </div>
         </AbsoluteSection>

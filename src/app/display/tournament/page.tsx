@@ -263,7 +263,7 @@ function Inner() {
           <AbsoluteSection pos={layout.tournamentName}>
             <div className="h-full flex items-center justify-center">
               <span className={`font-black tracking-wide truncate ${layout.tournamentName.textColor ? '' : 'text-white/70'}`}
-                style={{ fontSize: '2em', ...(layout.tournamentName.textColor ? { color: layout.tournamentName.textColor } : {}) }}>{tournament.name}</span>
+                style={{ fontSize: 'calc(var(--sfs, 1) * 2em)', ...(layout.tournamentName.textColor ? { color: layout.tournamentName.textColor } : {}) }}>{tournament.name}</span>
             </div>
           </AbsoluteSection>
         )}
