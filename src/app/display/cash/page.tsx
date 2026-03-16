@@ -8,6 +8,7 @@ import { unlockAudio } from '@/lib/audio';
 import { formatTimerHMS, formatChips } from '@/lib/utils';
 import { CashGame, ThemeConfig, DisplayToggles, CashSectionLayout } from '@/lib/types';
 import { DEFAULT_DISPLAY_TOGGLES, DEFAULT_CASH_SECTION_LAYOUT } from '@/lib/presets';
+import { computeBgStyle, computeTextEffectStyle, hasBgImage, getBgOverlayOpacity } from '@/lib/display-utils';
 import { FullscreenButton } from '@/components/FullscreenButton';
 import { AbsoluteSection } from '@/components/AbsoluteSection';
 import { DisplayWrapper } from '@/components/DisplayWrapper';
@@ -147,13 +148,7 @@ function CashDisplayInner() {
   const dt = cashGame.displayToggles || { ...globalToggles, backgroundImageUrl: '' };
   const tickerSpeed = dt.tickerSpeed || 25;
 
-  const bgStyle = dt.backgroundImageUrl
-    ? { backgroundImage: `url(${dt.backgroundImageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
-    : theme?.type === 'gradient'
-    ? { background: `linear-gradient(160deg, ${theme.gradientFrom || '#0e1c36'}, ${theme.gradientTo || '#1c3d6e'})` }
-    : theme?.type === 'image' && theme.imageUrl
-    ? { backgroundImage: `url(${theme.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
-    : { background: 'linear-gradient(160deg, #0e1c36 0%, #152d52 50%, #1c3d6e 100%)' };
+  const bgStyle = computeBgStyle(dt, theme);
 
   const primaryColor = theme?.primaryColor || '#60a5fa';
   const isCountdownWarning = cashGame.countdownMode && countdown < 300000 && countdown > 0 && cashGame.status === 'running';
@@ -169,20 +164,14 @@ function CashDisplayInner() {
     + cashGame.addonCount * cashGame.addonChips;
   const avgStack = activePlayers > 0 ? Math.round(totalChips / activePlayers) : 0;
 
-  // Text effect styles
-  const textEffectStyle: React.CSSProperties = {
-    ...(dt.textShadowEnabled ? { textShadow: '0 0 8px rgba(0,0,0,0.8), 0 2px 16px rgba(0,0,0,0.6), 0 0 40px rgba(0,0,0,0.4)' } : {}),
-    ...(dt.textStrokeEnabled ? { WebkitTextStroke: `${dt.textStrokeWidth ?? 1.5}px ${dt.textStrokeColor || '#000000'}`, paintOrder: 'stroke fill' as const } : {}),
-  };
+  const textEffectStyle = computeTextEffectStyle(dt);
 
   return (
     <DisplayWrapper bgStyle={bgStyle} className="flex flex-col select-none relative">
       {theme && theme.overlayOpacity > 0 && (
         <div className="absolute inset-0 bg-black pointer-events-none" style={{ opacity: theme.overlayOpacity / 100 }} />
       )}
-      {(dt.backgroundImageUrl || (theme?.type === 'image' && theme.imageUrl)) && (
-        <div className="absolute inset-0 bg-black pointer-events-none z-[1]" style={{ opacity: (dt.bgOverlayOpacity ?? 50) / 100 }} />
-      )}
+      {hasBgImage(dt, theme) && <div className="absolute inset-0 bg-black pointer-events-none z-[1]" style={{ opacity: getBgOverlayOpacity(dt) }} />}
 
       {/* ═══ Glass Top Bar ═══ */}
       <div className="relative z-50 flex items-center px-4 md:px-6 py-2.5 md:py-3" style={{ background: 'var(--sys-bg-from, #0e1c36)' }}>

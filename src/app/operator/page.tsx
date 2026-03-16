@@ -1305,7 +1305,12 @@ function GenericLayoutEditor<T extends string>({
       const a = layout[k as T], b = lp[k as T];
       if (!a || !b) return a === b;
       return a.x === b.x && a.y === b.y && a.w === b.w && a.h === b.h
-        && (a.fontSize ?? 1) === (b.fontSize ?? 1) && a.textColor === b.textColor
+        && (a.fontSize ?? 1) === (b.fontSize ?? 1)
+        && (a.timerDigitScale ?? 1) === (b.timerDigitScale ?? 1)
+        && (a.blindsScale ?? 1) === (b.blindsScale ?? 1)
+        && (a.anteScale ?? 1) === (b.anteScale ?? 1)
+        && (a.anteOpacity ?? 100) === (b.anteOpacity ?? 100)
+        && a.textColor === b.textColor
         && a.frameColor === b.frameColor && (a.frameVisibility ?? 50) === (b.frameVisibility ?? 50);
     });
     if (same) return;
@@ -1373,35 +1378,43 @@ function GenericLayoutEditor<T extends string>({
 
   const updateField = (field: 'x' | 'y' | 'w' | 'h' | 'fontSize' | 'timerDigitScale' | 'blindsScale' | 'anteScale' | 'anteOpacity' | 'frameVisibility', val: number) => {
     if (!selected) return;
-    const newPos = { ...localPositions[selected], [field]: val };
-    setLocalPositions(prev => ({ ...prev, [selected as T]: newPos }));
+    // Clamp position/size to 0-100, font scales to 0-10
+    let v = val;
+    if (field === 'x' || field === 'y' || field === 'w' || field === 'h' || field === 'anteOpacity' || field === 'frameVisibility') v = Math.max(0, Math.min(100, v));
+    if (field === 'fontSize' || field === 'timerDigitScale' || field === 'blindsScale' || field === 'anteScale') v = Math.max(0, Math.min(10, v));
+    const newPos = { ...localPositions[selected], [field]: v };
+    const next = { ...localPositions, [selected as T]: newPos };
+    setLocalPositions(next);
+    latestPosRef.current = next;
     onUpdatePosition(selected, newPos);
+    onBroadcast();
+  };
+  const updatePos = (cur: SectionPosition) => {
+    if (!selected) return;
+    const next = { ...localPositions, [selected as T]: cur };
+    setLocalPositions(next);
+    latestPosRef.current = next;
+    onUpdatePosition(selected, cur);
     onBroadcast();
   };
   const updateTextColor = (color: string | undefined) => {
     if (!selected) return;
     const cur = { ...localPositions[selected] };
     if (color) cur.textColor = color; else delete cur.textColor;
-    setLocalPositions(prev => ({ ...prev, [selected as T]: cur }));
-    onUpdatePosition(selected, cur);
-    onBroadcast();
+    updatePos(cur);
   };
   const updateFrameColor = (color: string | undefined) => {
     if (!selected) return;
     const cur = { ...localPositions[selected] };
     if (color) cur.frameColor = color; else delete cur.frameColor;
-    setLocalPositions(prev => ({ ...prev, [selected as T]: cur }));
-    onUpdatePosition(selected, cur);
-    onBroadcast();
+    updatePos(cur);
   };
   const resetFrame = () => {
     if (!selected) return;
     const cur = { ...localPositions[selected] };
     delete cur.frameColor;
     delete cur.frameVisibility;
-    setLocalPositions(prev => ({ ...prev, [selected as T]: cur }));
-    onUpdatePosition(selected, cur);
-    onBroadcast();
+    updatePos(cur);
   };
 
   const undoLayoutRef = useRef<Record<T, SectionPosition> | null>(null);

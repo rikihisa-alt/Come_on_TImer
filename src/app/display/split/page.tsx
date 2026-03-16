@@ -8,17 +8,11 @@ import { unlockAudio, playSound, playWarningBeep } from '@/lib/audio';
 import { formatTimer, formatChips, formatTimerHMS, computeTimeToBreak, computeTimeToEnd, computeRegCloseTime } from '@/lib/utils';
 import { Tournament, CashGame, ThemeConfig, DisplayToggles, SoundSettings, SectionLayout } from '@/lib/types';
 import { DEFAULT_SECTION_LAYOUT, DEFAULT_CASH_SECTION_LAYOUT } from '@/lib/presets';
+import { computeBgStyle, computeTextEffectStyle, hasBgImage, getBgOverlayOpacity, ordinalLabel } from '@/lib/display-utils';
 import { FullscreenButton } from '@/components/FullscreenButton';
 import { AbsoluteSection } from '@/components/AbsoluteSection';
 import { DisplayWrapper } from '@/components/DisplayWrapper';
 import { RoomSync } from '@/components/RoomSync';
-
-function ordinalLabel(n: number): string {
-  if (n === 1) return '1st';
-  if (n === 2) return '2nd';
-  if (n === 3) return '3rd';
-  return `${n}th`;
-}
 
 /* ═══ Tournament Panel (AbsoluteSection layout) ═══ */
 function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutOverride }: {
@@ -90,11 +84,7 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
   const tickerSpeed = dt.tickerSpeed || 25;
   const isPreLevel = tournament.status === 'running' && tournament.currentLevelIndex === -1;
 
-  // Text effect styles
-  const textEffectStyle: React.CSSProperties = {
-    ...(dt.textShadowEnabled ? { textShadow: '0 0 8px rgba(0,0,0,0.8), 0 2px 16px rgba(0,0,0,0.6), 0 0 40px rgba(0,0,0,0.4)' } : {}),
-    ...(dt.textStrokeEnabled ? { WebkitTextStroke: `${dt.textStrokeWidth ?? 1.5}px ${dt.textStrokeColor || '#000000'}`, paintOrder: 'stroke fill' as const } : {}),
-  };
+  const textEffectStyle = computeTextEffectStyle(dt);
 
   return (
     <div className={`flex-1 relative overflow-hidden ${isBrk ? 'break-bg' : ''}`} style={dt.backgroundImageUrl ? textEffectStyle : undefined}>
@@ -370,11 +360,7 @@ function CashPanel({ cashGame, theme, displayToggles: dt }: {
     + cashGame.addonCount * cashGame.addonChips;
   const avgStack = activePlayers > 0 ? Math.round(totalChips / activePlayers) : 0;
 
-  // Text effect styles
-  const textEffectStyle: React.CSSProperties = {
-    ...(dt.textShadowEnabled ? { textShadow: '0 0 8px rgba(0,0,0,0.8), 0 2px 16px rgba(0,0,0,0.6), 0 0 40px rgba(0,0,0,0.4)' } : {}),
-    ...(dt.textStrokeEnabled ? { WebkitTextStroke: `${dt.textStrokeWidth ?? 1.5}px ${dt.textStrokeColor || '#000000'}`, paintOrder: 'stroke fill' as const } : {}),
-  };
+  const textEffectStyle = computeTextEffectStyle(dt);
 
   return (
     <div className="flex-1 relative overflow-hidden" style={dt.backgroundImageUrl ? textEffectStyle : undefined}>
@@ -712,7 +698,7 @@ function SplitInner() {
         <div className="flex-1 flex flex-col relative overflow-hidden">
           <div className="absolute inset-0 z-0" style={leftBgStyle} />
           {leftTheme && leftTheme.overlayOpacity > 0 && <div className="absolute inset-0 bg-black z-0" style={{ opacity: leftTheme.overlayOpacity / 100 }} />}
-          {leftDt.backgroundImageUrl && <div className="absolute inset-0 bg-black z-0" style={{ opacity: (leftDt.bgOverlayOpacity ?? 50) / 100 }} />}
+          {hasBgImage(leftDt, leftTheme) && <div className="absolute inset-0 bg-black z-0" style={{ opacity: getBgOverlayOpacity(leftDt) }} />}
           <div className="relative z-[1] flex-1 flex flex-col">
             {hasLeft ? (
               leftTournament ? <TournamentPanel tournament={leftTournament} theme={leftTheme} displayToggles={leftDt} sound={leftSnd} />
@@ -731,7 +717,7 @@ function SplitInner() {
         <div className="flex-1 flex flex-col relative overflow-hidden">
           <div className="absolute inset-0 z-0" style={rightBgStyle} />
           {rightTheme && rightTheme.overlayOpacity > 0 && <div className="absolute inset-0 bg-black z-0" style={{ opacity: rightTheme.overlayOpacity / 100 }} />}
-          {rightDt.backgroundImageUrl && <div className="absolute inset-0 bg-black z-0" style={{ opacity: (rightDt.bgOverlayOpacity ?? 50) / 100 }} />}
+          {hasBgImage(rightDt, rightTheme) && <div className="absolute inset-0 bg-black z-0" style={{ opacity: getBgOverlayOpacity(rightDt) }} />}
           <div className="relative z-[1] flex-1 flex flex-col">
             {hasRight ? (
               rightTournament ? <TournamentPanel tournament={rightTournament} theme={rightTheme} displayToggles={rightDt} sound={rightSnd} />
