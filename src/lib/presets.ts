@@ -71,6 +71,7 @@ export const DEFAULT_SECTION_LAYOUT: SectionLayout = {
   prizeTable: { x: 86.7, y: 67,   w: 12.5, h: 22 },
   ticker:         { x: 0.8, y: 91,    w: 98.4, h: 7.5 },
   tournamentName: { x: 25,  y: 0.5,  w: 50,   h: 7 },
+  memo:           { x: 14.5, y: 81,  w: 71,   h: 9 },
 };
 
 export const DEFAULT_CASH_SECTION_LAYOUT: CashSectionLayout = {
@@ -221,7 +222,7 @@ export const DEFAULT_SYSTEM_STYLE: SystemStyle = {
 export const DEFAULT_DISPLAY_TOGGLES: DisplayToggles = {
   showTournamentName: true, showLevelInfo: true, showBlinds: true, showTimer: true,
   showProgressBar: true, showNextLevel: true, showTimeToBreak: true, showTimeToEnd: true,
-  showPrizeStructure: true, showEntryCount: true, showChipInfo: true, showRegClose: true, showFooter: true,
+  showPrizeStructure: true, showEntryCount: true, showChipInfo: true, showRegClose: true, showTournamentMemo: false, showFooter: true,
   showCashName: true, showCashRate: true, showCashMemo: true, showCashTimer: true,
   showCashPlayers: false, showCashChipInfo: false, showCashNextBlinds: true,
   tickerText: '', tickerSpeed: 25, backgroundImageUrl: '',

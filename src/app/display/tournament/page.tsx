@@ -391,6 +391,16 @@ function Inner() {
           </AbsoluteSection>
         )}
 
+        {/* Memo */}
+        {dt.showTournamentMemo && tournament.memo && (
+          <AbsoluteSection pos={layout.memo}>
+            <div className="g-card-inner p-2 lg:p-3 h-full flex items-center justify-center text-center overflow-hidden">
+              <span className={`font-semibold whitespace-pre-wrap ${layout.memo.textColor ? '' : 'text-white/60'}`}
+                style={{ fontSize: 'calc(var(--sfs, 1) * 1rem)', ...(layout.memo.textColor ? { color: layout.memo.textColor } : {}) }}>{tournament.memo}</span>
+            </div>
+          </AbsoluteSection>
+        )}
+
         {/* Bottom: Ticker */}
         {dt.tickerText && (
           <AbsoluteSection pos={layout.ticker}>

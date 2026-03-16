@@ -54,7 +54,7 @@ export type TournamentSectionId =
   | 'timer' | 'nextLevel'
   | 'cornerTime' | 'regClose' | 'nextBreak'
   | 'prizeTable' | 'ticker'
-  | 'tournamentName';
+  | 'tournamentName' | 'memo';
 
 export type SectionPosition = {
   x: number;
@@ -122,6 +122,7 @@ export type Tournament = {
   sectionLayout?: SectionLayout;
   // F6: Split用別レイアウト
   splitSectionLayout?: SectionLayout;
+  memo?: string;
 };
 
 export type CashGame = {
@@ -250,6 +251,7 @@ export type DisplayToggles = {
   showEntryCount: boolean;
   showChipInfo: boolean;
   showRegClose: boolean;
+  showTournamentMemo: boolean;
   showFooter: boolean;
   showCashName: boolean;
   showCashRate: boolean;

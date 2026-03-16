@@ -277,6 +277,16 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
         </AbsoluteSection>
       )}
 
+      {/* Memo */}
+      {dt.showTournamentMemo && tournament.memo && (
+        <AbsoluteSection pos={layout.memo}>
+          <div className="g-card-inner p-1 h-full flex items-center justify-center text-center overflow-hidden">
+            <span className={`font-semibold whitespace-pre-wrap ${layout.memo.textColor ? '' : 'text-white/50'}`}
+              style={{ fontSize: 'calc(var(--sfs, 1) * 0.7rem)', ...(layout.memo.textColor ? { color: layout.memo.textColor } : {}) }}>{tournament.memo}</span>
+          </div>
+        </AbsoluteSection>
+      )}
+
       {/* Ticker */}
       {dt.tickerText && (
         <AbsoluteSection pos={layout.ticker}>

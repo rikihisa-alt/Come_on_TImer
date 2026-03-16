@@ -526,6 +526,12 @@ function TournamentStats({ tournament: t }: { tournament: Tournament }) {
         )}
       </div>
 
+      {/* メモ */}
+      <div className="border-t border-white/[0.06] pt-3">
+        <div className="text-xs text-white/25 font-semibold mb-2">Memo</div>
+        <textarea className="input input-sm w-full min-h-[60px] resize-y text-xs" rows={2} value={t.memo || ''} onChange={e => up({ memo: e.target.value })} placeholder="メモを入力（ディスプレイに表示可能）" />
+      </div>
+
       {/* チップサマリー */}
       <div className="border-t border-white/[0.06] pt-3">
         <div className="text-xs text-white/25 font-semibold mb-2">Chip Summary</div>
@@ -641,7 +647,7 @@ function TogglesPanel({ timerId, timerType }: { timerId: string; timerType: 'tou
     { key: 'showTimeToBreak', label: 'Time to Break' }, { key: 'showTimeToEnd', label: 'Time to End' },
     { key: 'showPrizeStructure', label: 'Prize Structure' }, { key: 'showEntryCount', label: 'Entry Count' },
     { key: 'showChipInfo', label: 'Chip Info' }, { key: 'showRegClose', label: 'Reg Close' },
-    { key: 'showFooter', label: 'Footer' },
+    { key: 'showTournamentMemo', label: 'Memo' }, { key: 'showFooter', label: 'Footer' },
   ];
   const cashItems: { key: keyof DisplayToggles; label: string }[] = [
     { key: 'showCashName', label: 'Game Name' }, { key: 'showCashRate', label: 'Rate' },
@@ -1223,7 +1229,7 @@ const SECTION_LABELS: Record<TournamentSectionId, string> = {
   players: 'Players', reEntry: 'Re-Entry', rebuy: 'Rebuy', addon: 'Add-on', avgStack: 'Avg Stack',
   timer: 'Timer', nextLevel: 'Next Level',
   cornerTime: 'Time', regClose: 'Reg Close', nextBreak: 'Next Break',
-  prizeTable: 'Prize', ticker: 'Ticker', tournamentName: 'Name',
+  prizeTable: 'Prize', ticker: 'Ticker', tournamentName: 'Name', memo: 'Memo',
 };
 
 const CASH_SECTION_LABELS: Record<CashSectionId, string> = {
@@ -1246,6 +1252,7 @@ function isSectionVisible(id: TournamentSectionId, dt: DisplayToggles): boolean 
     case 'prizeTable': return dt.showPrizeStructure;
     case 'ticker': return !!dt.tickerText;
     case 'tournamentName': return dt.showTournamentName;
+    case 'memo': return dt.showTournamentMemo;
   }
 }
 
