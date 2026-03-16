@@ -193,7 +193,7 @@ function Inner() {
     </div>
   );
 
-  const dt = tournament.displayToggles || globalToggles;
+  const dt = tournament.displayToggles || { ...globalToggles, backgroundImageUrl: '' };
   const snd = tournament.sound || globalSound;
   const tickerSpeed = dt.tickerSpeed || 25;
   const cur = tournament.levels[tournament.currentLevelIndex];
@@ -235,11 +235,17 @@ function Inner() {
 
   const isPreLevel = tournament.status === 'running' && tournament.currentLevelIndex === -1;
 
+  // Text effect styles
+  const textEffectStyle: React.CSSProperties = {
+    ...(dt.textShadowEnabled ? { textShadow: '0 0 8px rgba(0,0,0,0.8), 0 2px 16px rgba(0,0,0,0.6), 0 0 40px rgba(0,0,0,0.4)' } : {}),
+    ...(dt.textStrokeEnabled ? { WebkitTextStroke: `${dt.textStrokeWidth ?? 1.5}px ${dt.textStrokeColor || '#000000'}`, paintOrder: 'stroke fill' as const } : {}),
+  };
+
   return (
     <DisplayWrapper bgStyle={bgStyle} className={`flex flex-col select-none relative ${isBrk ? 'break-bg' : ''}`}>
       {/* BG Overlays */}
       {(dt.backgroundImageUrl || (theme?.type === 'image' && theme.imageUrl)) && (
-        <div className="absolute inset-0 bg-black/50 pointer-events-none z-[1]" />
+        <div className="absolute inset-0 bg-black pointer-events-none z-[1]" style={{ opacity: (dt.bgOverlayOpacity ?? 50) / 100 }} />
       )}
       {theme && theme.overlayOpacity > 0 && <div className="absolute inset-0 bg-black pointer-events-none z-[1]" style={{ opacity: theme.overlayOpacity / 100 }} />}
 
@@ -268,7 +274,7 @@ function Inner() {
       </div>
 
       {/* ═══ Desktop: Absolute Section Layout ═══ */}
-      <div className="absolute inset-0 z-10 hidden md:block">
+      <div className="absolute inset-0 z-10 hidden md:block" style={dt.backgroundImageUrl ? textEffectStyle : undefined}>
         {/* Tournament Name section */}
         {dt.showTournamentName && (
           <AbsoluteSection pos={layout.tournamentName}>

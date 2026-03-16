@@ -680,6 +680,14 @@ function TogglesPanel({ timerId, timerType }: { timerId: string; timerType: 'tou
   );
 }
 
+const BG_GALLERY_KEY = 'come-on-timer-bg-gallery';
+function loadGallery(): { id: string; data: string; name: string }[] {
+  try { return JSON.parse(localStorage.getItem(BG_GALLERY_KEY) || '[]'); } catch { return []; }
+}
+function saveGallery(items: { id: string; data: string; name: string }[]) {
+  try { localStorage.setItem(BG_GALLERY_KEY, JSON.stringify(items)); } catch { /* quota */ }
+}
+
 function DisplaySettingsPanel({ timerId, timerType }: { timerId: string; timerType: 'tournament' | 'cash' }) {
   const store = useStore();
   const timer = timerType === 'tournament'
@@ -691,69 +699,182 @@ function DisplaySettingsPanel({ timerId, timerType }: { timerId: string; timerTy
     else store.updateCashToggles(timerId, partial);
   };
   const [showUrlInput, setShowUrlInput] = useState(false);
+  const [showGallery, setShowGallery] = useState(false);
+  const [gallery, setGallery] = useState<{ id: string; data: string; name: string }[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+
+  // Load gallery on mount
+  useEffect(() => { setGallery(loadGallery()); }, []);
+
+  const compressAndReturn = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
+      img.onload = () => {
+        try {
+          const MAX_DIM = 1280;
+          let w = img.width, h = img.height;
+          if (w > MAX_DIM || h > MAX_DIM) {
+            const ratio = Math.min(MAX_DIM / w, MAX_DIM / h);
+            w = Math.round(w * ratio); h = Math.round(h * ratio);
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) { reject(new Error('no ctx')); return; }
+          ctx.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', 0.7));
+        } catch (err) { reject(err); } finally { URL.revokeObjectURL(objectUrl); }
+      };
+      img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error('load failed')); };
+      img.src = objectUrl;
+    });
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 2 * 1024 * 1024) { alert('ファイルサイズは2MB以下にしてください'); return; }
-    // Compress image via canvas to avoid localStorage quota issues
-    const img = new Image();
-    const objectUrl = URL.createObjectURL(file);
-    img.onload = () => {
-      try {
-        const MAX_DIM = 1280;
-        let w = img.width, h = img.height;
-        if (w > MAX_DIM || h > MAX_DIM) {
-          const ratio = Math.min(MAX_DIM / w, MAX_DIM / h);
-          w = Math.round(w * ratio); h = Math.round(h * ratio);
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = w; canvas.height = h;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-        ctx.drawImage(img, 0, 0, w, h);
-        const compressed = canvas.toDataURL('image/jpeg', 0.7);
-        up({ backgroundImageUrl: compressed });
-      } catch (err) {
-        alert('画像の処理に失敗しました');
-        console.error(err);
-      } finally {
-        URL.revokeObjectURL(objectUrl);
-      }
-    };
-    img.onerror = () => { alert('画像の読み込みに失敗しました'); URL.revokeObjectURL(objectUrl); };
-    img.src = objectUrl;
+    try {
+      const compressed = await compressAndReturn(file);
+      up({ backgroundImageUrl: compressed });
+      // Auto-save to gallery
+      const newItem = { id: Date.now().toString(), data: compressed, name: file.name.replace(/\.[^.]+$/, '') };
+      const updated = [newItem, ...gallery].slice(0, 20); // max 20 images
+      setGallery(updated);
+      saveGallery(updated);
+    } catch {
+      alert('画像の処理に失敗しました');
+    }
     e.target.value = '';
   };
+
+  const removeFromGallery = (id: string) => {
+    const updated = gallery.filter(g => g.id !== id);
+    setGallery(updated);
+    saveGallery(updated);
+  };
+
+  const overlayOpacity = dt.bgOverlayOpacity ?? 50;
+  const hasBg = !!dt.backgroundImageUrl;
+
   return (
     <div className="space-y-3">
       <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Background Image</div>
       {/* Preview */}
-      {dt.backgroundImageUrl && (
+      {hasBg && (
         <div className="relative rounded-xl overflow-hidden border border-white/[0.08]" style={{ height: '80px' }}>
           <img src={dt.backgroundImageUrl} alt="bg preview" className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-black pointer-events-none" style={{ opacity: overlayOpacity / 100 }} />
           <button onClick={() => up({ backgroundImageUrl: '' })}
-            className="absolute top-1 right-1 p-1 rounded-full bg-black/60 text-white/60 hover:text-red-400 transition-colors" title="Clear">
+            className="absolute top-1 right-1 p-1 rounded-full bg-black/60 text-white/60 hover:text-red-400 transition-colors z-10" title="Clear">
             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         </div>
       )}
-      {/* Upload button */}
-      <div className="flex gap-2">
+      {/* Upload & Gallery buttons */}
+      <div className="flex gap-2 flex-wrap">
         <button onClick={() => fileInputRef.current?.click()}
           className="btn btn-ghost btn-sm flex items-center gap-1.5">
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" /></svg>
-          Upload Image
+          Upload
         </button>
-        <button onClick={() => setShowUrlInput(!showUrlInput)} className="btn btn-ghost btn-sm text-xs text-white/20">URLで指定</button>
+        {gallery.length > 0 && (
+          <button onClick={() => setShowGallery(!showGallery)}
+            className={`btn btn-ghost btn-sm flex items-center gap-1.5 ${showGallery ? 'text-blue-400' : ''}`}>
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0 0 22.5 18.75V5.25A2.25 2.25 0 0 0 20.25 3H3.75A2.25 2.25 0 0 0 1.5 5.25v13.5A2.25 2.25 0 0 0 3.75 21Z" /></svg>
+            Gallery ({gallery.length})
+          </button>
+        )}
+        <button onClick={() => setShowUrlInput(!showUrlInput)} className="btn btn-ghost btn-sm text-xs text-white/20">URL</button>
       </div>
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
-      <p className="text-xs text-white/15">最大2MB · JPG/PNG/WebP</p>
+      <p className="text-xs text-white/15">最大2MB · 自動保存されます</p>
+
+      {/* Image Gallery */}
+      {showGallery && gallery.length > 0 && (
+        <div className="fade-in space-y-2">
+          <div className="text-[10px] text-white/20 uppercase tracking-wider">Saved Images</div>
+          <div className="grid grid-cols-4 gap-1.5">
+            {gallery.map(item => (
+              <div key={item.id} className="relative group rounded-lg overflow-hidden border border-white/[0.08] cursor-pointer hover:border-blue-400/50 transition-colors"
+                style={{ aspectRatio: '16/9' }}
+                onClick={() => up({ backgroundImageUrl: item.data })}>
+                <img src={item.data} alt={item.name} className="w-full h-full object-cover" />
+                {dt.backgroundImageUrl === item.data && (
+                  <div className="absolute inset-0 border-2 border-blue-400 rounded-lg">
+                    <div className="absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-blue-500 flex items-center justify-center">
+                      <svg className="w-2 h-2 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
+                    </div>
+                  </div>
+                )}
+                <button onClick={e => { e.stopPropagation(); removeFromGallery(item.id); }}
+                  className="absolute top-0.5 right-0.5 p-0.5 rounded-full bg-black/70 text-white/50 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* URL input (collapsible) */}
       {showUrlInput && (
         <div className="fade-in">
           <input className="input input-sm" value={dt.backgroundImageUrl.startsWith('data:') ? '' : dt.backgroundImageUrl}
             onChange={e => up({ backgroundImageUrl: e.target.value })} placeholder="https://example.com/image.jpg" />
+        </div>
+      )}
+
+      {/* ── Text Readability Controls (only when bg image is set) ── */}
+      {hasBg && (
+        <div className="space-y-2 pt-2 border-t border-white/[0.06] fade-in">
+          <div className="text-[10px] text-white/20 uppercase tracking-wider">Text Readability</div>
+
+          {/* Overlay Opacity */}
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-white/40 shrink-0" style={{ width: '4rem' }}>Overlay</label>
+            <input type="range" min={0} max={90} step={5} value={overlayOpacity}
+              onChange={e => up({ bgOverlayOpacity: +e.target.value })}
+              className="flex-1 min-w-0 h-1.5 rounded-full appearance-none accent-blue-500"
+              style={{ background: 'linear-gradient(to right, rgba(255,255,255,0.08), rgba(96,165,250,0.4))' }} />
+            <span className="text-[10px] text-white/30 shrink-0" style={{ width: '2rem', textAlign: 'right' }}>{overlayOpacity}%</span>
+          </div>
+
+          {/* Text Shadow toggle */}
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-white/40 shrink-0" style={{ width: '4rem' }}>Shadow</label>
+            <button onClick={() => up({ textShadowEnabled: !dt.textShadowEnabled })}
+              className={`relative w-8 h-4 rounded-full transition-colors ${dt.textShadowEnabled ? 'bg-blue-500' : 'bg-white/10'}`}>
+              <span className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${dt.textShadowEnabled ? 'left-[18px]' : 'left-0.5'}`} />
+            </button>
+            <span className="text-[10px] text-white/20">{dt.textShadowEnabled ? 'ON' : 'OFF'}</span>
+          </div>
+
+          {/* Text Stroke toggle + settings */}
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-white/40 shrink-0" style={{ width: '4rem' }}>Stroke</label>
+            <button onClick={() => up({ textStrokeEnabled: !dt.textStrokeEnabled })}
+              className={`relative w-8 h-4 rounded-full transition-colors ${dt.textStrokeEnabled ? 'bg-blue-500' : 'bg-white/10'}`}>
+              <span className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${dt.textStrokeEnabled ? 'left-[18px]' : 'left-0.5'}`} />
+            </button>
+            <span className="text-[10px] text-white/20">{dt.textStrokeEnabled ? 'ON' : 'OFF'}</span>
+          </div>
+
+          {/* Stroke color & width (show when stroke enabled) */}
+          {dt.textStrokeEnabled && (
+            <div className="flex items-center gap-2 pl-2 fade-in">
+              <input type="color" value={dt.textStrokeColor || '#000000'}
+                onChange={e => up({ textStrokeColor: e.target.value })}
+                className="w-6 h-6 rounded border border-white/10 cursor-pointer" style={{ padding: 0 }} />
+              <label className="text-[10px] text-white/25 shrink-0">Width</label>
+              <input type="range" min={0.5} max={4} step={0.5} value={dt.textStrokeWidth ?? 1.5}
+                onChange={e => up({ textStrokeWidth: +e.target.value })}
+                className="flex-1 min-w-0 h-1.5 rounded-full appearance-none accent-blue-500"
+                style={{ background: 'linear-gradient(to right, rgba(255,255,255,0.08), rgba(96,165,250,0.4))' }} />
+              <span className="text-[10px] text-white/30 shrink-0">{dt.textStrokeWidth ?? 1.5}px</span>
+            </div>
+          )}
         </div>
       )}
     </div>

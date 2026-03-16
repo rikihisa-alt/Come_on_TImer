@@ -261,6 +261,11 @@ export type DisplayToggles = {
   tickerText: string;
   tickerSpeed: number;
   backgroundImageUrl: string;
+  bgOverlayOpacity: number;       // 0-100 overlay darkness on bg image
+  textShadowEnabled: boolean;     // glow / drop-shadow on text
+  textStrokeEnabled: boolean;     // outline around text
+  textStrokeColor: string;        // stroke color (hex)
+  textStrokeWidth: number;        // stroke width in px (0.5-4)
   prizeLabelFormat: 'ordinal' | 'jp';  // 'ordinal' = 1st/2nd, 'jp' = 1位/2位
 };
 
