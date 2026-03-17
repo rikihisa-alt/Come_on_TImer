@@ -1598,7 +1598,7 @@ function useTournamentLayoutEditor(t: Tournament, initialLayoutMode: 'single' | 
   const store = useStore();
   const [layoutMode, setLayoutMode] = useState<'single' | 'split'>(initialLayoutMode);
   const raw = layoutMode === 'split' ? t.splitSectionLayout : t.sectionLayout;
-  const layout = raw ? { ...DEFAULT_SECTION_LAYOUT, ...raw } : DEFAULT_SECTION_LAYOUT;
+  const layout = useMemo(() => raw ? { ...DEFAULT_SECTION_LAYOUT, ...raw } : DEFAULT_SECTION_LAYOUT, [raw]);
   const dt = t.displayToggles || DEFAULT_DISPLAY_TOGGLES;
   const visibleIds = (Object.keys(DEFAULT_SECTION_LAYOUT) as TournamentSectionId[]).filter(id => isSectionVisible(id, dt));
   const editor = GenericLayoutEditor<TournamentSectionId>({
@@ -1616,7 +1616,7 @@ function useCashLayoutEditor(c: CashGame, initialLayoutMode: 'single' | 'split' 
   const store = useStore();
   const [layoutMode, setLayoutMode] = useState<'single' | 'split'>(initialLayoutMode);
   const rawCash = layoutMode === 'split' ? c.splitSectionLayout : c.sectionLayout;
-  const layout = rawCash ? { ...DEFAULT_CASH_SECTION_LAYOUT, ...rawCash } : DEFAULT_CASH_SECTION_LAYOUT;
+  const layout = useMemo(() => rawCash ? { ...DEFAULT_CASH_SECTION_LAYOUT, ...rawCash } : DEFAULT_CASH_SECTION_LAYOUT, [rawCash]);
   const dt = c.displayToggles || DEFAULT_DISPLAY_TOGGLES;
   const visibleIds = (Object.keys(DEFAULT_CASH_SECTION_LAYOUT) as CashSectionId[]).filter(id => isCashSectionVisible(id, dt));
   const editor = GenericLayoutEditor<CashSectionId>({
