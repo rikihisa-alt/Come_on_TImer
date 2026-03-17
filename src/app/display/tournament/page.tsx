@@ -212,9 +212,10 @@ function Inner() {
   const avg = activePlayers > 0 ? Math.round(totalChips / activePlayers) : 0;
   const pc = theme?.primaryColor || '#60a5fa';
   const layoutParam = params.get('layout');
-  const layout = layoutParam === 'split'
-    ? (tournament.splitSectionLayout || tournament.sectionLayout || DEFAULT_SECTION_LAYOUT)
-    : (tournament.sectionLayout || DEFAULT_SECTION_LAYOUT);
+  const rawLayout = layoutParam === 'split'
+    ? (tournament.splitSectionLayout || tournament.sectionLayout)
+    : tournament.sectionLayout;
+  const layout = rawLayout ? { ...DEFAULT_SECTION_LAYOUT, ...rawLayout } : DEFAULT_SECTION_LAYOUT;
   const timerPos = layout.timer;
   const tds = (timerPos.timerDigitScale ?? 1) * fs;
   const bds = (timerPos.blindsScale ?? 1) * fs;

@@ -372,7 +372,7 @@ export const useStore = create<AppState>()(
       updateSectionPosition: (id, sectionId, pos) => {
         set(s => ({ tournaments: s.tournaments.map(t => {
           if (t.id !== id) return t;
-          const current = t.sectionLayout || { ...DEFAULT_SECTION_LAYOUT };
+          const current = { ...DEFAULT_SECTION_LAYOUT, ...(t.sectionLayout || {}) };
           return { ...t, sectionLayout: { ...current, [sectionId]: pos } };
         }) }));
         get().broadcastAll();
@@ -384,7 +384,7 @@ export const useStore = create<AppState>()(
       updateCashSectionPosition: (id, sectionId, pos) => {
         set(s => ({ cashGames: s.cashGames.map(c => {
           if (c.id !== id) return c;
-          const current = c.sectionLayout || { ...DEFAULT_CASH_SECTION_LAYOUT };
+          const current = { ...DEFAULT_CASH_SECTION_LAYOUT, ...(c.sectionLayout || {}) };
           return { ...c, sectionLayout: { ...current, [sectionId]: pos } };
         }) }));
         get().broadcastAll();
@@ -411,7 +411,7 @@ export const useStore = create<AppState>()(
       updateSplitSectionPosition: (id, sectionId, pos) => {
         set(s => ({ tournaments: s.tournaments.map(t => {
           if (t.id !== id) return t;
-          const current = t.splitSectionLayout || { ...DEFAULT_SECTION_LAYOUT };
+          const current = { ...DEFAULT_SECTION_LAYOUT, ...(t.splitSectionLayout || {}) };
           return { ...t, splitSectionLayout: { ...current, [sectionId]: pos } };
         }) }));
         get().broadcastAll();
@@ -423,7 +423,7 @@ export const useStore = create<AppState>()(
       updateCashSplitSectionPosition: (id, sectionId, pos) => {
         set(s => ({ cashGames: s.cashGames.map(c => {
           if (c.id !== id) return c;
-          const current = c.splitSectionLayout || { ...DEFAULT_CASH_SECTION_LAYOUT };
+          const current = { ...DEFAULT_CASH_SECTION_LAYOUT, ...(c.splitSectionLayout || {}) };
           return { ...c, splitSectionLayout: { ...current, [sectionId]: pos } };
         }) }));
         get().broadcastAll();
@@ -598,7 +598,7 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'come-on-timer-v3',
-      version: 21,
+      version: 22,
       migrate: (persisted: unknown, version: number) => {
         const state = persisted as Record<string, unknown>;
         if (version < 4) {
@@ -902,6 +902,26 @@ export const useStore = create<AppState>()(
             ...t,
             eliminated: (t as { eliminated?: number }).eliminated ?? 0,
           }));
+        }
+        if (version < 22) {
+          // Add memo position to existing tournament sectionLayouts
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          state.tournaments = (state.tournaments as any[]).map((t) => {
+            if (t.sectionLayout && !t.sectionLayout.memo) {
+              t.sectionLayout = { ...t.sectionLayout, memo: { x: 14.5, y: 81, w: 71, h: 9 } };
+            }
+            if (t.splitSectionLayout && !t.splitSectionLayout.memo) {
+              t.splitSectionLayout = { ...t.splitSectionLayout, memo: { x: 14.5, y: 81, w: 71, h: 9 } };
+            }
+            return t;
+          });
+          // Fix fontFamily default ('serif' doesn't match any FONT_OPTIONS)
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const ss = (state.systemStyle as any) || {};
+          if (ss.fontFamily === 'serif') {
+            ss.fontFamily = 'inter';
+          }
+          state.systemStyle = ss;
         }
         return state as unknown as AppState;
       },

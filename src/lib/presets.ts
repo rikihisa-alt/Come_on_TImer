@@ -212,7 +212,7 @@ export function getSystemTheme(id: SystemThemeId, customFrom?: string, customTo?
 }
 
 export const DEFAULT_SYSTEM_STYLE: SystemStyle = {
-  fontFamily: 'serif',
+  fontFamily: 'inter',
   uiAccentColor: '#3b82f6',
   displayAspectRatio: 'zoom',
   displayFontScale: 1.0,

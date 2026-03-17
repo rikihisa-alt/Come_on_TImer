@@ -153,9 +153,10 @@ function CashDisplayInner() {
   const primaryColor = theme?.primaryColor || '#60a5fa';
   const isCountdownWarning = cashGame.countdownMode && countdown < 300000 && countdown > 0 && cashGame.status === 'running';
   const layoutParam = params.get('layout');
-  const layout = layoutParam === 'split'
-    ? (cashGame.splitSectionLayout || cashGame.sectionLayout || DEFAULT_CASH_SECTION_LAYOUT)
-    : (cashGame.sectionLayout || DEFAULT_CASH_SECTION_LAYOUT);
+  const rawCashLayout = layoutParam === 'split'
+    ? (cashGame.splitSectionLayout || cashGame.sectionLayout)
+    : cashGame.sectionLayout;
+  const layout = rawCashLayout ? { ...DEFAULT_CASH_SECTION_LAYOUT, ...rawCashLayout } : DEFAULT_CASH_SECTION_LAYOUT;
 
   const activePlayers = cashGame.initialEntries + cashGame.reEntryCount;
   const totalChips = cashGame.initialEntries * cashGame.startingChips

@@ -56,7 +56,8 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
     }
   }, [displayMs, tournament.status, sound]);
 
-  const layout = layoutOverride || tournament.splitSectionLayout || tournament.sectionLayout || DEFAULT_SECTION_LAYOUT;
+  const rawTLayout = layoutOverride || tournament.splitSectionLayout || tournament.sectionLayout;
+  const layout = rawTLayout ? { ...DEFAULT_SECTION_LAYOUT, ...rawTLayout } : DEFAULT_SECTION_LAYOUT;
   const cur = tournament.levels[tournament.currentLevelIndex];
   const nextPlay = tournament.levels.slice(tournament.currentLevelIndex + 1).find(l => l.type === 'play');
   const isBrk = cur?.type === 'break';
@@ -359,7 +360,8 @@ function CashPanel({ cashGame, theme, displayToggles: dt }: {
     return () => clearInterval(iv);
   }, [cashGame]);
 
-  const layout = cashGame.splitSectionLayout || cashGame.sectionLayout || DEFAULT_CASH_SECTION_LAYOUT;
+  const rawCLayout = cashGame.splitSectionLayout || cashGame.sectionLayout;
+  const layout = rawCLayout ? { ...DEFAULT_CASH_SECTION_LAYOUT, ...rawCLayout } : DEFAULT_CASH_SECTION_LAYOUT;
   const pc = theme?.primaryColor || '#60a5fa';
   const isWarn = cashGame.countdownMode && countdown < 300000 && countdown > 0 && cashGame.status === 'running';
   const tickerSpeed = dt.tickerSpeed || 25;
