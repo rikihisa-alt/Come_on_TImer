@@ -294,20 +294,24 @@ function CashDisplayInner() {
 
         {/* Player / Re-Entry / Rebuy / Add-on / Avg Stack */}
         {dt.showCashPlayers && (
-          <>
-            <AbsoluteSection pos={layout.players}>
-              <GlassStat label="Players" value={`${activePlayers}`} accent textColor={layout.players.textColor} />
-            </AbsoluteSection>
-            <AbsoluteSection pos={layout.reEntry}>
-              <GlassStat label="Re-Entry" value={String(cashGame.reEntryCount)} textColor={layout.reEntry.textColor} />
-            </AbsoluteSection>
-            <AbsoluteSection pos={layout.rebuy}>
-              <GlassStat label="Rebuy" value={String(cashGame.rebuyCount)} textColor={layout.rebuy.textColor} />
-            </AbsoluteSection>
-            <AbsoluteSection pos={layout.addon}>
-              <GlassStat label="Add-on" value={String(cashGame.addonCount)} textColor={layout.addon.textColor} />
-            </AbsoluteSection>
-          </>
+          <AbsoluteSection pos={layout.players}>
+            <GlassStat label="Players" value={`${activePlayers}`} accent textColor={layout.players.textColor} />
+          </AbsoluteSection>
+        )}
+        {dt.showCashReEntry && (
+          <AbsoluteSection pos={layout.reEntry}>
+            <GlassStat label="Re-Entry" value={String(cashGame.reEntryCount)} textColor={layout.reEntry.textColor} />
+          </AbsoluteSection>
+        )}
+        {dt.showCashRebuy && (
+          <AbsoluteSection pos={layout.rebuy}>
+            <GlassStat label="Rebuy" value={String(cashGame.rebuyCount)} textColor={layout.rebuy.textColor} />
+          </AbsoluteSection>
+        )}
+        {dt.showCashAddon && (
+          <AbsoluteSection pos={layout.addon}>
+            <GlassStat label="Add-on" value={String(cashGame.addonCount)} textColor={layout.addon.textColor} />
+          </AbsoluteSection>
         )}
         {dt.showCashChipInfo && (
           <AbsoluteSection pos={layout.avgStack}>
@@ -374,22 +378,32 @@ function CashDisplayInner() {
             </div>
           )}
         </div>
-        {dt.showCashPlayers && (
-          <div className="flex gap-2.5 w-full">
+        <div className="flex gap-2.5 w-full">
+          {dt.showCashPlayers && (
             <div className="g-card-inner flex-1 p-3 text-center">
               <div className="text-[9px] text-white/30 uppercase tracking-wider font-semibold mb-1">Players</div>
               <div className="text-lg font-bold text-blue-400 timer-font">{activePlayers}</div>
             </div>
+          )}
+          {dt.showCashReEntry && (
             <div className="g-card-inner flex-1 p-3 text-center">
               <div className="text-[9px] text-white/30 uppercase tracking-wider font-semibold mb-1">Re-Entry</div>
               <div className="text-lg font-bold text-white/70 timer-font">{cashGame.reEntryCount}</div>
             </div>
+          )}
+          {dt.showCashRebuy && (
             <div className="g-card-inner flex-1 p-3 text-center">
               <div className="text-[9px] text-white/30 uppercase tracking-wider font-semibold mb-1">Rebuy</div>
               <div className="text-lg font-bold text-white/70 timer-font">{cashGame.rebuyCount}</div>
             </div>
-          </div>
-        )}
+          )}
+          {dt.showCashAddon && (
+            <div className="g-card-inner flex-1 p-3 text-center">
+              <div className="text-[9px] text-white/30 uppercase tracking-wider font-semibold mb-1">Add-on</div>
+              <div className="text-lg font-bold text-white/70 timer-font">{cashGame.addonCount}</div>
+            </div>
+          )}
+        </div>
         {dt.showCashChipInfo && (
           <div className="g-card-inner px-5 py-3 text-center">
             <div className="text-[9px] text-white/30 uppercase tracking-wider font-semibold mb-1">Avg Stack</div>

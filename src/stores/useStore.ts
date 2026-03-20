@@ -598,7 +598,7 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'come-on-timer-v3',
-      version: 22,
+      version: 23,
       migrate: (persisted: unknown, version: number) => {
         const state = persisted as Record<string, unknown>;
         if (version < 4) {
@@ -922,6 +922,73 @@ export const useStore = create<AppState>()(
             ss.fontFamily = 'inter';
           }
           state.systemStyle = ss;
+        }
+        if (version < 23) {
+          // Split grouped entry toggles into individual toggles
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const dt23 = (state.displayToggles as any) || {};
+          const oldEntry = dt23.showEntryCount ?? true;
+          dt23.showPlayers = dt23.showPlayers ?? oldEntry;
+          dt23.showReEntry = dt23.showReEntry ?? oldEntry;
+          dt23.showRebuy = dt23.showRebuy ?? oldEntry;
+          dt23.showAddon = dt23.showAddon ?? oldEntry;
+          const oldCashP = dt23.showCashPlayers ?? false;
+          dt23.showCashReEntry = dt23.showCashReEntry ?? oldCashP;
+          dt23.showCashRebuy = dt23.showCashRebuy ?? oldCashP;
+          dt23.showCashAddon = dt23.showCashAddon ?? oldCashP;
+          state.displayToggles = dt23;
+          // Per-tournament toggles
+          state.tournaments = (state.tournaments as Record<string, unknown>[]).map((t) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const tdt = (t.displayToggles as any);
+            if (tdt) {
+              const oe = tdt.showEntryCount ?? true;
+              tdt.showPlayers = tdt.showPlayers ?? oe;
+              tdt.showReEntry = tdt.showReEntry ?? oe;
+              tdt.showRebuy = tdt.showRebuy ?? oe;
+              tdt.showAddon = tdt.showAddon ?? oe;
+            }
+            return t;
+          });
+          // Per-cash toggles
+          state.cashGames = (state.cashGames as Record<string, unknown>[]).map((c) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const cdt = (c.displayToggles as any);
+            if (cdt) {
+              const ocp = cdt.showCashPlayers ?? false;
+              cdt.showCashReEntry = cdt.showCashReEntry ?? ocp;
+              cdt.showCashRebuy = cdt.showCashRebuy ?? ocp;
+              cdt.showCashAddon = cdt.showCashAddon ?? ocp;
+            }
+            return c;
+          });
+          // Tournament presets
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          state.tournamentPresets = (state.tournamentPresets as any[] || []).map((p) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const pdt = (p.displayToggles as any);
+            if (pdt) {
+              const oe = pdt.showEntryCount ?? true;
+              pdt.showPlayers = pdt.showPlayers ?? oe;
+              pdt.showReEntry = pdt.showReEntry ?? oe;
+              pdt.showRebuy = pdt.showRebuy ?? oe;
+              pdt.showAddon = pdt.showAddon ?? oe;
+            }
+            return p;
+          });
+          // Cash presets
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          state.cashPresets = (state.cashPresets as any[] || []).map((p) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const pdt = (p.displayToggles as any);
+            if (pdt) {
+              const ocp = pdt.showCashPlayers ?? false;
+              pdt.showCashReEntry = pdt.showCashReEntry ?? ocp;
+              pdt.showCashRebuy = pdt.showCashRebuy ?? ocp;
+              pdt.showCashAddon = pdt.showCashAddon ?? ocp;
+            }
+            return p;
+          });
         }
         return state as unknown as AppState;
       },
