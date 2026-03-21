@@ -15,6 +15,6 @@ export const config = {
      * - public files (sw.js, manifest.json, icons, etc.)
      * - API routes (handled by their own auth)
      */
-    '/((?!_next/static|_next/image|favicon\\.ico|sitemap\\.xml|robots\\.txt|sw\\.js|manifest\\.json|clear-cache\\.html|icons/|api/).*)',
+    '/((?!_next/static|_next/image|favicon\\.ico|sitemap\\.xml|robots\\.txt|sw\\.js|manifest\\.json|clear-cache\\.html|icons/|audio/|api/).*)',
   ],
 };
