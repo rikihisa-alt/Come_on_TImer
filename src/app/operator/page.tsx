@@ -5,8 +5,8 @@ import { createPortal } from 'react-dom';
 import { useStore } from '@/stores/useStore';
 import { formatTimer, formatTimerHMS, formatChips, uid, toHalfWidthNumber } from '@/lib/utils';
 import { DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND, DEFAULT_SECTION_LAYOUT, DEFAULT_CASH_SECTION_LAYOUT, FONT_OPTIONS, DEFAULT_SYSTEM_STYLE, ASPECT_RATIO_OPTIONS, SYSTEM_THEMES, getSystemTheme, UNIFIED_PRESETS } from '@/lib/presets';
-import { playSound, playTestSound, playWarningBeep, speakTTS, fillTTSTemplate, PRESET_LABELS } from '@/lib/audio';
-import { BlindLevel, Tournament, CashGame, SoundPreset, PrizeEntry, SoundSettings, DisplayToggles, ThemeConfig, TournamentSectionId, SectionPosition, SectionLayout, CashSectionId, CashSectionLayout, AspectRatioMode, TournamentPreset, CashGamePreset, SystemThemeId } from '@/lib/types';
+import { speakTTS, fillTTSTemplate, playSoundById, SOUND_LIBRARY } from '@/lib/audio';
+import { BlindLevel, Tournament, CashGame, SoundId, PrizeEntry, SoundSettings, DisplayToggles, ThemeConfig, TournamentSectionId, SectionPosition, SectionLayout, CashSectionId, CashSectionLayout, AspectRatioMode, TournamentPreset, CashGamePreset, SystemThemeId } from '@/lib/types';
 import { RoomSync } from '@/components/RoomSync';
 
 const TAB_ORDER = ['tournaments', 'cash', 'split', 'settings'] as const;
@@ -368,6 +368,7 @@ function TournamentTimer({ tournament: t }: { tournament: Tournament }) {
   const [displayMs, setDisplayMs] = useState(t.remainingMs);
   const prevLevelRef = useRef(t.currentLevelIndex);
   const warnedRef = useRef(false);
+  const warned330Ref = useRef(false);
   const computeRem = useCallback(() => {
     if (t.status === 'running' && t.timerStartedAt) return Math.max(0, t.remainingMs - (Date.now() - t.timerStartedAt));
     return t.remainingMs;
@@ -380,13 +381,14 @@ function TournamentTimer({ tournament: t }: { tournament: Tournament }) {
     if (prevLevelRef.current !== t.currentLevelIndex) {
       prevLevelRef.current = t.currentLevelIndex;
       warnedRef.current = false;
+      warned330Ref.current = false;
       if (t.status === 'running') {
         const lv = t.levels[t.currentLevelIndex];
         if (lv?.type === 'break') {
-          if (snd.breakStartEnabled) playSound(snd.soundPreset, snd.masterVolume);
+          if (snd.breakStartEnabled) playSoundById(snd.breakStartSoundId || 'fanfare-long', snd.masterVolume);
           fireTTS(snd, 'break', lv);
         } else if (lv) {
-          if (snd.blindChangeEnabled) playSound(snd.soundPreset, snd.masterVolume);
+          if (snd.blindChangeEnabled) playSoundById(snd.blindChangeSoundId || 'chime-short', snd.masterVolume);
           fireTTS(snd, 'level', lv);
         }
       }
@@ -394,9 +396,13 @@ function TournamentTimer({ tournament: t }: { tournament: Tournament }) {
   }, [t.currentLevelIndex, t.status, t.levels, snd]);
   useEffect(() => {
     if (t.status !== 'running') return;
+    if (displayMs <= 210000 && displayMs > 205000 && !warned330Ref.current) {
+      warned330Ref.current = true;
+      if (snd.threeMinThirtyWarningEnabled) playSoundById(snd.threeMinThirtySoundId || 'bell-short', snd.masterVolume);
+    }
     if (displayMs <= 60000 && displayMs > 55000 && !warnedRef.current) {
       warnedRef.current = true;
-      if (snd.oneMinWarningEnabled) playWarningBeep(snd.masterVolume);
+      if (snd.oneMinWarningEnabled) playSoundById(snd.oneMinWarningSoundId || 'beep-short', snd.masterVolume);
       fireTTS(snd, 'warning', null);
     }
   }, [displayMs, t.status, snd]);
@@ -645,7 +651,9 @@ function TogglesPanel({ timerId, timerType }: { timerId: string; timerType: 'tou
     { key: 'showBlinds', label: 'Blinds' }, { key: 'showTimer', label: 'Timer' },
     { key: 'showProgressBar', label: 'Progress Bar' }, { key: 'showNextLevel', label: 'Next Level' },
     { key: 'showTimeToBreak', label: 'Time to Break' }, { key: 'showTimeToEnd', label: 'Time to End' },
-    { key: 'showPrizeStructure', label: 'Prize Structure' }, { key: 'showEntryCount', label: 'Entry Count' },
+    { key: 'showPrizeStructure', label: 'Prize Structure' },
+    { key: 'showPlayers', label: 'Players' }, { key: 'showReEntry', label: 'Re-Entry' },
+    { key: 'showRebuy', label: 'Rebuy' }, { key: 'showAddon', label: 'Add-on' },
     { key: 'showChipInfo', label: 'Chip Info' }, { key: 'showRegClose', label: 'Reg Close' },
     { key: 'showTournamentMemo', label: 'Memo' }, { key: 'showFooter', label: 'Footer' },
   ];
@@ -653,7 +661,9 @@ function TogglesPanel({ timerId, timerType }: { timerId: string; timerType: 'tou
     { key: 'showCashName', label: 'Game Name' }, { key: 'showCashRate', label: 'Rate' },
     { key: 'showCashMemo', label: 'Memo' }, { key: 'showCashTimer', label: 'Timer' },
     { key: 'showCashNextBlinds', label: 'Next Blind' },
-    { key: 'showCashPlayers', label: 'Player Count' }, { key: 'showCashChipInfo', label: 'Avg Stack' },
+    { key: 'showCashPlayers', label: 'Players' }, { key: 'showCashReEntry', label: 'Re-Entry' },
+    { key: 'showCashRebuy', label: 'Rebuy' }, { key: 'showCashAddon', label: 'Add-on' },
+    { key: 'showCashChipInfo', label: 'Avg Stack' },
     { key: 'showProgressBar', label: 'Progress Bar' }, { key: 'showFooter', label: 'Footer' },
   ];
   const items = timerType === 'tournament' ? tournamentItems : cashItems;
@@ -887,6 +897,22 @@ function DisplaySettingsPanel({ timerId, timerType }: { timerId: string; timerTy
   );
 }
 
+function SoundSelect({ value, onChange, volume }: { value: SoundId; onChange: (id: SoundId) => void; volume: number }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <select className="input input-sm flex-1 min-w-0" value={value} onChange={e => onChange(e.target.value as SoundId)}>
+        <optgroup label="Short">
+          {SOUND_LIBRARY.filter(s => s.durationType === 'short').map(s => <option key={s.id} value={s.id}>{s.nameJa}</option>)}
+        </optgroup>
+        <optgroup label="Long">
+          {SOUND_LIBRARY.filter(s => s.durationType === 'long').map(s => <option key={s.id} value={s.id}>{s.nameJa}</option>)}
+        </optgroup>
+      </select>
+      <button className="btn btn-ghost btn-sm shrink-0 px-2" onClick={() => playSoundById(value, volume)} title="テスト再生">&#9654;</button>
+    </div>
+  );
+}
+
 function SoundPanel({ timerId, timerType }: { timerId: string; timerType: 'tournament' | 'cash' }) {
   const store = useStore();
   const timer = timerType === 'tournament'
@@ -897,19 +923,44 @@ function SoundPanel({ timerId, timerType }: { timerId: string; timerType: 'tourn
     if (timerType === 'tournament') store.updateTournamentSound(timerId, partial);
     else store.updateCashSound(timerId, partial);
   };
+
+  const notificationRows: { enabledKey: keyof SoundSettings; soundIdKey: keyof SoundSettings; label: string }[] = [
+    { enabledKey: 'blindChangeEnabled', soundIdKey: 'blindChangeSoundId', label: 'レベル切り替え' },
+    { enabledKey: 'breakStartEnabled', soundIdKey: 'breakStartSoundId', label: 'ブレイク開始' },
+    { enabledKey: 'threeMinThirtyWarningEnabled', soundIdKey: 'threeMinThirtySoundId', label: '3分30秒前' },
+    { enabledKey: 'oneMinWarningEnabled', soundIdKey: 'oneMinWarningSoundId', label: '1分前' },
+  ];
+
   return (
     <div className="space-y-4">
       <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Sound Settings</div>
-      <div className="flex items-center gap-3"><span className="text-sm text-white/50 w-20">Volume</span><input type="range" min={0} max={1} step={0.05} value={sound.masterVolume} onChange={e => updateSound({ masterVolume: +e.target.value })} className="flex-1" /><span className="text-sm text-white/30 w-10 text-right">{Math.round(sound.masterVolume * 100)}%</span></div>
-      <div className="flex items-center gap-3"><span className="text-sm text-white/50 w-20">Sound</span>
-        <select className="input input-sm flex-1" value={sound.soundPreset} onChange={e => updateSound({ soundPreset: e.target.value as SoundPreset })}>
-          {(Object.keys(PRESET_LABELS) as SoundPreset[]).map(k => <option key={k} value={k}>{PRESET_LABELS[k]}</option>)}
-        </select>
-        <button className="btn btn-ghost btn-sm" onClick={() => playTestSound(sound.soundPreset, sound.masterVolume)}>Test</button>
+
+      {/* Volume */}
+      <div className="flex items-center gap-3">
+        <span className="text-sm text-white/50 w-20">Volume</span>
+        <input type="range" min={0} max={1} step={0.05} value={sound.masterVolume} onChange={e => updateSound({ masterVolume: +e.target.value })} className="flex-1" />
+        <span className="text-sm text-white/30 w-10 text-right">{Math.round(sound.masterVolume * 100)}%</span>
       </div>
-      {(['blindChangeEnabled', 'breakStartEnabled', 'oneMinWarningEnabled'] as const).map(k => (
-        <div key={k} className="flex items-center justify-between"><span className="text-sm text-white/50">{k === 'blindChangeEnabled' ? 'Blind Change' : k === 'breakStartEnabled' ? 'Break Start' : '1-Min Warning'}</span><div className={`toggle ${sound[k] ? 'on' : ''}`} onClick={() => updateSound({ [k]: !sound[k] })} /></div>
-      ))}
+
+      {/* Notification sounds */}
+      <div className="border-t border-white/5 pt-4 space-y-3">
+        <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">通知音設定</div>
+        {notificationRows.map(({ enabledKey, soundIdKey, label }) => (
+          <div key={enabledKey} className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-white/50">{label}</span>
+              <div className={`toggle ${sound[enabledKey] ? 'on' : ''}`} onClick={() => updateSound({ [enabledKey]: !sound[enabledKey] })} />
+            </div>
+            {sound[enabledKey] && (
+              <div className="pl-4">
+                <SoundSelect value={sound[soundIdKey] as SoundId} onChange={id => updateSound({ [soundIdKey]: id })} volume={sound.masterVolume} />
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* TTS */}
       <div className="border-t border-white/5 pt-4 space-y-3">
         <div className="flex items-center justify-between"><span className="text-sm text-white/50">TTS (読み上げ)</span><div className={`toggle ${sound.ttsEnabled ? 'on' : ''}`} onClick={() => updateSound({ ttsEnabled: !sound.ttsEnabled })} /></div>
         {sound.ttsEnabled && <>
@@ -1242,7 +1293,10 @@ const CASH_SECTION_LABELS: Record<CashSectionId, string> = {
 
 function isSectionVisible(id: TournamentSectionId, dt: DisplayToggles): boolean {
   switch (id) {
-    case 'players': case 'reEntry': case 'rebuy': case 'addon': return dt.showEntryCount;
+    case 'players': return dt.showPlayers;
+    case 'reEntry': return dt.showReEntry;
+    case 'rebuy': return dt.showRebuy;
+    case 'addon': return dt.showAddon;
     case 'avgStack': return dt.showChipInfo;
     case 'timer': return dt.showTimer;
     case 'nextLevel': return dt.showNextLevel;
@@ -1265,7 +1319,10 @@ function isCashSectionVisible(id: CashSectionId, dt: DisplayToggles): boolean {
     case 'sbCard': case 'bbCard': case 'anteCard': return dt.showCashRate;
     case 'nextBlinds': return dt.showCashNextBlinds;
     case 'ticker': return !!dt.tickerText;
-    case 'players': case 'reEntry': case 'rebuy': case 'addon': return dt.showCashPlayers;
+    case 'players': return dt.showCashPlayers;
+    case 'reEntry': return dt.showCashReEntry;
+    case 'rebuy': return dt.showCashRebuy;
+    case 'addon': return dt.showCashAddon;
     case 'avgStack': return dt.showCashChipInfo;
   }
 }

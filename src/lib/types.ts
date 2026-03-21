@@ -220,6 +220,10 @@ export type ThemeConfig = {
 
 export type SoundPreset = 'chime' | 'bell' | 'alert' | 'horn' | 'drum';
 
+export type SoundId =
+  | 'bell-short' | 'chime-short' | 'alert-short' | 'beep-short' | 'knock-short'
+  | 'chime-long' | 'fanfare-long' | 'alert-long' | 'bell-long' | 'horn-long';
+
 export type TTSMessage = {
   id: string;
   label: string;
@@ -229,10 +233,15 @@ export type TTSMessage = {
 
 export type SoundSettings = {
   masterVolume: number;
-  soundPreset: SoundPreset;
+  soundPreset: SoundPreset;          // legacy fallback
   blindChangeEnabled: boolean;
+  blindChangeSoundId: SoundId;
   breakStartEnabled: boolean;
+  breakStartSoundId: SoundId;
   oneMinWarningEnabled: boolean;
+  oneMinWarningSoundId: SoundId;
+  threeMinThirtyWarningEnabled: boolean;
+  threeMinThirtySoundId: SoundId;
   ttsEnabled: boolean;
   ttsLang: 'ja' | 'en';
   ttsMessages: TTSMessage[];
@@ -248,7 +257,11 @@ export type DisplayToggles = {
   showTimeToBreak: boolean;
   showTimeToEnd: boolean;
   showPrizeStructure: boolean;
-  showEntryCount: boolean;
+  showEntryCount: boolean;  // legacy — now split into individual toggles
+  showPlayers: boolean;
+  showReEntry: boolean;
+  showRebuy: boolean;
+  showAddon: boolean;
   showChipInfo: boolean;
   showRegClose: boolean;
   showTournamentMemo: boolean;
@@ -258,6 +271,9 @@ export type DisplayToggles = {
   showCashMemo: boolean;
   showCashTimer: boolean;
   showCashPlayers: boolean;
+  showCashReEntry: boolean;
+  showCashRebuy: boolean;
+  showCashAddon: boolean;
   showCashChipInfo: boolean;
   showCashNextBlinds: boolean;
   tickerText: string;

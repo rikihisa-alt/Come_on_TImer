@@ -123,11 +123,7 @@ export const useStore = create<AppState>()(
       cashGames: [mkCash()],
       displays: [],
       themes: [...DEFAULT_THEMES],
-      sound: {
-        masterVolume: 0.7, soundPreset: 'chime',
-        blindChangeEnabled: true, breakStartEnabled: true, oneMinWarningEnabled: true,
-        ttsEnabled: false, ttsLang: 'ja', ttsMessages: [...DEFAULT_TTS_MESSAGES],
-      },
+      sound: { ...DEFAULT_SOUND },
       displayToggles: { ...DEFAULT_DISPLAY_TOGGLES },
       defaultThemeId: 'come-on-blue',
       systemStyle: { ...DEFAULT_SYSTEM_STYLE },
@@ -598,7 +594,7 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'come-on-timer-v3',
-      version: 23,
+      version: 24,
       migrate: (persisted: unknown, version: number) => {
         const state = persisted as Record<string, unknown>;
         if (version < 4) {
@@ -987,6 +983,43 @@ export const useStore = create<AppState>()(
               pdt.showCashRebuy = pdt.showCashRebuy ?? ocp;
               pdt.showCashAddon = pdt.showCashAddon ?? ocp;
             }
+            return p;
+          });
+        }
+        if (version < 24) {
+          // Add per-notification soundId fields to SoundSettings
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const migrateSoundV24 = (s: any) => {
+            if (!s) return s;
+            s.blindChangeSoundId = s.blindChangeSoundId ?? 'chime-short';
+            s.breakStartSoundId = s.breakStartSoundId ?? 'fanfare-long';
+            s.oneMinWarningSoundId = s.oneMinWarningSoundId ?? 'beep-short';
+            s.threeMinThirtyWarningEnabled = s.threeMinThirtyWarningEnabled ?? false;
+            s.threeMinThirtySoundId = s.threeMinThirtySoundId ?? 'bell-short';
+            return s;
+          };
+          // Global sound
+          state.sound = migrateSoundV24(state.sound || {});
+          // Per-tournament
+          state.tournaments = (state.tournaments as Record<string, unknown>[]).map((t) => {
+            if (t.sound) t.sound = migrateSoundV24(t.sound);
+            return t;
+          });
+          // Per-cash
+          state.cashGames = (state.cashGames as Record<string, unknown>[]).map((c) => {
+            if (c.sound) c.sound = migrateSoundV24(c.sound);
+            return c;
+          });
+          // Tournament presets
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          state.tournamentPresets = (state.tournamentPresets as any[] || []).map((p) => {
+            if (p.sound) p.sound = migrateSoundV24(p.sound);
+            return p;
+          });
+          // Cash presets
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          state.cashPresets = (state.cashPresets as any[] || []).map((p) => {
+            if (p.sound) p.sound = migrateSoundV24(p.sound);
             return p;
           });
         }

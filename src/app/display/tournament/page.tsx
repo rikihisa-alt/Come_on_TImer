@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useStore } from '@/stores/useStore';
 import { onSync } from '@/lib/sync';
-import { unlockAudio, playSound, playWarningBeep, speakTTS, fillTTSTemplate } from '@/lib/audio';
+import { unlockAudio, playSoundById, speakTTS, fillTTSTemplate } from '@/lib/audio';
 import { formatTimer, formatChips, formatTimerHMS, computeTimeToBreak, computeTimeToEnd, computeRegCloseTime } from '@/lib/utils';
 import { Tournament, ThemeConfig, DisplayToggles, SoundSettings, SectionLayout, SectionPosition } from '@/lib/types';
 import { DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND, DEFAULT_SECTION_LAYOUT, DEFAULT_SYSTEM_STYLE } from '@/lib/presets';
@@ -114,6 +114,7 @@ function Inner() {
   const [displayMs, setDisplayMs] = useState(0);
   const prevRef = useRef(-1);
   const warnRef = useRef(false);
+  const warn330Ref = useRef(false);
   const fs = useStore(s => s.systemStyle?.displayFontScale) || 1;
 
   useEffect(() => {
@@ -154,16 +155,16 @@ function Inner() {
     if (!tournament) return;
     if (prevRef.current === -1) { prevRef.current = tournament.currentLevelIndex; return; }
     if (prevRef.current !== tournament.currentLevelIndex) {
-      prevRef.current = tournament.currentLevelIndex; warnRef.current = false;
+      prevRef.current = tournament.currentLevelIndex; warnRef.current = false; warn330Ref.current = false;
       if (tournament.status === 'running') {
         const lv = tournament.levels[tournament.currentLevelIndex];
         const s = tournament.sound || globalSound;
         if (lv?.type === 'break') {
-          if (s.breakStartEnabled) playSound(s.soundPreset, s.masterVolume);
+          if (s.breakStartEnabled) playSoundById(s.breakStartSoundId || 'fanfare-long', s.masterVolume);
           const m = s.ttsMessages.find(x => x.enabled && (x.label.includes('\u30D6\u30EC\u30A4\u30AF') || x.label.includes('\u4F11\u61A9') || x.label.toLowerCase().includes('break')));
           if (s.ttsEnabled && m) speakTTS(fillTTSTemplate(m.template, { level: lv.level, sb: lv.smallBlind, bb: lv.bigBlind, ante: lv.ante }), s.ttsLang);
         } else if (lv) {
-          if (s.blindChangeEnabled) playSound(s.soundPreset, s.masterVolume);
+          if (s.blindChangeEnabled) playSoundById(s.blindChangeSoundId || 'chime-short', s.masterVolume);
           const m = s.ttsMessages.find(x => x.enabled && (x.label.includes('\u30EC\u30D9\u30EB') || x.label.toLowerCase().includes('level')));
           if (s.ttsEnabled && m) speakTTS(fillTTSTemplate(m.template, { level: lv.level, sb: lv.smallBlind, bb: lv.bigBlind, ante: lv.ante }), s.ttsLang);
         }
@@ -174,9 +175,15 @@ function Inner() {
   useEffect(() => {
     if (!tournament || tournament.status !== 'running') return;
     const s = tournament.sound || globalSound;
+    // 3:30 warning (210 seconds)
+    if (displayMs <= 210000 && displayMs > 205000 && !warn330Ref.current) {
+      warn330Ref.current = true;
+      if (s.threeMinThirtyWarningEnabled) playSoundById(s.threeMinThirtySoundId || 'bell-short', s.masterVolume);
+    }
+    // 1-min warning
     if (displayMs <= 60000 && displayMs > 55000 && !warnRef.current) {
       warnRef.current = true;
-      if (s.oneMinWarningEnabled) playWarningBeep(s.masterVolume);
+      if (s.oneMinWarningEnabled) playSoundById(s.oneMinWarningSoundId || 'beep-short', s.masterVolume);
       const m = s.ttsMessages.find(x => x.enabled && (x.label.includes('\u6B8B\u308A') || x.label.toLowerCase().includes('min')));
       if (s.ttsEnabled && m) speakTTS(fillTTSTemplate(m.template, { level: 0, sb: 0, bb: 0, ante: 0 }), s.ttsLang);
     }
@@ -270,22 +277,22 @@ function Inner() {
         )}
 
         {/* Left column sections */}
-        {dt.showEntryCount && (
+        {dt.showPlayers && (
           <AbsoluteSection pos={layout.players}>
             <GlassStat label="Players" value={`${activePlayers}/${totalEntries}`} accent textColor={layout.players.textColor} />
           </AbsoluteSection>
         )}
-        {dt.showEntryCount && (
+        {dt.showReEntry && (
           <AbsoluteSection pos={layout.reEntry}>
             <GlassStat label="Re-Entry" value={String(tournament.reEntryCount)} textColor={layout.reEntry.textColor} />
           </AbsoluteSection>
         )}
-        {dt.showEntryCount && (
+        {dt.showRebuy && (
           <AbsoluteSection pos={layout.rebuy}>
             <GlassStat label="Rebuy" value={String(tournament.rebuyCount)} textColor={layout.rebuy.textColor} />
           </AbsoluteSection>
         )}
-        {dt.showEntryCount && (
+        {dt.showAddon && (
           <AbsoluteSection pos={layout.addon}>
             <GlassStat label="Add-on" value={String(tournament.addonCount)} textColor={layout.addon.textColor} />
           </AbsoluteSection>

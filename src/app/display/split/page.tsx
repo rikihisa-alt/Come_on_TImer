@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useStore } from '@/stores/useStore';
 import { onSync } from '@/lib/sync';
-import { unlockAudio, playSound, playWarningBeep } from '@/lib/audio';
+import { unlockAudio, playSoundById } from '@/lib/audio';
 import { formatTimer, formatChips, formatTimerHMS, computeTimeToBreak, computeTimeToEnd, computeRegCloseTime } from '@/lib/utils';
 import { Tournament, CashGame, ThemeConfig, DisplayToggles, SoundSettings, SectionLayout, SectionPosition } from '@/lib/types';
 import { DEFAULT_SECTION_LAYOUT, DEFAULT_CASH_SECTION_LAYOUT } from '@/lib/presets';
@@ -25,6 +25,7 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
   const [displayMs, setDisplayMs] = useState(0);
   const prevRef = useRef(-1);
   const warnRef = useRef(false);
+  const warn330Ref = useRef(false);
 
   const computeRem = useCallback(() => {
     if (tournament.status === 'running' && tournament.timerStartedAt) return Math.max(0, tournament.remainingMs - (Date.now() - tournament.timerStartedAt));
@@ -39,20 +40,24 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
   useEffect(() => {
     if (prevRef.current === -1) { prevRef.current = tournament.currentLevelIndex; return; }
     if (prevRef.current !== tournament.currentLevelIndex) {
-      prevRef.current = tournament.currentLevelIndex; warnRef.current = false;
+      prevRef.current = tournament.currentLevelIndex; warnRef.current = false; warn330Ref.current = false;
       if (tournament.status === 'running') {
         const lv = tournament.levels[tournament.currentLevelIndex];
-        if (lv?.type === 'break') { if (sound.breakStartEnabled) playSound(sound.soundPreset, sound.masterVolume); }
-        else if (lv) { if (sound.blindChangeEnabled) playSound(sound.soundPreset, sound.masterVolume); }
+        if (lv?.type === 'break') { if (sound.breakStartEnabled) playSoundById(sound.breakStartSoundId || 'fanfare-long', sound.masterVolume); }
+        else if (lv) { if (sound.blindChangeEnabled) playSoundById(sound.blindChangeSoundId || 'chime-short', sound.masterVolume); }
       }
     }
   }, [tournament.currentLevelIndex, tournament.status, tournament.levels, sound]);
 
   useEffect(() => {
     if (tournament.status !== 'running') return;
+    if (displayMs <= 210000 && displayMs > 205000 && !warn330Ref.current) {
+      warn330Ref.current = true;
+      if (sound.threeMinThirtyWarningEnabled) playSoundById(sound.threeMinThirtySoundId || 'bell-short', sound.masterVolume);
+    }
     if (displayMs <= 60000 && displayMs > 55000 && !warnRef.current) {
       warnRef.current = true;
-      if (sound.oneMinWarningEnabled) playWarningBeep(sound.masterVolume);
+      if (sound.oneMinWarningEnabled) playSoundById(sound.oneMinWarningSoundId || 'beep-short', sound.masterVolume);
     }
   }, [displayMs, tournament.status, sound]);
 
@@ -100,7 +105,7 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
       )}
 
       {/* Stats — font-size driven by --sfs from AbsoluteSection */}
-      {dt.showEntryCount && (
+      {dt.showPlayers && (
         <AbsoluteSection pos={layout.players}>
           <div className="g-card-inner h-full flex flex-col items-center justify-center p-1 overflow-hidden">
             <div className={`uppercase tracking-wider font-semibold ${layout.players.textColor ? '' : 'text-white/30'}`}
@@ -110,7 +115,7 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
           </div>
         </AbsoluteSection>
       )}
-      {dt.showEntryCount && (
+      {dt.showReEntry && (
         <AbsoluteSection pos={layout.reEntry}>
           <div className="g-card-inner h-full flex flex-col items-center justify-center p-1 overflow-hidden">
             <div className={`uppercase tracking-wider font-semibold ${layout.reEntry.textColor ? '' : 'text-white/30'}`}
@@ -120,7 +125,7 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
           </div>
         </AbsoluteSection>
       )}
-      {dt.showEntryCount && (
+      {dt.showRebuy && (
         <AbsoluteSection pos={layout.rebuy}>
           <div className="g-card-inner h-full flex flex-col items-center justify-center p-1 overflow-hidden">
             <div className={`uppercase tracking-wider font-semibold ${layout.rebuy.textColor ? '' : 'text-white/30'}`}
@@ -130,7 +135,7 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
           </div>
         </AbsoluteSection>
       )}
-      {dt.showEntryCount && (
+      {dt.showAddon && (
         <AbsoluteSection pos={layout.addon}>
           <div className="g-card-inner h-full flex flex-col items-center justify-center p-1 overflow-hidden">
             <div className={`uppercase tracking-wider font-semibold ${layout.addon.textColor ? '' : 'text-white/30'}`}
@@ -471,12 +476,16 @@ function CashPanel({ cashGame, theme, displayToggles: dt }: {
 
       {/* Player / Re-Entry / Rebuy / Add-on / Avg Stack */}
       {dt.showCashPlayers && (
-        <>
-          <AbsoluteSection pos={layout.players}><StatCard pos={layout.players} label="Players" value={activePlayers} /></AbsoluteSection>
-          <AbsoluteSection pos={layout.reEntry}><StatCard pos={layout.reEntry} label="Re-Entry" value={cashGame.reEntryCount} /></AbsoluteSection>
-          <AbsoluteSection pos={layout.rebuy}><StatCard pos={layout.rebuy} label="Rebuy" value={cashGame.rebuyCount} /></AbsoluteSection>
-          <AbsoluteSection pos={layout.addon}><StatCard pos={layout.addon} label="Add-on" value={cashGame.addonCount} /></AbsoluteSection>
-        </>
+        <AbsoluteSection pos={layout.players}><StatCard pos={layout.players} label="Players" value={activePlayers} /></AbsoluteSection>
+      )}
+      {dt.showCashReEntry && (
+        <AbsoluteSection pos={layout.reEntry}><StatCard pos={layout.reEntry} label="Re-Entry" value={cashGame.reEntryCount} /></AbsoluteSection>
+      )}
+      {dt.showCashRebuy && (
+        <AbsoluteSection pos={layout.rebuy}><StatCard pos={layout.rebuy} label="Rebuy" value={cashGame.rebuyCount} /></AbsoluteSection>
+      )}
+      {dt.showCashAddon && (
+        <AbsoluteSection pos={layout.addon}><StatCard pos={layout.addon} label="Add-on" value={cashGame.addonCount} /></AbsoluteSection>
       )}
       {dt.showCashChipInfo && (
         <AbsoluteSection pos={layout.avgStack}>
