@@ -594,7 +594,7 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'come-on-timer-v3',
-      version: 24,
+      version: 25,
       migrate: (persisted: unknown, version: number) => {
         const state = persisted as Record<string, unknown>;
         if (version < 4) {
@@ -991,11 +991,11 @@ export const useStore = create<AppState>()(
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const migrateSoundV24 = (s: any) => {
             if (!s) return s;
-            s.blindChangeSoundId = s.blindChangeSoundId ?? 'decision1';
-            s.breakStartSoundId = s.breakStartSoundId ?? 'school-chime1';
-            s.oneMinWarningSoundId = s.oneMinWarningSoundId ?? 'warning1';
-            s.threeMinThirtyWarningEnabled = s.threeMinThirtyWarningEnabled ?? false;
-            s.threeMinThirtySoundId = s.threeMinThirtySoundId ?? 'bell1';
+            s.blindChangeSoundId = s.blindChangeSoundId ?? 'sound_01';
+            s.breakStartSoundId = s.breakStartSoundId ?? 'sound_22';
+            s.oneMinWarningSoundId = s.oneMinWarningSoundId ?? 'sound_15';
+            s.thirtySecWarningEnabled = s.thirtySecWarningEnabled ?? false;
+            s.thirtySecSoundId = s.thirtySecSoundId ?? 'sound_19';
             return s;
           };
           // Global sound
@@ -1020,6 +1020,50 @@ export const useStore = create<AppState>()(
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           state.cashPresets = (state.cashPresets as any[] || []).map((p) => {
             if (p.sound) p.sound = migrateSoundV24(p.sound);
+            return p;
+          });
+        }
+        if (version < 25) {
+          // Rename threeMinThirty* → thirtySecWarning* and update old SoundId values
+          const OLD_TO_NEW: Record<string, string> = {
+            'decision1': 'sound_01', 'school-chime1': 'sound_22',
+            'warning1': 'sound_15', 'bell1': 'sound_19',
+          };
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const migrateSoundV25 = (s: any) => {
+            if (!s) return s;
+            // Rename fields
+            if ('threeMinThirtyWarningEnabled' in s) {
+              s.thirtySecWarningEnabled = s.threeMinThirtyWarningEnabled;
+              delete s.threeMinThirtyWarningEnabled;
+            }
+            if ('threeMinThirtySoundId' in s) {
+              s.thirtySecSoundId = s.threeMinThirtySoundId;
+              delete s.threeMinThirtySoundId;
+            }
+            // Map old SoundId values to new ones
+            for (const key of ['blindChangeSoundId', 'breakStartSoundId', 'oneMinWarningSoundId', 'thirtySecSoundId']) {
+              if (s[key] && OLD_TO_NEW[s[key]]) s[key] = OLD_TO_NEW[s[key]];
+            }
+            return s;
+          };
+          state.sound = migrateSoundV25(state.sound || {});
+          state.tournaments = (state.tournaments as Record<string, unknown>[]).map((t) => {
+            if (t.sound) t.sound = migrateSoundV25(t.sound);
+            return t;
+          });
+          state.cashGames = (state.cashGames as Record<string, unknown>[]).map((c) => {
+            if (c.sound) c.sound = migrateSoundV25(c.sound);
+            return c;
+          });
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          state.tournamentPresets = (state.tournamentPresets as any[] || []).map((p) => {
+            if (p.sound) p.sound = migrateSoundV25(p.sound);
+            return p;
+          });
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          state.cashPresets = (state.cashPresets as any[] || []).map((p) => {
+            if (p.sound) p.sound = migrateSoundV25(p.sound);
             return p;
           });
         }

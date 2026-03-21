@@ -25,7 +25,7 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
   const [displayMs, setDisplayMs] = useState(0);
   const prevRef = useRef(-1);
   const warnRef = useRef(false);
-  const warn330Ref = useRef(false);
+  const warn30sRef = useRef(false);
 
   const computeRem = useCallback(() => {
     if (tournament.status === 'running' && tournament.timerStartedAt) return Math.max(0, tournament.remainingMs - (Date.now() - tournament.timerStartedAt));
@@ -40,24 +40,24 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
   useEffect(() => {
     if (prevRef.current === -1) { prevRef.current = tournament.currentLevelIndex; return; }
     if (prevRef.current !== tournament.currentLevelIndex) {
-      prevRef.current = tournament.currentLevelIndex; warnRef.current = false; warn330Ref.current = false;
+      prevRef.current = tournament.currentLevelIndex; warnRef.current = false; warn30sRef.current = false;
       if (tournament.status === 'running') {
         const lv = tournament.levels[tournament.currentLevelIndex];
-        if (lv?.type === 'break') { if (sound.breakStartEnabled) playSoundById(sound.breakStartSoundId || 'school-chime1', sound.masterVolume); }
-        else if (lv) { if (sound.blindChangeEnabled) playSoundById(sound.blindChangeSoundId || 'decision1', sound.masterVolume); }
+        if (lv?.type === 'break') { if (sound.breakStartEnabled) playSoundById(sound.breakStartSoundId || 'sound_22', sound.masterVolume); }
+        else if (lv) { if (sound.blindChangeEnabled) playSoundById(sound.blindChangeSoundId || 'sound_01', sound.masterVolume); }
       }
     }
   }, [tournament.currentLevelIndex, tournament.status, tournament.levels, sound]);
 
   useEffect(() => {
     if (tournament.status !== 'running') return;
-    if (displayMs <= 210000 && displayMs > 205000 && !warn330Ref.current) {
-      warn330Ref.current = true;
-      if (sound.threeMinThirtyWarningEnabled) playSoundById(sound.threeMinThirtySoundId || 'bell1', sound.masterVolume);
+    if (displayMs <= 30000 && displayMs > 25000 && !warn30sRef.current) {
+      warn30sRef.current = true;
+      if (sound.thirtySecWarningEnabled) playSoundById(sound.thirtySecSoundId || 'sound_19', sound.masterVolume);
     }
     if (displayMs <= 60000 && displayMs > 55000 && !warnRef.current) {
       warnRef.current = true;
-      if (sound.oneMinWarningEnabled) playSoundById(sound.oneMinWarningSoundId || 'warning1', sound.masterVolume);
+      if (sound.oneMinWarningEnabled) playSoundById(sound.oneMinWarningSoundId || 'sound_15', sound.masterVolume);
     }
   }, [displayMs, tournament.status, sound]);
 

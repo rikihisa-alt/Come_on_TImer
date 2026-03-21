@@ -143,20 +143,46 @@ export type SoundEntry = {
 };
 
 export const SOUND_LIBRARY: SoundEntry[] = [
-  { id: 'decision1',     name: 'Decision 1',      nameJa: '決定音 1',       category: '決定音' },
-  { id: 'decision3',     name: 'Decision 3',      nameJa: '決定音 3',       category: '決定音' },
-  { id: 'decision5',     name: 'Decision 5',      nameJa: '決定音 5',       category: '決定音' },
-  { id: 'decision7',     name: 'Decision 7',      nameJa: '決定音 7',       category: '決定音' },
-  { id: 'decision24',    name: 'Decision 24',     nameJa: '決定音 24',      category: '決定音' },
-  { id: 'decision29',    name: 'Decision 29',     nameJa: '決定音 29',      category: '決定音' },
-  { id: 'decision33',    name: 'Decision 33',     nameJa: '決定音 33',      category: '決定音' },
-  { id: 'decision43',    name: 'Decision 43',     nameJa: '決定音 43',      category: '決定音' },
-  { id: 'warning1',      name: 'Warning 1',       nameJa: '警告音 1',       category: '警告音' },
-  { id: 'warning2',      name: 'Warning 2',       nameJa: '警告音 2',       category: '警告音' },
-  { id: 'success1',      name: 'Success',         nameJa: '成功音',         category: 'その他' },
-  { id: 'beep1',         name: 'Beep',            nameJa: 'ビープ音',       category: 'ビープ' },
-  { id: 'bell1',         name: 'Bell',            nameJa: 'ベル',           category: 'ベル' },
-  { id: 'school-chime1', name: 'School Chime',    nameJa: '学校チャイム',   category: 'チャイム' },
+  // 決定音 (1-11)
+  { id: 'sound_01', name: 'Decision 1',  nameJa: '決定音 1',  category: '決定音' },
+  { id: 'sound_02', name: 'Decision 2',  nameJa: '決定音 2',  category: '決定音' },
+  { id: 'sound_03', name: 'Decision 3',  nameJa: '決定音 3',  category: '決定音' },
+  { id: 'sound_04', name: 'Decision 4',  nameJa: '決定音 4',  category: '決定音' },
+  { id: 'sound_05', name: 'Decision 5',  nameJa: '決定音 5',  category: '決定音' },
+  { id: 'sound_06', name: 'Decision 6',  nameJa: '決定音 6',  category: '決定音' },
+  { id: 'sound_07', name: 'Decision 7',  nameJa: '決定音 7',  category: '決定音' },
+  { id: 'sound_08', name: 'Decision 8',  nameJa: '決定音 8',  category: '決定音' },
+  { id: 'sound_09', name: 'Decision 9',  nameJa: '決定音 9',  category: '決定音' },
+  { id: 'sound_10', name: 'Decision 10', nameJa: '決定音 10', category: '決定音' },
+  { id: 'sound_11', name: 'Decision 11', nameJa: '決定音 11', category: '決定音' },
+  // 正解音 (12-14)
+  { id: 'sound_12', name: 'Correct 1',   nameJa: '正解音 1',  category: '正解音' },
+  { id: 'sound_13', name: 'Correct 2',   nameJa: '正解音 2',  category: '正解音' },
+  { id: 'sound_14', name: 'Correct 3',   nameJa: '正解音 3',  category: '正解音' },
+  // 警告音 (15-16)
+  { id: 'sound_15', name: 'Warning 1',   nameJa: '警告音 1',  category: '警告音' },
+  { id: 'sound_16', name: 'Warning 2',   nameJa: '警告音 2',  category: '警告音' },
+  // キャンセル (17-18)
+  { id: 'sound_17', name: 'Cancel 1',    nameJa: 'キャンセル 1', category: 'キャンセル' },
+  { id: 'sound_18', name: 'Cancel 2',    nameJa: 'キャンセル 2', category: 'キャンセル' },
+  // ビープ (19)
+  { id: 'sound_19', name: 'Beep',        nameJa: 'ビープ',    category: 'ビープ' },
+  // ベル (20)
+  { id: 'sound_20', name: 'Bell',        nameJa: 'ベル',      category: 'ベル' },
+  // 成功音 (21)
+  { id: 'sound_21', name: 'Success',     nameJa: '成功音',    category: '成功音' },
+  // ファンファーレ (22-23)
+  { id: 'sound_22', name: 'Trumpet 1',   nameJa: 'トランペット 1', category: 'ファンファーレ' },
+  { id: 'sound_23', name: 'Trumpet 2',   nameJa: 'トランペット 2', category: 'ファンファーレ' },
+  // 金属音 (24-25)
+  { id: 'sound_24', name: 'Tin 1',       nameJa: 'チーン 1',  category: '金属音' },
+  { id: 'sound_25', name: 'Tin 2',       nameJa: 'チーン 2',  category: '金属音' },
+  // ゴング (26)
+  { id: 'sound_26', name: 'Gong',        nameJa: 'ゴング',    category: '金属音' },
+  // ホーン (27)
+  { id: 'sound_27', name: 'Air Horn',    nameJa: 'エアホーン', category: 'ホーン' },
+  // ブザー (28)
+  { id: 'sound_28', name: 'Buzzer',      nameJa: 'ブザー',    category: 'ブザー' },
 ];
 
 // Preload audio buffers for instant playback

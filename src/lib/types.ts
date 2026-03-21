@@ -221,10 +221,12 @@ export type ThemeConfig = {
 export type SoundPreset = 'chime' | 'bell' | 'alert' | 'horn' | 'drum';
 
 export type SoundId =
-  | 'decision1' | 'decision3' | 'decision5' | 'decision7'
-  | 'decision24' | 'decision29' | 'decision33' | 'decision43'
-  | 'warning1' | 'warning2' | 'success1' | 'beep1'
-  | 'bell1' | 'school-chime1';
+  | 'sound_01' | 'sound_02' | 'sound_03' | 'sound_04' | 'sound_05'
+  | 'sound_06' | 'sound_07' | 'sound_08' | 'sound_09' | 'sound_10'
+  | 'sound_11' | 'sound_12' | 'sound_13' | 'sound_14' | 'sound_15'
+  | 'sound_16' | 'sound_17' | 'sound_18' | 'sound_19' | 'sound_20'
+  | 'sound_21' | 'sound_22' | 'sound_23' | 'sound_24' | 'sound_25'
+  | 'sound_26' | 'sound_27' | 'sound_28';
 
 export type TTSMessage = {
   id: string;
@@ -242,8 +244,8 @@ export type SoundSettings = {
   breakStartSoundId: SoundId;
   oneMinWarningEnabled: boolean;
   oneMinWarningSoundId: SoundId;
-  threeMinThirtyWarningEnabled: boolean;
-  threeMinThirtySoundId: SoundId;
+  thirtySecWarningEnabled: boolean;
+  thirtySecSoundId: SoundId;
   ttsEnabled: boolean;
   ttsLang: 'ja' | 'en';
   ttsMessages: TTSMessage[];

@@ -368,7 +368,7 @@ function TournamentTimer({ tournament: t }: { tournament: Tournament }) {
   const [displayMs, setDisplayMs] = useState(t.remainingMs);
   const prevLevelRef = useRef(t.currentLevelIndex);
   const warnedRef = useRef(false);
-  const warned330Ref = useRef(false);
+  const warned30sRef = useRef(false);
   const computeRem = useCallback(() => {
     if (t.status === 'running' && t.timerStartedAt) return Math.max(0, t.remainingMs - (Date.now() - t.timerStartedAt));
     return t.remainingMs;
@@ -381,14 +381,14 @@ function TournamentTimer({ tournament: t }: { tournament: Tournament }) {
     if (prevLevelRef.current !== t.currentLevelIndex) {
       prevLevelRef.current = t.currentLevelIndex;
       warnedRef.current = false;
-      warned330Ref.current = false;
+      warned30sRef.current = false;
       if (t.status === 'running') {
         const lv = t.levels[t.currentLevelIndex];
         if (lv?.type === 'break') {
-          if (snd.breakStartEnabled) playSoundById(snd.breakStartSoundId || 'school-chime1', snd.masterVolume);
+          if (snd.breakStartEnabled) playSoundById(snd.breakStartSoundId || 'sound_22', snd.masterVolume);
           fireTTS(snd, 'break', lv);
         } else if (lv) {
-          if (snd.blindChangeEnabled) playSoundById(snd.blindChangeSoundId || 'decision1', snd.masterVolume);
+          if (snd.blindChangeEnabled) playSoundById(snd.blindChangeSoundId || 'sound_01', snd.masterVolume);
           fireTTS(snd, 'level', lv);
         }
       }
@@ -396,13 +396,13 @@ function TournamentTimer({ tournament: t }: { tournament: Tournament }) {
   }, [t.currentLevelIndex, t.status, t.levels, snd]);
   useEffect(() => {
     if (t.status !== 'running') return;
-    if (displayMs <= 210000 && displayMs > 205000 && !warned330Ref.current) {
-      warned330Ref.current = true;
-      if (snd.threeMinThirtyWarningEnabled) playSoundById(snd.threeMinThirtySoundId || 'bell1', snd.masterVolume);
+    if (displayMs <= 30000 && displayMs > 25000 && !warned30sRef.current) {
+      warned30sRef.current = true;
+      if (snd.thirtySecWarningEnabled) playSoundById(snd.thirtySecSoundId || 'sound_19', snd.masterVolume);
     }
     if (displayMs <= 60000 && displayMs > 55000 && !warnedRef.current) {
       warnedRef.current = true;
-      if (snd.oneMinWarningEnabled) playSoundById(snd.oneMinWarningSoundId || 'warning1', snd.masterVolume);
+      if (snd.oneMinWarningEnabled) playSoundById(snd.oneMinWarningSoundId || 'sound_15', snd.masterVolume);
       fireTTS(snd, 'warning', null);
     }
   }, [displayMs, t.status, snd]);
@@ -927,7 +927,7 @@ function SoundPanel({ timerId, timerType }: { timerId: string; timerType: 'tourn
   const notificationRows: { enabledKey: keyof SoundSettings; soundIdKey: keyof SoundSettings; label: string }[] = [
     { enabledKey: 'blindChangeEnabled', soundIdKey: 'blindChangeSoundId', label: 'レベル切り替え' },
     { enabledKey: 'breakStartEnabled', soundIdKey: 'breakStartSoundId', label: 'ブレイク開始' },
-    { enabledKey: 'threeMinThirtyWarningEnabled', soundIdKey: 'threeMinThirtySoundId', label: '3分30秒前' },
+    { enabledKey: 'thirtySecWarningEnabled', soundIdKey: 'thirtySecSoundId', label: '30秒前' },
     { enabledKey: 'oneMinWarningEnabled', soundIdKey: 'oneMinWarningSoundId', label: '1分前' },
   ];
 
