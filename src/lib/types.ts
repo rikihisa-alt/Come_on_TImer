@@ -221,8 +221,10 @@ export type ThemeConfig = {
 export type SoundPreset = 'chime' | 'bell' | 'alert' | 'horn' | 'drum';
 
 export type SoundId =
-  | 'bell-short' | 'chime-short' | 'alert-short' | 'beep-short' | 'knock-short'
-  | 'chime-long' | 'fanfare-long' | 'alert-long' | 'bell-long' | 'horn-long';
+  | 'decision1' | 'decision3' | 'decision5' | 'decision7'
+  | 'decision24' | 'decision29' | 'decision33' | 'decision43'
+  | 'warning1' | 'warning2' | 'success1' | 'beep1'
+  | 'bell1' | 'school-chime1';
 
 export type TTSMessage = {
   id: string;

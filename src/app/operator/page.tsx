@@ -385,10 +385,10 @@ function TournamentTimer({ tournament: t }: { tournament: Tournament }) {
       if (t.status === 'running') {
         const lv = t.levels[t.currentLevelIndex];
         if (lv?.type === 'break') {
-          if (snd.breakStartEnabled) playSoundById(snd.breakStartSoundId || 'fanfare-long', snd.masterVolume);
+          if (snd.breakStartEnabled) playSoundById(snd.breakStartSoundId || 'school-chime1', snd.masterVolume);
           fireTTS(snd, 'break', lv);
         } else if (lv) {
-          if (snd.blindChangeEnabled) playSoundById(snd.blindChangeSoundId || 'chime-short', snd.masterVolume);
+          if (snd.blindChangeEnabled) playSoundById(snd.blindChangeSoundId || 'decision1', snd.masterVolume);
           fireTTS(snd, 'level', lv);
         }
       }
@@ -398,11 +398,11 @@ function TournamentTimer({ tournament: t }: { tournament: Tournament }) {
     if (t.status !== 'running') return;
     if (displayMs <= 210000 && displayMs > 205000 && !warned330Ref.current) {
       warned330Ref.current = true;
-      if (snd.threeMinThirtyWarningEnabled) playSoundById(snd.threeMinThirtySoundId || 'bell-short', snd.masterVolume);
+      if (snd.threeMinThirtyWarningEnabled) playSoundById(snd.threeMinThirtySoundId || 'bell1', snd.masterVolume);
     }
     if (displayMs <= 60000 && displayMs > 55000 && !warnedRef.current) {
       warnedRef.current = true;
-      if (snd.oneMinWarningEnabled) playSoundById(snd.oneMinWarningSoundId || 'beep-short', snd.masterVolume);
+      if (snd.oneMinWarningEnabled) playSoundById(snd.oneMinWarningSoundId || 'warning1', snd.masterVolume);
       fireTTS(snd, 'warning', null);
     }
   }, [displayMs, t.status, snd]);
@@ -898,15 +898,15 @@ function DisplaySettingsPanel({ timerId, timerType }: { timerId: string; timerTy
 }
 
 function SoundSelect({ value, onChange, volume }: { value: SoundId; onChange: (id: SoundId) => void; volume: number }) {
+  const categories = [...new Set(SOUND_LIBRARY.map(s => s.category))];
   return (
     <div className="flex items-center gap-1.5">
       <select className="input input-sm flex-1 min-w-0" value={value} onChange={e => onChange(e.target.value as SoundId)}>
-        <optgroup label="Short">
-          {SOUND_LIBRARY.filter(s => s.durationType === 'short').map(s => <option key={s.id} value={s.id}>{s.nameJa}</option>)}
-        </optgroup>
-        <optgroup label="Long">
-          {SOUND_LIBRARY.filter(s => s.durationType === 'long').map(s => <option key={s.id} value={s.id}>{s.nameJa}</option>)}
-        </optgroup>
+        {categories.map(cat => (
+          <optgroup key={cat} label={cat}>
+            {SOUND_LIBRARY.filter(s => s.category === cat).map(s => <option key={s.id} value={s.id}>{s.nameJa}</option>)}
+          </optgroup>
+        ))}
       </select>
       <button className="btn btn-ghost btn-sm shrink-0 px-2" onClick={() => playSoundById(value, volume)} title="テスト再生">&#9654;</button>
     </div>

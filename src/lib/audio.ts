@@ -133,213 +133,62 @@ export function playTestSound(preset: SoundPreset, volume: number) {
   playSound(preset, volume);
 }
 
-// ─── New Sound Library (10 sounds: 5 short + 5 long) ───
-
-function synthBellShort(ctx: AudioContext, vol: number) {
-  // Single bright bell hit ~0.8s
-  const freqs = [523.25, 659.25, 783.99];
-  freqs.forEach((freq) => {
-    const o = ctx.createOscillator();
-    o.type = 'sine';
-    o.frequency.value = freq;
-    const g = ctx.createGain();
-    g.gain.setValueAtTime(vol * 0.35, ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
-    o.connect(g); g.connect(ctx.destination);
-    o.start(ctx.currentTime); o.stop(ctx.currentTime + 0.8);
-  });
-}
-
-function synthChimeShort(ctx: AudioContext, vol: number) {
-  // 3-note ascending chime ~1s
-  [880, 1108.73, 1318.51].forEach((freq, i) => {
-    const o = ctx.createOscillator();
-    o.type = 'sine';
-    o.frequency.value = freq;
-    const g = ctx.createGain();
-    g.gain.setValueAtTime(vol * 0.35, ctx.currentTime + i * 0.15);
-    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.15 + 0.7);
-    o.connect(g); g.connect(ctx.destination);
-    o.start(ctx.currentTime + i * 0.15); o.stop(ctx.currentTime + i * 0.15 + 0.7);
-  });
-}
-
-function synthAlertShort(ctx: AudioContext, vol: number) {
-  // 3 quick square-wave pulses ~0.6s
-  for (let i = 0; i < 3; i++) {
-    const o = ctx.createOscillator();
-    const g = ctx.createGain();
-    o.type = 'square';
-    o.frequency.value = 1000;
-    g.gain.setValueAtTime(vol * 0.2, ctx.currentTime + i * 0.2);
-    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.2 + 0.12);
-    o.connect(g); g.connect(ctx.destination);
-    o.start(ctx.currentTime + i * 0.2); o.stop(ctx.currentTime + i * 0.2 + 0.15);
-  }
-}
-
-function synthBeepShort(ctx: AudioContext, vol: number) {
-  // Simple sine beep ~0.5s
-  const o = ctx.createOscillator();
-  const g = ctx.createGain();
-  o.type = 'sine';
-  o.frequency.value = 880;
-  g.gain.setValueAtTime(vol * 0.3, ctx.currentTime);
-  g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
-  o.connect(g); g.connect(ctx.destination);
-  o.start(ctx.currentTime); o.stop(ctx.currentTime + 0.5);
-}
-
-function synthKnockShort(ctx: AudioContext, vol: number) {
-  // 2 percussive hits ~0.5s
-  for (let i = 0; i < 2; i++) {
-    const o = ctx.createOscillator();
-    const g = ctx.createGain();
-    o.type = 'sine';
-    o.frequency.setValueAtTime(200, ctx.currentTime + i * 0.2);
-    o.frequency.exponentialRampToValueAtTime(50, ctx.currentTime + i * 0.2 + 0.15);
-    g.gain.setValueAtTime(vol * 0.5, ctx.currentTime + i * 0.2);
-    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.2 + 0.15);
-    o.connect(g); g.connect(ctx.destination);
-    o.start(ctx.currentTime + i * 0.2); o.stop(ctx.currentTime + i * 0.2 + 0.2);
-  }
-}
-
-function synthChimeLong(ctx: AudioContext, vol: number) {
-  // Extended 5-note descending chime ~3.5s
-  const notes = [1318.51, 1174.66, 1046.5, 880, 783.99];
-  notes.forEach((freq, i) => {
-    const o = ctx.createOscillator();
-    o.type = 'sine';
-    o.frequency.value = freq;
-    const g = ctx.createGain();
-    const t = ctx.currentTime + i * 0.5;
-    g.gain.setValueAtTime(vol * 0.3, t);
-    g.gain.exponentialRampToValueAtTime(0.001, t + 1.2);
-    o.connect(g); g.connect(ctx.destination);
-    o.start(t); o.stop(t + 1.2);
-  });
-}
-
-function synthFanfareLong(ctx: AudioContext, vol: number) {
-  // Triumphant fanfare ~4s - ascending major sequence
-  const notes = [
-    { freq: 523.25, start: 0, dur: 0.3 },
-    { freq: 659.25, start: 0.3, dur: 0.3 },
-    { freq: 783.99, start: 0.6, dur: 0.5 },
-    { freq: 1046.5, start: 1.2, dur: 0.8 },
-    { freq: 783.99, start: 2.2, dur: 0.3 },
-    { freq: 1046.5, start: 2.5, dur: 0.3 },
-    { freq: 1318.51, start: 2.8, dur: 1.2 },
-  ];
-  notes.forEach(({ freq, start, dur }) => {
-    const o = ctx.createOscillator();
-    o.type = 'triangle';
-    o.frequency.value = freq;
-    const g = ctx.createGain();
-    const t = ctx.currentTime + start;
-    g.gain.setValueAtTime(vol * 0.3, t);
-    g.gain.setValueAtTime(vol * 0.3, t + dur * 0.7);
-    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-    o.connect(g); g.connect(ctx.destination);
-    o.start(t); o.stop(t + dur);
-  });
-}
-
-function synthAlertLong(ctx: AudioContext, vol: number) {
-  // Escalating alert ~3s - rising pitch pattern x3
-  for (let r = 0; r < 3; r++) {
-    const baseT = ctx.currentTime + r * 1.0;
-    for (let i = 0; i < 3; i++) {
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-      o.type = 'square';
-      o.frequency.value = 800 + i * 200 + r * 100;
-      const t = baseT + i * 0.2;
-      g.gain.setValueAtTime(vol * 0.18, t);
-      g.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
-      o.connect(g); g.connect(ctx.destination);
-      o.start(t); o.stop(t + 0.18);
-    }
-  }
-}
-
-function synthBellLong(ctx: AudioContext, vol: number) {
-  // Rich bell with harmonics ~4s
-  const fundamentals = [523.25, 659.25, 783.99];
-  fundamentals.forEach((freq, i) => {
-    [1, 2, 3].forEach((harmonic) => {
-      const o = ctx.createOscillator();
-      o.type = 'sine';
-      o.frequency.value = freq * harmonic;
-      const g = ctx.createGain();
-      const amp = vol * 0.2 / harmonic;
-      const t = ctx.currentTime + i * 0.8;
-      g.gain.setValueAtTime(amp, t);
-      g.gain.exponentialRampToValueAtTime(0.001, t + 3.0);
-      o.connect(g); g.connect(ctx.destination);
-      o.start(t); o.stop(t + 3.0);
-    });
-  });
-}
-
-function synthHornLong(ctx: AudioContext, vol: number) {
-  // Extended horn sweep ~4s
-  const o = ctx.createOscillator();
-  const g = ctx.createGain();
-  o.type = 'sawtooth';
-  o.frequency.setValueAtTime(220, ctx.currentTime);
-  o.frequency.linearRampToValueAtTime(440, ctx.currentTime + 1.0);
-  o.frequency.setValueAtTime(440, ctx.currentTime + 2.0);
-  o.frequency.linearRampToValueAtTime(660, ctx.currentTime + 3.0);
-  g.gain.setValueAtTime(vol * 0.25, ctx.currentTime);
-  g.gain.setValueAtTime(vol * 0.3, ctx.currentTime + 1.5);
-  g.gain.setValueAtTime(vol * 0.25, ctx.currentTime + 3.0);
-  g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 4.0);
-  o.connect(g); g.connect(ctx.destination);
-  o.start(ctx.currentTime); o.stop(ctx.currentTime + 4.0);
-}
-
-// ─── Sound Library ───
+// ─── MP3 Sound Library (効果音ラボ) ───
 
 export type SoundEntry = {
   id: SoundId;
   name: string;
   nameJa: string;
-  durationType: 'short' | 'long';
+  category: string;
 };
 
 export const SOUND_LIBRARY: SoundEntry[] = [
-  { id: 'bell-short',   name: 'Bell (Short)',        nameJa: 'ベル (短)',        durationType: 'short' },
-  { id: 'chime-short',  name: 'Chime (Short)',       nameJa: 'チャイム (短)',    durationType: 'short' },
-  { id: 'alert-short',  name: 'Alert (Short)',       nameJa: 'アラート (短)',    durationType: 'short' },
-  { id: 'beep-short',   name: 'Beep (Short)',        nameJa: 'ビープ (短)',      durationType: 'short' },
-  { id: 'knock-short',  name: 'Knock (Short)',       nameJa: 'ノック (短)',      durationType: 'short' },
-  { id: 'chime-long',   name: 'Chime (Long)',        nameJa: 'チャイム (長)',    durationType: 'long' },
-  { id: 'fanfare-long', name: 'Fanfare (Long)',      nameJa: 'ファンファーレ (長)', durationType: 'long' },
-  { id: 'alert-long',   name: 'Alert (Long)',        nameJa: 'アラート (長)',    durationType: 'long' },
-  { id: 'bell-long',    name: 'Bell (Long)',         nameJa: 'ベル (長)',        durationType: 'long' },
-  { id: 'horn-long',    name: 'Horn (Long)',         nameJa: 'ホーン (長)',      durationType: 'long' },
+  { id: 'decision1',     name: 'Decision 1',      nameJa: '決定音 1',       category: '決定音' },
+  { id: 'decision3',     name: 'Decision 3',      nameJa: '決定音 3',       category: '決定音' },
+  { id: 'decision5',     name: 'Decision 5',      nameJa: '決定音 5',       category: '決定音' },
+  { id: 'decision7',     name: 'Decision 7',      nameJa: '決定音 7',       category: '決定音' },
+  { id: 'decision24',    name: 'Decision 24',     nameJa: '決定音 24',      category: '決定音' },
+  { id: 'decision29',    name: 'Decision 29',     nameJa: '決定音 29',      category: '決定音' },
+  { id: 'decision33',    name: 'Decision 33',     nameJa: '決定音 33',      category: '決定音' },
+  { id: 'decision43',    name: 'Decision 43',     nameJa: '決定音 43',      category: '決定音' },
+  { id: 'warning1',      name: 'Warning 1',       nameJa: '警告音 1',       category: '警告音' },
+  { id: 'warning2',      name: 'Warning 2',       nameJa: '警告音 2',       category: '警告音' },
+  { id: 'success1',      name: 'Success',         nameJa: '成功音',         category: 'その他' },
+  { id: 'beep1',         name: 'Beep',            nameJa: 'ビープ音',       category: 'ビープ' },
+  { id: 'bell1',         name: 'Bell',            nameJa: 'ベル',           category: 'ベル' },
+  { id: 'school-chime1', name: 'School Chime',    nameJa: '学校チャイム',   category: 'チャイム' },
 ];
 
-const SOUND_ID_MAP: Record<SoundId, (ctx: AudioContext, vol: number) => void> = {
-  'bell-short':   synthBellShort,
-  'chime-short':  synthChimeShort,
-  'alert-short':  synthAlertShort,
-  'beep-short':   synthBeepShort,
-  'knock-short':  synthKnockShort,
-  'chime-long':   synthChimeLong,
-  'fanfare-long': synthFanfareLong,
-  'alert-long':   synthAlertLong,
-  'bell-long':    synthBellLong,
-  'horn-long':    synthHornLong,
-};
+// Preload audio buffers for instant playback
+const audioCache: Map<string, HTMLAudioElement> = new Map();
+
+function getAudioElement(soundId: SoundId): HTMLAudioElement {
+  const cached = audioCache.get(soundId);
+  if (cached) return cached;
+  const audio = new Audio(`/audio/${soundId}.mp3`);
+  audio.preload = 'auto';
+  audioCache.set(soundId, audio);
+  return audio;
+}
+
+// Preload all sounds on first user interaction
+let preloaded = false;
+export function preloadSounds() {
+  if (preloaded) return;
+  preloaded = true;
+  SOUND_LIBRARY.forEach(s => {
+    const audio = getAudioElement(s.id);
+    audio.load();
+  });
+}
 
 export function playSoundById(soundId: SoundId, volume: number) {
   try {
-    const ctx = getCtx();
-    const fn = SOUND_ID_MAP[soundId];
-    if (fn) fn(ctx, volume);
+    const audio = getAudioElement(soundId);
+    // Clone to allow overlapping plays (but we generally avoid it)
+    const clone = audio.cloneNode() as HTMLAudioElement;
+    clone.volume = Math.max(0, Math.min(1, volume));
+    clone.play().catch(() => { /* autoplay blocked */ });
   } catch { /* ignore */ }
 }
 

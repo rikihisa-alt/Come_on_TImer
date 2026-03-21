@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useStore } from '@/stores/useStore';
 import { onSync } from '@/lib/sync';
-import { unlockAudio, playSoundById, speakTTS, fillTTSTemplate } from '@/lib/audio';
+import { unlockAudio, playSoundById, preloadSounds, speakTTS, fillTTSTemplate } from '@/lib/audio';
 import { formatTimer, formatChips, formatTimerHMS, computeTimeToBreak, computeTimeToEnd, computeRegCloseTime } from '@/lib/utils';
 import { Tournament, ThemeConfig, DisplayToggles, SoundSettings, SectionLayout, SectionPosition } from '@/lib/types';
 import { DEFAULT_DISPLAY_TOGGLES, DEFAULT_SOUND, DEFAULT_SECTION_LAYOUT, DEFAULT_SYSTEM_STYLE } from '@/lib/presets';
@@ -118,7 +118,7 @@ function Inner() {
   const fs = useStore(s => s.systemStyle?.displayFontScale) || 1;
 
   useEffect(() => {
-    const h = () => unlockAudio();
+    const h = () => { unlockAudio(); preloadSounds(); };
     document.addEventListener('click', h, { once: true });
     document.addEventListener('touchstart', h, { once: true });
     return () => { document.removeEventListener('click', h); document.removeEventListener('touchstart', h); };
@@ -160,11 +160,11 @@ function Inner() {
         const lv = tournament.levels[tournament.currentLevelIndex];
         const s = tournament.sound || globalSound;
         if (lv?.type === 'break') {
-          if (s.breakStartEnabled) playSoundById(s.breakStartSoundId || 'fanfare-long', s.masterVolume);
+          if (s.breakStartEnabled) playSoundById(s.breakStartSoundId || 'school-chime1', s.masterVolume);
           const m = s.ttsMessages.find(x => x.enabled && (x.label.includes('\u30D6\u30EC\u30A4\u30AF') || x.label.includes('\u4F11\u61A9') || x.label.toLowerCase().includes('break')));
           if (s.ttsEnabled && m) speakTTS(fillTTSTemplate(m.template, { level: lv.level, sb: lv.smallBlind, bb: lv.bigBlind, ante: lv.ante }), s.ttsLang);
         } else if (lv) {
-          if (s.blindChangeEnabled) playSoundById(s.blindChangeSoundId || 'chime-short', s.masterVolume);
+          if (s.blindChangeEnabled) playSoundById(s.blindChangeSoundId || 'decision1', s.masterVolume);
           const m = s.ttsMessages.find(x => x.enabled && (x.label.includes('\u30EC\u30D9\u30EB') || x.label.toLowerCase().includes('level')));
           if (s.ttsEnabled && m) speakTTS(fillTTSTemplate(m.template, { level: lv.level, sb: lv.smallBlind, bb: lv.bigBlind, ante: lv.ante }), s.ttsLang);
         }
@@ -178,12 +178,12 @@ function Inner() {
     // 3:30 warning (210 seconds)
     if (displayMs <= 210000 && displayMs > 205000 && !warn330Ref.current) {
       warn330Ref.current = true;
-      if (s.threeMinThirtyWarningEnabled) playSoundById(s.threeMinThirtySoundId || 'bell-short', s.masterVolume);
+      if (s.threeMinThirtyWarningEnabled) playSoundById(s.threeMinThirtySoundId || 'bell1', s.masterVolume);
     }
     // 1-min warning
     if (displayMs <= 60000 && displayMs > 55000 && !warnRef.current) {
       warnRef.current = true;
-      if (s.oneMinWarningEnabled) playSoundById(s.oneMinWarningSoundId || 'beep-short', s.masterVolume);
+      if (s.oneMinWarningEnabled) playSoundById(s.oneMinWarningSoundId || 'warning1', s.masterVolume);
       const m = s.ttsMessages.find(x => x.enabled && (x.label.includes('\u6B8B\u308A') || x.label.toLowerCase().includes('min')));
       if (s.ttsEnabled && m) speakTTS(fillTTSTemplate(m.template, { level: 0, sb: 0, bb: 0, ante: 0 }), s.ttsLang);
     }

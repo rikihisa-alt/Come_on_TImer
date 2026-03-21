@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useStore } from '@/stores/useStore';
 import { onSync } from '@/lib/sync';
-import { unlockAudio } from '@/lib/audio';
+import { unlockAudio, preloadSounds } from '@/lib/audio';
 import { formatTimerHMS, formatChips } from '@/lib/utils';
 import { CashGame, ThemeConfig, DisplayToggles, CashSectionLayout } from '@/lib/types';
 import { DEFAULT_DISPLAY_TOGGLES, DEFAULT_CASH_SECTION_LAYOUT } from '@/lib/presets';
@@ -91,7 +91,7 @@ function CashDisplayInner() {
   const [preLevelMs, setPreLevelMs] = useState(0);
 
   useEffect(() => {
-    const h = () => unlockAudio();
+    const h = () => { unlockAudio(); preloadSounds(); };
     document.addEventListener('click', h, { once: true });
     document.addEventListener('touchstart', h, { once: true });
     return () => { document.removeEventListener('click', h); document.removeEventListener('touchstart', h); };

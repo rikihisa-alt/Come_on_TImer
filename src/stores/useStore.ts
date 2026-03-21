@@ -991,11 +991,11 @@ export const useStore = create<AppState>()(
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const migrateSoundV24 = (s: any) => {
             if (!s) return s;
-            s.blindChangeSoundId = s.blindChangeSoundId ?? 'chime-short';
-            s.breakStartSoundId = s.breakStartSoundId ?? 'fanfare-long';
-            s.oneMinWarningSoundId = s.oneMinWarningSoundId ?? 'beep-short';
+            s.blindChangeSoundId = s.blindChangeSoundId ?? 'decision1';
+            s.breakStartSoundId = s.breakStartSoundId ?? 'school-chime1';
+            s.oneMinWarningSoundId = s.oneMinWarningSoundId ?? 'warning1';
             s.threeMinThirtyWarningEnabled = s.threeMinThirtyWarningEnabled ?? false;
-            s.threeMinThirtySoundId = s.threeMinThirtySoundId ?? 'bell-short';
+            s.threeMinThirtySoundId = s.threeMinThirtySoundId ?? 'bell1';
             return s;
           };
           // Global sound
