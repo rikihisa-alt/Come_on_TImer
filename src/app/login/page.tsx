@@ -92,15 +92,7 @@ export default function LoginPage() {
       <div className="w-full max-w-[420px] relative z-10">
         {/* Logo */}
         <div className="text-center mb-10">
-          <div className="inline-block mb-4">
-            <div className="relative w-16 h-16 mx-auto">
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 rotate-6 opacity-80 blur-sm" />
-              <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 flex items-center justify-center shadow-xl shadow-blue-500/30">
-                <span className="text-white font-black text-2xl tracking-tighter" style={{ fontFamily: "'Arial Black', sans-serif" }}>C</span>
-              </div>
-            </div>
-          </div>
-          <h1 className="text-3xl font-black tracking-tight mb-1">
+          <h1 className="text-4xl font-black tracking-tight mb-2">
             <span className="text-white">COME ON</span>{' '}
             <span className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">Timer</span>
           </h1>
