@@ -92,16 +92,18 @@ export default function LoginPage() {
       <div className="w-full max-w-[420px] relative z-10">
         {/* Logo */}
         <div className="text-center mb-10">
-          <div className="inline-flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/25">
-              <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
-              </svg>
+          <div className="inline-block mb-4">
+            <div className="relative w-16 h-16 mx-auto">
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 rotate-6 opacity-80 blur-sm" />
+              <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 flex items-center justify-center shadow-xl shadow-blue-500/30">
+                <span className="text-white font-black text-2xl tracking-tighter" style={{ fontFamily: "'Arial Black', sans-serif" }}>C</span>
+              </div>
             </div>
-            <h1 className="text-3xl font-black tracking-tight">
-              <span className="bg-gradient-to-r from-blue-400 to-blue-500 bg-clip-text text-transparent">COME ON Timer</span>
-            </h1>
           </div>
+          <h1 className="text-3xl font-black tracking-tight mb-1">
+            <span className="text-white">COME ON</span>{' '}
+            <span className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">Timer</span>
+          </h1>
           <p className="text-white/20 text-xs font-medium tracking-[0.3em] uppercase">Poker Tournament Timer</p>
         </div>
 
