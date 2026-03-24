@@ -71,7 +71,7 @@ export default function SignupPage() {
   };
 
   const inputClass = "w-full px-4 py-3.5 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-blue-500/50 focus:bg-white/[0.06] focus:ring-1 focus:ring-blue-500/20 transition-all";
-  const labelClass = "block text-white/30 text-[11px] font-medium mb-2 tracking-wide uppercase";
+  const labelClass = "block text-white/50 text-[11px] font-medium mb-2 tracking-wide uppercase";
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-[#0a0f1e]">
@@ -86,16 +86,16 @@ export default function SignupPage() {
       <div className="w-full max-w-[420px] relative z-10">
         {/* Logo */}
         <div className="text-center mb-10">
-          <h1 className="text-4xl font-black tracking-tight mb-2">
+          <h1 className="text-4xl font-black tracking-tight mb-2" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
             <span className="text-white">COME ON</span>{' '}
-            <span className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">Timer</span>
+            <span className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent drop-shadow-lg">Timer</span>
           </h1>
-          <p className="text-white/20 text-xs font-medium tracking-[0.3em] uppercase">Poker Tournament Timer</p>
+          <p className="text-white/40 text-xs font-medium tracking-[0.3em] uppercase">Poker Tournament Timer</p>
         </div>
 
         {/* Signup Card */}
-        <div className="backdrop-blur-xl bg-white/[0.04] rounded-2xl border border-white/[0.08] p-7 md:p-9 shadow-2xl shadow-black/20">
-          <h2 className="text-lg font-bold text-white/90 mb-6 text-center tracking-wide">新規登録</h2>
+        <div className="backdrop-blur-xl bg-white/[0.06] rounded-2xl border border-white/[0.1] p-7 md:p-9 shadow-2xl shadow-black/30">
+          <h2 className="text-lg font-bold text-white mb-6 text-center tracking-wide">新規登録</h2>
 
           <form onSubmit={handleSignup} className="space-y-4">
             {showCodeNotice && (
@@ -165,7 +165,7 @@ export default function SignupPage() {
             <div className="flex-1 h-px bg-white/[0.06]" />
           </div>
 
-          <p className="text-center text-white/25 text-sm">
+          <p className="text-center text-white/40 text-sm">
             既にアカウントをお持ちの方は{' '}
             <Link href="/login" className="text-blue-400 hover:text-blue-300 transition-colors font-medium">
               ログイン

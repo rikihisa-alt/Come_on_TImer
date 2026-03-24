@@ -92,16 +92,16 @@ export default function LoginPage() {
       <div className="w-full max-w-[420px] relative z-10">
         {/* Logo */}
         <div className="text-center mb-10">
-          <h1 className="text-4xl font-black tracking-tight mb-2">
+          <h1 className="text-4xl font-black tracking-tight mb-2" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
             <span className="text-white">COME ON</span>{' '}
-            <span className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">Timer</span>
+            <span className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent drop-shadow-lg">Timer</span>
           </h1>
-          <p className="text-white/20 text-xs font-medium tracking-[0.3em] uppercase">Poker Tournament Timer</p>
+          <p className="text-white/40 text-xs font-medium tracking-[0.3em] uppercase">Poker Tournament Timer</p>
         </div>
 
         {/* Login Card */}
-        <div className="backdrop-blur-xl bg-white/[0.04] rounded-2xl border border-white/[0.08] p-7 md:p-9 shadow-2xl shadow-black/20">
-          <h2 className="text-lg font-bold text-white/90 mb-6 text-center tracking-wide">ログイン</h2>
+        <div className="backdrop-blur-xl bg-white/[0.06] rounded-2xl border border-white/[0.1] p-7 md:p-9 shadow-2xl shadow-black/30">
+          <h2 className="text-lg font-bold text-white mb-6 text-center tracking-wide">ログイン</h2>
 
           <form onSubmit={handleLogin} className="space-y-5" autoComplete="on">
             {error && (
@@ -111,7 +111,7 @@ export default function LoginPage() {
             )}
 
             <div>
-              <label className="block text-white/30 text-[11px] font-medium mb-2 tracking-wide uppercase">メールアドレス</label>
+              <label className="block text-white/50 text-[11px] font-medium mb-2 tracking-wide uppercase">メールアドレス</label>
               <input
                 type="email"
                 name="email"
@@ -125,7 +125,7 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-white/30 text-[11px] font-medium mb-2 tracking-wide uppercase">パスワード</label>
+              <label className="block text-white/50 text-[11px] font-medium mb-2 tracking-wide uppercase">パスワード</label>
               <input
                 type="password"
                 name="password"
@@ -147,7 +147,7 @@ export default function LoginPage() {
                 )}
               </div>
               <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} className="sr-only" />
-              <span className="text-white/30 text-sm group-hover:text-white/40 transition-colors">ログイン状態を保持する</span>
+              <span className="text-white/50 text-sm group-hover:text-white/60 transition-colors">ログイン状態を保持する</span>
             </label>
 
             <button
@@ -170,7 +170,7 @@ export default function LoginPage() {
             <div className="flex-1 h-px bg-white/[0.06]" />
           </div>
 
-          <p className="text-center text-white/25 text-sm">
+          <p className="text-center text-white/40 text-sm">
             アカウントをお持ちでない方は{' '}
             <Link href="/signup" className="text-blue-400 hover:text-blue-300 transition-colors font-medium">
               新規登録
