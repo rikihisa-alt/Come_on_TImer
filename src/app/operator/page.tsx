@@ -142,16 +142,24 @@ function TournamentEditor({ id }: { id: string }) {
         <div className="g-card p-4"><PrizeEditor tournament={t} /></div>
         <div className="g-card p-4"><BlindEditor tournament={t} /></div>
         <button onClick={() => setShowSettings(!showSettings)} className="w-full flex items-center justify-between px-4 py-3 g-card hover:bg-white/[0.04] transition-colors">
-          <span className="text-xs text-white/40 font-semibold uppercase tracking-wider">Display & Sound Settings</span>
+          <span className="text-xs text-white/40 font-semibold tracking-wider">ディスプレイ・サウンド設定</span>
           <svg className={`w-4 h-4 text-white/30 transition-transform duration-200 ${showSettings ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
         </button>
         {showSettings && (
-          <div className="space-y-4 fade-in">
-            <div className="g-card p-4"><ThemeSelector timerId={id} timerType="tournament" /></div>
-            <div className="g-card p-4"><TickerPanel timerId={id} timerType="tournament" /></div>
-            <div className="g-card p-4"><TogglesPanel timerId={id} timerType="tournament" /></div>
-            <div className="g-card p-4"><DisplaySettingsPanel timerId={id} timerType="tournament" /></div>
-            <div className="g-card p-4"><SoundPanel timerId={id} timerType="tournament" /></div>
+          <div className="space-y-3 fade-in">
+            <AccordionSection title="表示設定">
+              <TogglesPanel timerId={id} timerType="tournament" />
+              <div className="border-t border-white/[0.06] pt-4 mt-4" />
+              <TickerPanel timerId={id} timerType="tournament" />
+            </AccordionSection>
+            <AccordionSection title="外観設定">
+              <ThemeSelector timerId={id} timerType="tournament" />
+              <div className="border-t border-white/[0.06] pt-4 mt-4" />
+              <DisplaySettingsPanel timerId={id} timerType="tournament" />
+            </AccordionSection>
+            <AccordionSection title="サウンド設定">
+              <SoundPanel timerId={id} timerType="tournament" />
+            </AccordionSection>
           </div>
         )}
       </div>
@@ -176,16 +184,24 @@ function TournamentEditor({ id }: { id: string }) {
           <div className="g-card p-4"><PrizeEditor tournament={t} /></div>
           <div className="g-card p-4"><BlindEditor tournament={t} /></div>
           <button onClick={() => setShowSettings(!showSettings)} className="w-full flex items-center justify-between px-4 py-3 g-card hover:bg-white/[0.04] transition-colors">
-            <span className="text-xs text-white/40 font-semibold uppercase tracking-wider">Display & Sound Settings</span>
+            <span className="text-xs text-white/40 font-semibold tracking-wider">ディスプレイ・サウンド設定</span>
             <svg className={`w-4 h-4 text-white/30 transition-transform duration-200 ${showSettings ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
           </button>
           {showSettings && (
-            <div className="space-y-4 fade-in">
-              <div className="g-card p-4"><ThemeSelector timerId={id} timerType="tournament" /></div>
-              <div className="g-card p-4"><TickerPanel timerId={id} timerType="tournament" /></div>
-              <div className="g-card p-4"><TogglesPanel timerId={id} timerType="tournament" /></div>
-              <div className="g-card p-4"><DisplaySettingsPanel timerId={id} timerType="tournament" /></div>
-              <div className="g-card p-4"><SoundPanel timerId={id} timerType="tournament" /></div>
+            <div className="space-y-3 fade-in">
+              <AccordionSection title="表示設定">
+                <TogglesPanel timerId={id} timerType="tournament" />
+                <div className="border-t border-white/[0.06] pt-4 mt-4" />
+                <TickerPanel timerId={id} timerType="tournament" />
+              </AccordionSection>
+              <AccordionSection title="外観設定">
+                <ThemeSelector timerId={id} timerType="tournament" />
+                <div className="border-t border-white/[0.06] pt-4 mt-4" />
+                <DisplaySettingsPanel timerId={id} timerType="tournament" />
+              </AccordionSection>
+              <AccordionSection title="サウンド設定">
+                <SoundPanel timerId={id} timerType="tournament" />
+              </AccordionSection>
             </div>
           )}
         </div>
@@ -621,7 +637,7 @@ function TickerPanel({ timerId, timerType }: { timerId: string; timerType: 'tour
   ];
   return (
     <div className="space-y-3">
-      <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Ticker (テロップ)</div>
+      <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">テロップ設定</div>
       <div>
         <label className="text-xs text-white/25 block mb-1">Ticker Text</label>
         <input className="input" value={dt.tickerText} onChange={e => up({ tickerText: e.target.value })} placeholder="画面下部に表示するテキストを入力..." />
@@ -670,7 +686,7 @@ function TogglesPanel({ timerId, timerType }: { timerId: string; timerType: 'tou
 
   return (
     <div className="space-y-3">
-      <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Display Elements</div>
+      <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">表示要素</div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {items.map(({ key, label }) => (
           <div key={key} className="flex items-center justify-between py-1">
@@ -776,7 +792,7 @@ function DisplaySettingsPanel({ timerId, timerType }: { timerId: string; timerTy
 
   return (
     <div className="space-y-3">
-      <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Background Image</div>
+      <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">背景画像</div>
       {/* Preview */}
       {hasBg && (
         <div className="relative rounded-xl overflow-hidden border border-white/[0.08]" style={{ height: '80px' }}>
@@ -933,7 +949,7 @@ function SoundPanel({ timerId, timerType }: { timerId: string; timerType: 'tourn
 
   return (
     <div className="space-y-4">
-      <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Sound Settings</div>
+      <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">サウンド設定</div>
 
       {/* Volume */}
       <div className="flex items-center gap-3">
@@ -1237,12 +1253,20 @@ function CashEditor({ id, onDelete }: { id: string; onDelete: (id: string) => vo
         <svg className={`w-4 h-4 text-white/30 transition-transform duration-200 ${showSettings ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
       </button>
       {showSettings && (
-        <div className="space-y-4 fade-in">
-          <div className="g-card p-4"><ThemeSelector timerId={id} timerType="cash" /></div>
-          <div className="g-card p-4"><TickerPanel timerId={id} timerType="cash" /></div>
-          <div className="g-card p-4"><TogglesPanel timerId={id} timerType="cash" /></div>
-          <div className="g-card p-4"><DisplaySettingsPanel timerId={id} timerType="cash" /></div>
-          <div className="g-card p-4"><SoundPanel timerId={id} timerType="cash" /></div>
+        <div className="space-y-3 fade-in">
+          <AccordionSection title="表示設定">
+            <TogglesPanel timerId={id} timerType="cash" />
+            <div className="border-t border-white/[0.06] pt-4 mt-4" />
+            <TickerPanel timerId={id} timerType="cash" />
+          </AccordionSection>
+          <AccordionSection title="外観設定">
+            <ThemeSelector timerId={id} timerType="cash" />
+            <div className="border-t border-white/[0.06] pt-4 mt-4" />
+            <DisplaySettingsPanel timerId={id} timerType="cash" />
+          </AccordionSection>
+          <AccordionSection title="サウンド設定">
+            <SoundPanel timerId={id} timerType="cash" />
+          </AccordionSection>
         </div>
       )}
     </>
@@ -1701,7 +1725,7 @@ function ThemeSelector({ timerId, timerType }: { timerId: string; timerType: 'to
 
   return (
     <div className="space-y-3">
-      <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">Color Theme</div>
+      <div className="text-xs text-white/30 font-semibold uppercase tracking-wider">カラーテーマ</div>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {store.themes.map(th => (
           <button
@@ -2890,13 +2914,9 @@ function SettingsFonts() {
 }
 
 /* ── Settings: Colors ── */
-function SettingsColors() {
+function SettingsSystemTheme() {
   const systemStyle = useStore(s => s.systemStyle) || DEFAULT_SYSTEM_STYLE;
   const updateSystemStyle = useStore(s => s.updateSystemStyle);
-  const hsl = hexToHsl(systemStyle.uiAccentColor || '#3b82f6');
-  const setHsl = (h: number, s: number, l: number) => {
-    updateSystemStyle({ uiAccentColor: hslToHex(h, s, l) });
-  };
   return (
     <>
       {/* System Theme Picker */}
@@ -2976,7 +2996,19 @@ function SettingsColors() {
           );
         })()}
       </div>
+    </>
+  );
+}
 
+function SettingsColors() {
+  const systemStyle = useStore(s => s.systemStyle) || DEFAULT_SYSTEM_STYLE;
+  const updateSystemStyle = useStore(s => s.updateSystemStyle);
+  const hsl = hexToHsl(systemStyle.uiAccentColor || '#3b82f6');
+  const setHsl = (h: number, s: number, l: number) => {
+    updateSystemStyle({ uiAccentColor: hslToHex(h, s, l) });
+  };
+  return (
+    <>
       {/* Text Color Override */}
       <div>
         <label className="text-xs block mb-1" style={{ color: 'var(--sys-text-muted)' }}>Text Color (文字色)</label>
@@ -3211,22 +3243,31 @@ function SettingsDisplay() {
   );
 }
 
+function SettingsAppearance() {
+  return (
+    <>
+      <SettingsSystemTheme />
+      <div className="border-t pt-5 mt-5" style={{ borderColor: 'var(--sys-glass-border)' }} />
+      <SettingsFonts />
+      <div className="border-t pt-5 mt-5" style={{ borderColor: 'var(--sys-glass-border)' }} />
+      <SettingsDisplay />
+    </>
+  );
+}
+
 function SettingsTab() {
   return (
     <div className="space-y-4 fade-in">
-      <AccordionSection title="テーマプリセット" defaultOpen>
+      <AccordionSection title="プリセット" defaultOpen>
         <SettingsThemePresets />
       </AccordionSection>
-      <AccordionSection title="フォント設定">
-        <SettingsFonts />
+      <AccordionSection title="外観設定">
+        <SettingsAppearance />
       </AccordionSection>
       <AccordionSection title="カラー設定">
         <SettingsColors />
       </AccordionSection>
-      <AccordionSection title="ディスプレイ設定">
-        <SettingsDisplay />
-      </AccordionSection>
-      <AccordionSection title="テーマ管理">
+      <AccordionSection title="タイマーテーマ管理">
         <ThemePicker />
       </AccordionSection>
     </div>
