@@ -8,17 +8,18 @@ import { isFirebaseAvailable, writeOrgState, onOrgStateChange } from '@/lib/fire
 const SUPABASE_DEBOUNCE_MS = 500;
 const FIREBASE_THROTTLE_MS = 300;
 const POLL_INTERVAL_MS = 3000;
-const FLUSH_COOLDOWN_MS = 5000;  // Ignore remote echoes for 5s after own write (must be > POLL_INTERVAL_MS)
+const FLUSH_COOLDOWN_MS = 8000;  // Ignore remote echoes for 8s after own write (must be > POLL_INTERVAL_MS)
 const PERSISTED_KEYS = ['tournaments', 'cashGames', 'displays', 'themes', 'sound', 'displayToggles', 'defaultThemeId', 'systemStyle', 'blindTemplates', 'tournamentPresets', 'cashPresets'] as const;
 
 /**
- * StoreSync v91: Fix snap-back on local changes
+ * StoreSync v92: Fix background image snap-back
  *
  * Key fixes:
- *   - Skip remote updates while local changes are pending (isDirty guard)
- *   - Cooldown period after flush to avoid echo snap-back
- *   - Full JSON hash to catch ALL field changes (blinds, themes, etc.)
- *   - Polling only when no pending local changes
+ *   - isDirty stays true until flush PUT succeeds (not before)
+ *   - lastSavedJson only updated after successful PUT
+ *   - Cooldown starts immediately on local change (not just on flush)
+ *   - Increased cooldown to 8s for large payloads (base64 images)
+ *   - Failed flush keeps isDirty=true so next change retries
  */
 export function StoreSync() {
   const isRemoteUpdate = useRef(false);
@@ -76,13 +77,12 @@ export function StoreSync() {
   // Flush: send data to Supabase + Firebase
   const flush = useCallback(async () => {
     if (!isAuthenticated.current || !isDirty.current) return;
-    isDirty.current = false;
+    // Keep isDirty=true until flush succeeds to block remote overwrites
 
     const persisted = getPersistedState();
     const json = stableHash(persisted);
-    if (!json || json === lastSavedJson.current) return;
-    lastSavedJson.current = json;
-    lastFlushTime.current = Date.now();  // Start echo cooldown
+    if (!json || json === lastSavedJson.current) { isDirty.current = false; return; }
+    lastFlushTime.current = Date.now();  // Start echo cooldown immediately
 
     // Firebase: instant
     if (firebaseAvailable && orgId.current) {
@@ -108,7 +108,14 @@ export function StoreSync() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ store_data: persisted }),
       });
-    } catch { /* ignore */ }
+      // Only update saved hash and clear dirty AFTER successful PUT
+      lastSavedJson.current = json;
+      isDirty.current = false;
+      lastFlushTime.current = Date.now();  // Reset cooldown after success
+    } catch {
+      // PUT failed — keep isDirty so we retry on next change
+      // Don't update lastSavedJson so remote data won't be skipped
+    }
   }, [getPersistedState, stableHash, firebaseAvailable]);
 
   // Load initial state
@@ -223,6 +230,7 @@ export function StoreSync() {
       if (!initialLoadDone.current || !isAuthenticated.current) return;
 
       isDirty.current = true;
+      lastFlushTime.current = Date.now();  // Protect from remote overwrite immediately
 
       if (supabaseTimer.current) clearTimeout(supabaseTimer.current);
       supabaseTimer.current = setTimeout(flush, SUPABASE_DEBOUNCE_MS);
