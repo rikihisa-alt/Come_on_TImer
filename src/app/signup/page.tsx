@@ -93,11 +93,10 @@ export default function SignupPage() {
               </svg>
             </div>
             <h1 className="text-3xl font-black tracking-tight">
-              <span className="bg-gradient-to-r from-blue-400 to-blue-500 bg-clip-text text-transparent">COME ON</span>
+              <span className="bg-gradient-to-r from-blue-400 to-blue-500 bg-clip-text text-transparent">COME ON Timer</span>
             </h1>
           </div>
-          <p className="text-white/30 text-sm font-medium tracking-wider">カモンタイマー</p>
-          <p className="text-white/15 text-xs mt-1 tracking-[0.2em] uppercase">Poker Tournament Timer</p>
+          <p className="text-white/20 text-xs font-medium tracking-[0.3em] uppercase">Poker Tournament Timer</p>
         </div>
 
         {/* Signup Card */}
