@@ -42,6 +42,9 @@ export function GlobalNav() {
         .catch(() => { /* ignore */ });
     };
 
+    // Fetch immediately on mount (don't wait for auth state change)
+    fetchProfile();
+
     // Listen for auth state changes (handles login, logout, token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') && session) {

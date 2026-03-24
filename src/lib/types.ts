@@ -226,7 +226,12 @@ export type SoundId =
   | 'sound_11' | 'sound_12' | 'sound_13' | 'sound_14' | 'sound_15'
   | 'sound_16' | 'sound_17' | 'sound_18' | 'sound_19' | 'sound_20'
   | 'sound_21' | 'sound_22' | 'sound_23' | 'sound_24' | 'sound_25'
-  | 'sound_26' | 'sound_27' | 'sound_28';
+  | 'sound_26' | 'sound_27' | 'sound_28' | 'sound_29' | 'sound_30'
+  | 'sound_31' | 'sound_32' | 'sound_33' | 'sound_34' | 'sound_35'
+  | 'sound_36' | 'sound_37' | 'sound_38' | 'sound_39' | 'sound_40'
+  | 'sound_41' | 'sound_42' | 'sound_43' | 'sound_44' | 'sound_45'
+  | 'sound_46' | 'sound_47' | 'sound_48' | 'sound_49' | 'sound_50'
+  | 'sound_51' | 'sound_52' | 'sound_53';
 
 export type TTSMessage = {
   id: string;

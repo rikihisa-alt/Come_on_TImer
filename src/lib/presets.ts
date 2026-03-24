@@ -126,8 +126,30 @@ export const FONT_OPTIONS: FontOption[] = [
   { id: 'exo-2', label: 'Exo 2', value: "'Exo 2', sans-serif", category: 'display', googleFamily: 'Exo+2' },
   { id: 'teko', label: 'Teko', value: "'Teko', sans-serif", category: 'display', googleFamily: 'Teko' },
   { id: 'playfair-display', label: 'Playfair Display', value: "'Playfair Display', serif", category: 'display', googleFamily: 'Playfair+Display' },
+  // Sans-serif (additional)
+  { id: 'open-sans', label: 'Open Sans', value: "'Open Sans', sans-serif", category: 'sans', googleFamily: 'Open+Sans' },
+  { id: 'nunito', label: 'Nunito', value: "'Nunito', sans-serif", category: 'sans', googleFamily: 'Nunito' },
+  { id: 'quicksand', label: 'Quicksand', value: "'Quicksand', sans-serif", category: 'sans', googleFamily: 'Quicksand' },
+  { id: 'rubik', label: 'Rubik', value: "'Rubik', sans-serif", category: 'sans', googleFamily: 'Rubik' },
+  { id: 'figtree', label: 'Figtree', value: "'Figtree', sans-serif", category: 'sans', googleFamily: 'Figtree' },
+  { id: 'outfit', label: 'Outfit', value: "'Outfit', sans-serif", category: 'sans', googleFamily: 'Outfit' },
+  { id: 'ubuntu', label: 'Ubuntu', value: "'Ubuntu', sans-serif", category: 'sans', googleFamily: 'Ubuntu' },
+  { id: 'source-sans-3', label: 'Source Sans 3', value: "'Source Sans 3', sans-serif", category: 'sans', googleFamily: 'Source+Sans+3' },
+  // Display (additional)
+  { id: 'russo-one', label: 'Russo One', value: "'Russo One', sans-serif", category: 'display', googleFamily: 'Russo+One' },
+  { id: 'bungee', label: 'Bungee', value: "'Bungee', sans-serif", category: 'display', googleFamily: 'Bungee' },
+  { id: 'anton', label: 'Anton', value: "'Anton', sans-serif", category: 'display', googleFamily: 'Anton' },
+  { id: 'righteous', label: 'Righteous', value: "'Righteous', sans-serif", category: 'display', googleFamily: 'Righteous' },
+  { id: 'black-ops-one', label: 'Black Ops One', value: "'Black Ops One', sans-serif", category: 'display', googleFamily: 'Black+Ops+One' },
+  { id: 'audiowide', label: 'Audiowide', value: "'Audiowide', sans-serif", category: 'display', googleFamily: 'Audiowide' },
+  { id: 'michroma', label: 'Michroma', value: "'Michroma', sans-serif", category: 'display', googleFamily: 'Michroma' },
+  // Serif (additional)
+  { id: 'merriweather', label: 'Merriweather', value: "'Merriweather', serif", category: 'display', googleFamily: 'Merriweather' },
+  { id: 'cinzel', label: 'Cinzel', value: "'Cinzel', serif", category: 'display', googleFamily: 'Cinzel' },
   // Monospace
   { id: 'share-tech-mono', label: 'Share Tech Mono', value: "'Share Tech Mono', monospace", category: 'mono', googleFamily: 'Share+Tech+Mono' },
+  { id: 'jetbrains-mono', label: 'JetBrains Mono', value: "'JetBrains Mono', monospace", category: 'mono', googleFamily: 'JetBrains+Mono' },
+  { id: 'fira-code', label: 'Fira Code', value: "'Fira Code', monospace", category: 'mono', googleFamily: 'Fira+Code' },
 ];
 
 export const ASPECT_RATIO_OPTIONS: { id: AspectRatioMode; label: string; desc: string }[] = [

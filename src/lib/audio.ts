@@ -183,6 +183,42 @@ export const SOUND_LIBRARY: SoundEntry[] = [
   { id: 'sound_27', name: 'Air Horn',    nameJa: 'エアホーン', category: 'ホーン' },
   // ブザー (28)
   { id: 'sound_28', name: 'Buzzer',      nameJa: 'ブザー',    category: 'ブザー' },
+  // 決定音 追加 (29-31)
+  { id: 'sound_29', name: 'Decision 12', nameJa: '決定音 12', category: '決定音' },
+  { id: 'sound_30', name: 'Decision 13', nameJa: '決定音 13', category: '決定音' },
+  { id: 'sound_31', name: 'Decision 14', nameJa: '決定音 14', category: '決定音' },
+  // カーソル (32-34)
+  { id: 'sound_32', name: 'Cursor 1',    nameJa: 'カーソル 1', category: 'カーソル' },
+  { id: 'sound_33', name: 'Cursor 2',    nameJa: 'カーソル 2', category: 'カーソル' },
+  { id: 'sound_34', name: 'Cursor 3',    nameJa: 'カーソル 3', category: 'カーソル' },
+  // 決定音 追加 (35-36)
+  { id: 'sound_35', name: 'Decision 15', nameJa: '決定音 15', category: '決定音' },
+  { id: 'sound_36', name: 'Decision 16', nameJa: '決定音 16', category: '決定音' },
+  // キャンセル 追加 (37-40)
+  { id: 'sound_37', name: 'Cancel 3',    nameJa: 'キャンセル 3', category: 'キャンセル' },
+  { id: 'sound_38', name: 'Cancel 4',    nameJa: 'キャンセル 4', category: 'キャンセル' },
+  { id: 'sound_39', name: 'Cancel 5',    nameJa: 'キャンセル 5', category: 'キャンセル' },
+  { id: 'sound_40', name: 'Cancel 6',    nameJa: 'キャンセル 6', category: 'キャンセル' },
+  // ビープ 追加 (41-42)
+  { id: 'sound_41', name: 'Beep 2',      nameJa: 'ビープ 2',  category: 'ビープ' },
+  { id: 'sound_42', name: 'Beep 3',      nameJa: 'ビープ 3',  category: 'ビープ' },
+  // メニュー (43-44)
+  { id: 'sound_43', name: 'Menu 1',      nameJa: 'メニュー 1', category: 'メニュー' },
+  { id: 'sound_44', name: 'Menu 2',      nameJa: 'メニュー 2', category: 'メニュー' },
+  // データ表示 (45-46)
+  { id: 'sound_45', name: 'Data 1',      nameJa: 'データ表示 1', category: 'データ表示' },
+  { id: 'sound_46', name: 'Data 2',      nameJa: 'データ表示 2', category: 'データ表示' },
+  // ゲージ回復 (47-48)
+  { id: 'sound_47', name: 'Recovery 1',  nameJa: 'ゲージ回復 1', category: 'ゲージ回復' },
+  { id: 'sound_48', name: 'Recovery 2',  nameJa: 'ゲージ回復 2', category: 'ゲージ回復' },
+  // メッセージ表示 (49-50)
+  { id: 'sound_49', name: 'Message 1',   nameJa: 'メッセージ 1', category: 'メッセージ' },
+  { id: 'sound_50', name: 'Message 2',   nameJa: 'メッセージ 2', category: 'メッセージ' },
+  // ビープ 追加 (51-52)
+  { id: 'sound_51', name: 'Beep 4',      nameJa: 'ビープ 4',  category: 'ビープ' },
+  { id: 'sound_52', name: 'Beep 5',      nameJa: 'ビープ 5',  category: 'ビープ' },
+  // ウィンドウ (53)
+  { id: 'sound_53', name: 'Window',      nameJa: 'ウィンドウ', category: 'ウィンドウ' },
 ];
 
 // Preload audio buffers for instant playback
