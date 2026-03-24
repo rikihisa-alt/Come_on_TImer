@@ -155,6 +155,8 @@ function TournamentEditor({ id }: { id: string }) {
             <AccordionSection title="外観設定">
               <ThemeSelector timerId={id} timerType="tournament" />
               <div className="border-t border-white/[0.06] pt-4 mt-4" />
+              <TimerFontPanel timerId={id} timerType="tournament" />
+              <div className="border-t border-white/[0.06] pt-4 mt-4" />
               <DisplaySettingsPanel timerId={id} timerType="tournament" />
             </AccordionSection>
             <AccordionSection title="サウンド設定">
@@ -712,6 +714,56 @@ function TogglesPanel({ timerId, timerType }: { timerId: string; timerType: 'tou
   );
 }
 
+function TimerFontPanel({ timerId, timerType }: { timerId: string; timerType: 'tournament' | 'cash' }) {
+  const store = useStore();
+  const timer = timerType === 'tournament'
+    ? store.tournaments.find(t => t.id === timerId)
+    : store.cashGames.find(c => c.id === timerId);
+  const dt = timer?.displayToggles || DEFAULT_DISPLAY_TOGGLES;
+  const up = (partial: Partial<DisplayToggles>) => {
+    if (timerType === 'tournament') store.updateTournamentToggles(timerId, partial);
+    else store.updateCashToggles(timerId, partial);
+  };
+  const sansOpts = FONT_OPTIONS.filter(f => f.category === 'sans');
+  const displayOpts = FONT_OPTIONS.filter(f => f.category === 'display');
+  const monoOpts = FONT_OPTIONS.filter(f => f.category === 'mono');
+  return (
+    <div className="space-y-3">
+      <div className="text-xs text-white/30 font-semibold tracking-wider">フォント設定</div>
+      <div>
+        <label className="text-[10px] text-white/40 block mb-1">メインフォント</label>
+        <select className="input input-sm w-full" value={dt.fontFamily || ''} onChange={e => up({ fontFamily: e.target.value || undefined })}>
+          <option value="">システム設定に従う</option>
+          <optgroup label="Sans-serif">
+            {sansOpts.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
+          </optgroup>
+          <optgroup label="Display">
+            {displayOpts.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
+          </optgroup>
+          <optgroup label="Monospace">
+            {monoOpts.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
+          </optgroup>
+        </select>
+      </div>
+      <div>
+        <label className="text-[10px] text-white/40 block mb-1">タイマーフォント</label>
+        <select className="input input-sm w-full" value={dt.timerFontFamily || ''} onChange={e => up({ timerFontFamily: e.target.value || undefined })}>
+          <option value="">システム設定に従う</option>
+          <optgroup label="Sans-serif">
+            {sansOpts.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
+          </optgroup>
+          <optgroup label="Display">
+            {displayOpts.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
+          </optgroup>
+          <optgroup label="Monospace">
+            {monoOpts.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
+          </optgroup>
+        </select>
+      </div>
+    </div>
+  );
+}
+
 const BG_GALLERY_KEY = 'come-on-timer-bg-gallery';
 function loadGallery(): { id: string; data: string; name: string }[] {
   try { return JSON.parse(localStorage.getItem(BG_GALLERY_KEY) || '[]'); } catch { return []; }
@@ -1261,6 +1313,8 @@ function CashEditor({ id, onDelete }: { id: string; onDelete: (id: string) => vo
           </AccordionSection>
           <AccordionSection title="外観設定">
             <ThemeSelector timerId={id} timerType="cash" />
+            <div className="border-t border-white/[0.06] pt-4 mt-4" />
+            <TimerFontPanel timerId={id} timerType="cash" />
             <div className="border-t border-white/[0.06] pt-4 mt-4" />
             <DisplaySettingsPanel timerId={id} timerType="cash" />
           </AccordionSection>

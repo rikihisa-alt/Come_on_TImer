@@ -235,7 +235,7 @@ function Inner() {
   const textEffectStyle = computeTextEffectStyle(dt);
 
   return (
-    <DisplayWrapper bgStyle={bgStyle} className={`flex flex-col select-none relative ${isBrk ? 'break-bg' : ''}`}>
+    <DisplayWrapper bgStyle={bgStyle} className={`flex flex-col select-none relative ${isBrk ? 'break-bg' : ''}`} fontOverride={dt.fontFamily} timerFontOverride={dt.timerFontFamily}>
       {/* BG Overlays */}
       {hasBgImage(dt, theme) && <div className="absolute inset-0 bg-black pointer-events-none z-[1]" style={{ opacity: getBgOverlayOpacity(dt) }} />}
       {theme && theme.overlayOpacity > 0 && <div className="absolute inset-0 bg-black pointer-events-none z-[1]" style={{ opacity: theme.overlayOpacity / 100 }} />}

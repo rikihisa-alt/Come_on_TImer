@@ -294,6 +294,8 @@ export type DisplayToggles = {
   textStrokeColor: string;        // stroke color (hex)
   textStrokeWidth: number;        // stroke width in px (0.5-4)
   prizeLabelFormat: 'ordinal' | 'jp';  // 'ordinal' = 1st/2nd, 'jp' = 1位/2位
+  fontFamily?: string;                // per-timer font override (empty = use system)
+  timerFontFamily?: string;           // per-timer timer font override
 };
 
 export type AspectRatioMode = '16:9' | '4:3' | 'panorama' | 'zoom';

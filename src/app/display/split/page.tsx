@@ -7,7 +7,7 @@ import { onSync } from '@/lib/sync';
 import { unlockAudio, playSoundById, preloadSounds } from '@/lib/audio';
 import { formatTimer, formatChips, formatTimerHMS, computeTimeToBreak, computeTimeToEnd, computeRegCloseTime } from '@/lib/utils';
 import { Tournament, CashGame, ThemeConfig, DisplayToggles, SoundSettings, SectionLayout, SectionPosition } from '@/lib/types';
-import { DEFAULT_SECTION_LAYOUT, DEFAULT_CASH_SECTION_LAYOUT } from '@/lib/presets';
+import { DEFAULT_SECTION_LAYOUT, DEFAULT_CASH_SECTION_LAYOUT, FONT_OPTIONS } from '@/lib/presets';
 import { computeBgStyle, computeTextEffectStyle, hasBgImage, getBgOverlayOpacity, ordinalLabel } from '@/lib/display-utils';
 import { FullscreenButton } from '@/components/FullscreenButton';
 import { AbsoluteSection } from '@/components/AbsoluteSection';
@@ -701,7 +701,10 @@ function SplitInner() {
       {/* Split panels */}
       <div className="relative z-10 flex-1 flex">
         {/* LEFT PANEL - always has own bg */}
-        <div className="flex-1 flex flex-col relative overflow-hidden">
+        <div className="flex-1 flex flex-col relative overflow-hidden" style={{
+          ...(leftDt.fontFamily ? { fontFamily: FONT_OPTIONS.find(f => f.id === leftDt.fontFamily)?.value } : {}),
+          ...(leftDt.timerFontFamily ? { '--timer-font-family': FONT_OPTIONS.find(f => f.id === leftDt.timerFontFamily)?.value } as React.CSSProperties : {}),
+        }}>
           <div className="absolute inset-0 z-0" style={leftBgStyle} />
           {leftTheme && leftTheme.overlayOpacity > 0 && <div className="absolute inset-0 bg-black z-0" style={{ opacity: leftTheme.overlayOpacity / 100 }} />}
           {hasBgImage(leftDt, leftTheme) && <div className="absolute inset-0 bg-black z-0" style={{ opacity: getBgOverlayOpacity(leftDt) }} />}
@@ -720,7 +723,10 @@ function SplitInner() {
         <div className="relative z-10 w-[2px] bg-white/20 shrink-0" />
 
         {/* RIGHT PANEL - always has own bg */}
-        <div className="flex-1 flex flex-col relative overflow-hidden">
+        <div className="flex-1 flex flex-col relative overflow-hidden" style={{
+          ...(rightDt.fontFamily ? { fontFamily: FONT_OPTIONS.find(f => f.id === rightDt.fontFamily)?.value } : {}),
+          ...(rightDt.timerFontFamily ? { '--timer-font-family': FONT_OPTIONS.find(f => f.id === rightDt.timerFontFamily)?.value } as React.CSSProperties : {}),
+        }}>
           <div className="absolute inset-0 z-0" style={rightBgStyle} />
           {rightTheme && rightTheme.overlayOpacity > 0 && <div className="absolute inset-0 bg-black z-0" style={{ opacity: rightTheme.overlayOpacity / 100 }} />}
           {hasBgImage(rightDt, rightTheme) && <div className="absolute inset-0 bg-black z-0" style={{ opacity: getBgOverlayOpacity(rightDt) }} />}

@@ -168,7 +168,7 @@ function CashDisplayInner() {
   const textEffectStyle = computeTextEffectStyle(dt);
 
   return (
-    <DisplayWrapper bgStyle={bgStyle} className="flex flex-col select-none relative">
+    <DisplayWrapper bgStyle={bgStyle} className="flex flex-col select-none relative" fontOverride={dt.fontFamily} timerFontOverride={dt.timerFontFamily}>
       {theme && theme.overlayOpacity > 0 && (
         <div className="absolute inset-0 bg-black pointer-events-none" style={{ opacity: theme.overlayOpacity / 100 }} />
       )}
