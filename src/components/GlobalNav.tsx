@@ -23,8 +23,16 @@ export function GlobalNav() {
   const [accountOpen, setAccountOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const accountRef = useRef<HTMLDivElement>(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userProfile, setUserProfile] = useState<{ display_name: string; role: string } | null>(null);
+  // Instant load from cache, then refresh from API
+  const [isLoggedIn, setIsLoggedIn] = useState(() => {
+    try { return !!sessionStorage.getItem('cot-profile'); } catch { return false; }
+  });
+  const [userProfile, setUserProfile] = useState<{ display_name: string; role: string } | null>(() => {
+    try {
+      const cached = sessionStorage.getItem('cot-profile');
+      return cached ? JSON.parse(cached) : null;
+    } catch { return null; }
+  });
 
   // Fetch profile via API route
   useEffect(() => {
@@ -35,8 +43,12 @@ export function GlobalNav() {
         .then(res => res.ok ? res.json() : null)
         .then(data => {
           if (data && data.display_name) {
+            const profile = { display_name: data.display_name, role: data.role };
             setIsLoggedIn(true);
-            setUserProfile({ display_name: data.display_name, role: data.role });
+            setUserProfile(profile);
+            try { sessionStorage.setItem('cot-profile', JSON.stringify(profile)); } catch { /* ignore */ }
+          } else {
+            try { sessionStorage.removeItem('cot-profile'); } catch { /* ignore */ }
           }
         })
         .catch(() => { /* ignore */ });
@@ -53,6 +65,7 @@ export function GlobalNav() {
       } else if (event === 'SIGNED_OUT') {
         setIsLoggedIn(false);
         setUserProfile(null);
+        try { sessionStorage.removeItem('cot-profile'); } catch { /* ignore */ }
       }
     });
 
@@ -66,6 +79,7 @@ export function GlobalNav() {
     await supabase.auth.signOut();
     setUserProfile(null);
     setIsLoggedIn(false);
+    try { sessionStorage.removeItem('cot-profile'); } catch { /* ignore */ }
     setAccountOpen(false);
     setMenuOpen(false);
     router.push('/login');
@@ -108,8 +122,11 @@ export function GlobalNav() {
     <nav className="g-topbar flex items-center justify-between px-3 md:px-5 py-2 md:py-3 border-b border-white/[0.06] sticky top-0 z-50">
       {/* Left: Logo */}
       <Link href="/" className="flex items-center gap-2 group shrink-0">
-        <span className="text-xl font-black text-blue-400 tracking-tight group-hover:text-blue-300 transition-colors">COME ON</span>
-        <span className="text-white/25 font-medium text-base">Timer</span>
+        <span className="text-xl font-black tracking-tight">
+          <span className="text-white group-hover:text-blue-100 transition-colors">COME ON</span>
+          {' '}
+          <span className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">Timer</span>
+        </span>
       </Link>
 
       {/* Center: Desktop nav links */}

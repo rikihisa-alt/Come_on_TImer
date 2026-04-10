@@ -2286,13 +2286,13 @@ function SplitTab() {
               {/* Left panel overlay */}
               <div className="absolute z-10 select-none" style={{
                 top: '7.2%', left: 0, width: '49.9%', height: '92.8%',
-              }} onPointerDown={() => setActivePanel('left')}>
+              }} onPointerDownCapture={() => setActivePanel('left')}>
                 {leftEditor.overlay}
               </div>
               {/* Right panel overlay */}
               <div className="absolute z-10 select-none" style={{
                 top: '7.2%', left: '50.1%', width: '49.9%', height: '92.8%',
-              }} onPointerDown={() => setActivePanel('right')}>
+              }} onPointerDownCapture={() => setActivePanel('right')}>
                 {rightEditor.overlay}
               </div>
               {/* Panel border labels */}
