@@ -229,12 +229,15 @@ export const useStore = create<AppState>()(
       tNextLevel: (id) => {
         set(s => ({ tournaments: s.tournaments.map(t => {
           if (t.id !== id) return t;
+          // Guard: if status is already finished, don't advance
+          if (t.status === 'finished') return t;
           const next = Math.min(t.currentLevelIndex + 1, t.levels.length - 1);
           if (next === t.currentLevelIndex && next === t.levels.length - 1) {
-            return { ...t, status: 'finished' as const, timerStartedAt: null };
+            return { ...t, status: 'finished' as const, remainingMs: 0, timerStartedAt: null };
           }
+          const now = Date.now();
           return { ...t, currentLevelIndex: next, remainingMs: (t.levels[next]?.duration || 900) * 1000,
-            timerStartedAt: t.status === 'running' ? Date.now() : null };
+            timerStartedAt: t.status === 'running' ? now : null };
         }) }));
         get().broadcastAll();
       },
@@ -277,13 +280,23 @@ export const useStore = create<AppState>()(
         }) }));
         get().broadcastAll();
       },
-      tTick: (id) => {
-        const s = get();
-        const t = s.tournaments.find(x => x.id === id);
-        if (!t || t.status !== 'running') return;
-        const rem = t.timerStartedAt ? t.remainingMs - (Date.now() - t.timerStartedAt) : t.remainingMs;
-        if (rem <= 0) s.tNextLevel(id);
-      },
+      tTick: (() => {
+        // Debounce per-tournament to prevent double level advance from multiple callers
+        const advancing = new Set<string>();
+        return (id: string) => {
+          if (advancing.has(id)) return;
+          const s = get();
+          const t = s.tournaments.find(x => x.id === id);
+          if (!t || t.status !== 'running') return;
+          const rem = t.timerStartedAt ? t.remainingMs - (Date.now() - t.timerStartedAt) : t.remainingMs;
+          if (rem <= 0) {
+            advancing.add(id);
+            s.tNextLevel(id);
+            // Release after next microtask so all pending ticks in this frame are blocked
+            Promise.resolve().then(() => advancing.delete(id));
+          }
+        };
+      })(),
       addCashGame: (name) => { const c = mkCash(name); set(s => ({ cashGames: [...s.cashGames, c] })); get().broadcastAll(); return c.id; },
       removeCashGame: (id) => { set(s => ({ cashGames: s.cashGames.filter(c => c.id !== id) })); get().broadcastAll(); },
       updateCashGame: (id, partial) => { set(s => ({ cashGames: s.cashGames.map(c => c.id === id ? { ...c, ...partial } : c) })); get().broadcastAll(); },
@@ -324,14 +337,23 @@ export const useStore = create<AppState>()(
         }) }));
         get().broadcastAll();
       },
-      cEndPreLevel: (id) => {
-        set(s => ({ cashGames: s.cashGames.map(c => {
-          if (c.id !== id) return c;
-          return { ...c, preLevelRemainingMs: 0, timerStartedAt: Date.now(),
-            ...(c.countdownMode ? { countdownRemainingMs: c.countdownTotalMs } : {}) };
-        }) }));
-        get().broadcastAll();
-      },
+      cEndPreLevel: (() => {
+        const advancing = new Set<string>();
+        return (id: string) => {
+          if (advancing.has(id)) return;
+          const s = get();
+          const c = s.cashGames.find(x => x.id === id);
+          if (!c || c.preLevelRemainingMs <= 0) return;
+          advancing.add(id);
+          set(s2 => ({ cashGames: s2.cashGames.map(cx => {
+            if (cx.id !== id) return cx;
+            return { ...cx, preLevelRemainingMs: 0, timerStartedAt: Date.now(),
+              ...(cx.countdownMode ? { countdownRemainingMs: cx.countdownTotalMs } : {}) };
+          }) }));
+          get().broadcastAll();
+          Promise.resolve().then(() => advancing.delete(id));
+        };
+      })(),
       setDisplay: (d) => { set(s => ({ displays: [...s.displays.filter(x => x.displayId !== d.displayId), d] })); get().broadcastAll(); },
       removeDisplay: (displayId) => { set(s => ({ displays: s.displays.filter(x => x.displayId !== displayId) })); get().broadcastAll(); },
       updateSound: (partial) => { set(s => ({ sound: { ...s.sound, ...partial } })); get().broadcastAll(); },

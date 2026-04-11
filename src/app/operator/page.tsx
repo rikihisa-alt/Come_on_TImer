@@ -387,14 +387,22 @@ function TournamentTimer({ tournament: t }: { tournament: Tournament }) {
   const prevLevelRef = useRef(t.currentLevelIndex);
   const warnedRef = useRef(false);
   const warned30sRef = useRef(false);
-  const computeRem = useCallback(() => {
-    if (t.status === 'running' && t.timerStartedAt) return Math.max(0, t.remainingMs - (Date.now() - t.timerStartedAt));
-    return t.remainingMs;
-  }, [t.status, t.timerStartedAt, t.remainingMs]);
   useEffect(() => {
-    const iv = setInterval(() => { const r = computeRem(); setDisplayMs(r); if (r <= 0 && t.status === 'running') store.tTick(t.id); }, 200);
+    const iv = setInterval(() => {
+      // Read fresh state to avoid stale closure issues
+      const fresh = useStore.getState().tournaments.find(x => x.id === t.id);
+      if (!fresh) return;
+      let r: number;
+      if (fresh.status === 'running' && fresh.timerStartedAt) {
+        r = Math.max(0, fresh.remainingMs - (Date.now() - fresh.timerStartedAt));
+      } else {
+        r = fresh.remainingMs;
+      }
+      setDisplayMs(r);
+      if (r <= 0 && fresh.status === 'running') useStore.getState().tTick(t.id);
+    }, 200);
     return () => clearInterval(iv);
-  }, [computeRem, t.status, t.id, store]);
+  }, [t.id]);
   useEffect(() => {
     if (prevLevelRef.current !== t.currentLevelIndex) {
       prevLevelRef.current = t.currentLevelIndex;
@@ -1227,24 +1235,24 @@ function CashEditor({ id, onDelete }: { id: string; onDelete: (id: string) => vo
   const [preLevelMs, setPreLevelMs] = useState(0);
 
   useEffect(() => {
-    if (!c) return;
-    setCountdown(c.countdownRemainingMs);
-    setPreLevelMs(c.preLevelRemainingMs);
+    if (!id) return;
     const iv = setInterval(() => {
-      if (c.status === 'running' && c.timerStartedAt) {
-        const e = Date.now() - c.timerStartedAt;
-        if (c.preLevelRemainingMs > 0) {
-          const rem = Math.max(0, c.preLevelRemainingMs - e);
+      const fresh = useStore.getState().cashGames.find(x => x.id === id);
+      if (!fresh) return;
+      if (fresh.status === 'running' && fresh.timerStartedAt) {
+        const e = Date.now() - fresh.timerStartedAt;
+        if (fresh.preLevelRemainingMs > 0) {
+          const rem = Math.max(0, fresh.preLevelRemainingMs - e);
           setPreLevelMs(rem);
-          if (rem <= 0) store.cEndPreLevel(c.id);
+          if (rem <= 0) useStore.getState().cEndPreLevel(id);
         } else {
-          setElapsed(c.elapsedMs + e);
-          if (c.countdownMode) setCountdown(Math.max(0, c.countdownRemainingMs - e));
+          setElapsed(fresh.elapsedMs + e);
+          if (fresh.countdownMode) setCountdown(Math.max(0, fresh.countdownRemainingMs - e));
         }
-      } else { setElapsed(c.elapsedMs); setCountdown(c.countdownRemainingMs); setPreLevelMs(c.preLevelRemainingMs); }
+      } else { setElapsed(fresh.elapsedMs); setCountdown(fresh.countdownRemainingMs); setPreLevelMs(fresh.preLevelRemainingMs); }
     }, 500);
     return () => clearInterval(iv);
-  }, [c, store]);
+  }, [id]);
 
   if (!c) return null;
 

@@ -27,15 +27,23 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
   const warnRef = useRef(false);
   const warn30sRef = useRef(false);
 
-  const computeRem = useCallback(() => {
-    if (tournament.status === 'running' && tournament.timerStartedAt) return Math.max(0, tournament.remainingMs - (Date.now() - tournament.timerStartedAt));
-    return tournament.remainingMs;
-  }, [tournament.status, tournament.timerStartedAt, tournament.remainingMs]);
+  const tournamentId = tournament.id;
 
   useEffect(() => {
-    const iv = setInterval(() => { const r = computeRem(); setDisplayMs(r); if (r <= 0 && tournament.status === 'running') useStore.getState().tTick(tournament.id); }, 200);
+    const iv = setInterval(() => {
+      const fresh = useStore.getState().tournaments.find(x => x.id === tournamentId);
+      if (!fresh) return;
+      let r: number;
+      if (fresh.status === 'running' && fresh.timerStartedAt) {
+        r = Math.max(0, fresh.remainingMs - (Date.now() - fresh.timerStartedAt));
+      } else {
+        r = fresh.remainingMs;
+      }
+      setDisplayMs(r);
+      if (r <= 0 && fresh.status === 'running') useStore.getState().tTick(tournamentId);
+    }, 200);
     return () => clearInterval(iv);
-  }, [computeRem, tournament.status, tournament.id]);
+  }, [tournamentId]);
 
   useEffect(() => {
     if (prevRef.current === -1) { prevRef.current = tournament.currentLevelIndex; return; }
@@ -343,27 +351,30 @@ function CashPanel({ cashGame, theme, displayToggles: dt }: {
   const [countdown, setCountdown] = useState(0);
   const [preLevelMs, setPreLevelMs] = useState(0);
 
+  const cashId = cashGame.id;
   useEffect(() => {
     const iv = setInterval(() => {
-      if (cashGame.status === 'running' && cashGame.timerStartedAt) {
-        const e = Date.now() - cashGame.timerStartedAt;
-        if (cashGame.preLevelRemainingMs > 0) {
-          const rem = Math.max(0, cashGame.preLevelRemainingMs - e);
+      const fresh = useStore.getState().cashGames.find(c => c.id === cashId);
+      if (!fresh) return;
+      if (fresh.status === 'running' && fresh.timerStartedAt) {
+        const e = Date.now() - fresh.timerStartedAt;
+        if (fresh.preLevelRemainingMs > 0) {
+          const rem = Math.max(0, fresh.preLevelRemainingMs - e);
           setPreLevelMs(rem);
-          if (rem <= 0) useStore.getState().cEndPreLevel(cashGame.id);
+          if (rem <= 0) useStore.getState().cEndPreLevel(cashId);
         } else {
           setPreLevelMs(0);
-          setElapsed(cashGame.elapsedMs + e);
-          if (cashGame.countdownMode) setCountdown(Math.max(0, cashGame.countdownRemainingMs - e));
+          setElapsed(fresh.elapsedMs + e);
+          if (fresh.countdownMode) setCountdown(Math.max(0, fresh.countdownRemainingMs - e));
         }
       } else {
-        setElapsed(cashGame.elapsedMs);
-        setCountdown(cashGame.countdownRemainingMs);
-        setPreLevelMs(cashGame.preLevelRemainingMs);
+        setElapsed(fresh.elapsedMs);
+        setCountdown(fresh.countdownRemainingMs);
+        setPreLevelMs(fresh.preLevelRemainingMs);
       }
     }, 500);
     return () => clearInterval(iv);
-  }, [cashGame]);
+  }, [cashId]);
 
   const rawCLayout = cashGame.splitSectionLayout || cashGame.sectionLayout;
   const layout = rawCLayout ? { ...DEFAULT_CASH_SECTION_LAYOUT, ...rawCLayout } : DEFAULT_CASH_SECTION_LAYOUT;

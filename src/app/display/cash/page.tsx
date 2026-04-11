@@ -111,28 +111,32 @@ function CashDisplayInner() {
     });
   }, []);
 
+  const cashGameId = cashGame?.id;
+
   useEffect(() => {
-    if (!cashGame) return;
-    setPreLevelMs(cashGame.preLevelRemainingMs);
+    if (!cashGameId) return;
     const iv = setInterval(() => {
-      if (cashGame.status === 'running' && cashGame.timerStartedAt) {
-        const e = Date.now() - cashGame.timerStartedAt;
-        if (cashGame.preLevelRemainingMs > 0) {
-          const rem = Math.max(0, cashGame.preLevelRemainingMs - e);
+      // Read fresh state to avoid stale closure issues
+      const fresh = useStore.getState().cashGames.find(c => c.id === cashGameId);
+      if (!fresh) return;
+      if (fresh.status === 'running' && fresh.timerStartedAt) {
+        const e = Date.now() - fresh.timerStartedAt;
+        if (fresh.preLevelRemainingMs > 0) {
+          const rem = Math.max(0, fresh.preLevelRemainingMs - e);
           setPreLevelMs(rem);
-          if (rem <= 0) useStore.getState().cEndPreLevel(cashGame.id);
+          if (rem <= 0) useStore.getState().cEndPreLevel(cashGameId);
         } else {
-          setElapsed(cashGame.elapsedMs + e);
-          if (cashGame.countdownMode) setCountdown(Math.max(0, cashGame.countdownRemainingMs - e));
+          setElapsed(fresh.elapsedMs + e);
+          if (fresh.countdownMode) setCountdown(Math.max(0, fresh.countdownRemainingMs - e));
         }
       } else {
-        setElapsed(cashGame.elapsedMs);
-        setCountdown(cashGame.countdownRemainingMs);
-        setPreLevelMs(cashGame.preLevelRemainingMs);
+        setElapsed(fresh?.elapsedMs || 0);
+        setCountdown(fresh?.countdownRemainingMs || 0);
+        setPreLevelMs(fresh?.preLevelRemainingMs || 0);
       }
     }, 500);
     return () => clearInterval(iv);
-  }, [cashGame]);
+  }, [cashGameId]);
 
   if (!cashGame) {
     return (

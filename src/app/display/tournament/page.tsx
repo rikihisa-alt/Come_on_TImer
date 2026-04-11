@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef, Suspense } from 'react';
+import { useEffect, useState, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useStore } from '@/stores/useStore';
 import { onSync } from '@/lib/sync';
@@ -139,17 +139,24 @@ function Inner() {
     });
   }, []);
 
-  const computeRem = useCallback(() => {
-    if (!tournament) return 0;
-    if (tournament.status === 'running' && tournament.timerStartedAt) return Math.max(0, tournament.remainingMs - (Date.now() - tournament.timerStartedAt));
-    return tournament.remainingMs;
-  }, [tournament]);
+  const tournamentId = tournament?.id;
 
   useEffect(() => {
-    if (!tournament) return;
-    const iv = setInterval(() => { const r = computeRem(); setDisplayMs(r); if (r <= 0 && tournament.status === 'running') useStore.getState().tTick(tournament.id); }, 200);
+    if (!tournamentId) return;
+    const iv = setInterval(() => {
+      const fresh = useStore.getState().tournaments.find(x => x.id === tournamentId);
+      if (!fresh) return;
+      let r: number;
+      if (fresh.status === 'running' && fresh.timerStartedAt) {
+        r = Math.max(0, fresh.remainingMs - (Date.now() - fresh.timerStartedAt));
+      } else {
+        r = fresh.remainingMs;
+      }
+      setDisplayMs(r);
+      if (r <= 0 && fresh.status === 'running') useStore.getState().tTick(tournamentId);
+    }, 200);
     return () => clearInterval(iv);
-  }, [tournament, computeRem]);
+  }, [tournamentId]);
 
   useEffect(() => {
     if (!tournament) return;
