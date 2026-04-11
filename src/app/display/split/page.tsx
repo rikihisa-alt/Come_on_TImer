@@ -361,6 +361,25 @@ function CashPanel({ cashGame, theme, displayToggles: dt }: {
   const [preLevelMs, setPreLevelMs] = useState(0);
 
   const cashId = cashGame.id;
+
+  // Immediately sync state when cashGame props change
+  useEffect(() => {
+    if (cashGame.status === 'running' && cashGame.timerStartedAt) {
+      const e = Date.now() - cashGame.timerStartedAt;
+      if (cashGame.preLevelRemainingMs > 0) {
+        setPreLevelMs(Math.max(0, cashGame.preLevelRemainingMs - e));
+      } else {
+        setPreLevelMs(0);
+        setElapsed(cashGame.elapsedMs + e);
+        if (cashGame.countdownMode) setCountdown(Math.max(0, cashGame.countdownRemainingMs - e));
+      }
+    } else {
+      setElapsed(cashGame.elapsedMs);
+      setCountdown(cashGame.countdownRemainingMs);
+      setPreLevelMs(cashGame.preLevelRemainingMs);
+    }
+  }, [cashGame.status, cashGame.timerStartedAt, cashGame.elapsedMs, cashGame.preLevelRemainingMs, cashGame.countdownRemainingMs, cashGame.countdownMode]);
+
   useEffect(() => {
     const iv = setInterval(() => {
       const fresh = useStore.getState().cashGames.find(c => c.id === cashId);

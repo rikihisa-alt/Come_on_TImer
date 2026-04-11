@@ -113,6 +113,25 @@ function CashDisplayInner() {
 
   const cashGameId = cashGame?.id;
 
+  // Immediately sync state when cashGame props change (e.g. pause/resume, pre-level end)
+  useEffect(() => {
+    if (!cashGame) return;
+    if (cashGame.status === 'running' && cashGame.timerStartedAt) {
+      const e = Date.now() - cashGame.timerStartedAt;
+      if (cashGame.preLevelRemainingMs > 0) {
+        setPreLevelMs(Math.max(0, cashGame.preLevelRemainingMs - e));
+      } else {
+        setPreLevelMs(0);
+        setElapsed(cashGame.elapsedMs + e);
+        if (cashGame.countdownMode) setCountdown(Math.max(0, cashGame.countdownRemainingMs - e));
+      }
+    } else {
+      setElapsed(cashGame?.elapsedMs || 0);
+      setCountdown(cashGame?.countdownRemainingMs || 0);
+      setPreLevelMs(cashGame?.preLevelRemainingMs || 0);
+    }
+  }, [cashGame?.status, cashGame?.timerStartedAt, cashGame?.elapsedMs, cashGame?.preLevelRemainingMs, cashGame?.countdownRemainingMs, cashGame?.countdownMode]);
+
   useEffect(() => {
     if (!cashGameId) return;
     const iv = setInterval(() => {

@@ -1242,6 +1242,25 @@ function CashEditor({ id, onDelete }: { id: string; onDelete: (id: string) => vo
 
   const [preLevelMs, setPreLevelMs] = useState(0);
 
+  // Immediately sync state when cash game status changes
+  useEffect(() => {
+    if (!c) return;
+    if (c.status === 'running' && c.timerStartedAt) {
+      const e = Date.now() - c.timerStartedAt;
+      if (c.preLevelRemainingMs > 0) {
+        setPreLevelMs(Math.max(0, c.preLevelRemainingMs - e));
+      } else {
+        setPreLevelMs(0);
+        setElapsed(c.elapsedMs + e);
+        if (c.countdownMode) setCountdown(Math.max(0, c.countdownRemainingMs - e));
+      }
+    } else {
+      setElapsed(c.elapsedMs);
+      setCountdown(c.countdownRemainingMs);
+      setPreLevelMs(c.preLevelRemainingMs);
+    }
+  }, [c?.status, c?.timerStartedAt, c?.elapsedMs, c?.preLevelRemainingMs, c?.countdownRemainingMs, c?.countdownMode]);
+
   useEffect(() => {
     if (!id) return;
     const iv = setInterval(() => {
