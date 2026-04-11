@@ -141,6 +141,16 @@ function Inner() {
 
   const tournamentId = tournament?.id;
 
+  // Immediately sync displayMs when level/remainingMs changes
+  useEffect(() => {
+    if (!tournament) return;
+    if (tournament.status === 'running' && tournament.timerStartedAt) {
+      setDisplayMs(Math.max(0, tournament.remainingMs - (Date.now() - tournament.timerStartedAt)));
+    } else {
+      setDisplayMs(tournament.remainingMs);
+    }
+  }, [tournament?.currentLevelIndex, tournament?.remainingMs, tournament?.status, tournament?.timerStartedAt]);
+
   useEffect(() => {
     if (!tournamentId) return;
     const iv = setInterval(() => {

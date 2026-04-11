@@ -387,6 +387,14 @@ function TournamentTimer({ tournament: t }: { tournament: Tournament }) {
   const prevLevelRef = useRef(t.currentLevelIndex);
   const warnedRef = useRef(false);
   const warned30sRef = useRef(false);
+  // Immediately sync displayMs when level changes or remainingMs resets (prevents 200ms stale display)
+  useEffect(() => {
+    if (t.status === 'running' && t.timerStartedAt) {
+      setDisplayMs(Math.max(0, t.remainingMs - (Date.now() - t.timerStartedAt)));
+    } else {
+      setDisplayMs(t.remainingMs);
+    }
+  }, [t.currentLevelIndex, t.remainingMs, t.status, t.timerStartedAt]);
   useEffect(() => {
     const iv = setInterval(() => {
       // Read fresh state to avoid stale closure issues

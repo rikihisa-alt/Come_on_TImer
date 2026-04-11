@@ -29,6 +29,15 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
 
   const tournamentId = tournament.id;
 
+  // Immediately sync displayMs when level/remainingMs changes
+  useEffect(() => {
+    if (tournament.status === 'running' && tournament.timerStartedAt) {
+      setDisplayMs(Math.max(0, tournament.remainingMs - (Date.now() - tournament.timerStartedAt)));
+    } else {
+      setDisplayMs(tournament.remainingMs);
+    }
+  }, [tournament.currentLevelIndex, tournament.remainingMs, tournament.status, tournament.timerStartedAt]);
+
   useEffect(() => {
     const iv = setInterval(() => {
       const fresh = useStore.getState().tournaments.find(x => x.id === tournamentId);
