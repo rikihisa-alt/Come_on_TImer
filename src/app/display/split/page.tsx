@@ -22,7 +22,12 @@ function TournamentPanel({ tournament, theme, displayToggles: dt, sound, layoutO
   sound: SoundSettings;
   layoutOverride?: SectionLayout;
 }) {
-  const [displayMs, setDisplayMs] = useState(0);
+  const [displayMs, setDisplayMs] = useState(() => {
+    if (tournament.status === 'running' && tournament.timerStartedAt) {
+      return Math.max(0, tournament.remainingMs - (Date.now() - tournament.timerStartedAt));
+    }
+    return tournament.remainingMs;
+  });
   const prevRef = useRef(-1);
   const warnRef = useRef(false);
   const warn30sRef = useRef(false);
@@ -356,9 +361,24 @@ function CashPanel({ cashGame, theme, displayToggles: dt }: {
   theme: ThemeConfig;
   displayToggles: DisplayToggles;
 }) {
-  const [elapsed, setElapsed] = useState(0);
-  const [countdown, setCountdown] = useState(0);
-  const [preLevelMs, setPreLevelMs] = useState(0);
+  const [elapsed, setElapsed] = useState(() => {
+    if (cashGame.status === 'running' && cashGame.timerStartedAt && cashGame.preLevelRemainingMs <= 0) {
+      return cashGame.elapsedMs + (Date.now() - cashGame.timerStartedAt);
+    }
+    return cashGame.elapsedMs;
+  });
+  const [countdown, setCountdown] = useState(() => {
+    if (cashGame.status === 'running' && cashGame.timerStartedAt && cashGame.countdownMode && cashGame.preLevelRemainingMs <= 0) {
+      return Math.max(0, cashGame.countdownRemainingMs - (Date.now() - cashGame.timerStartedAt));
+    }
+    return cashGame.countdownRemainingMs;
+  });
+  const [preLevelMs, setPreLevelMs] = useState(() => {
+    if (cashGame.status === 'running' && cashGame.timerStartedAt && cashGame.preLevelRemainingMs > 0) {
+      return Math.max(0, cashGame.preLevelRemainingMs - (Date.now() - cashGame.timerStartedAt));
+    }
+    return cashGame.preLevelRemainingMs;
+  });
 
   const cashId = cashGame.id;
 

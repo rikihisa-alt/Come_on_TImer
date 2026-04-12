@@ -35,16 +35,11 @@ if('serviceWorker' in navigator){
     reg.addEventListener('updatefound',function(){
       var nw=reg.installing;
       if(nw){nw.addEventListener('statechange',function(){
-        if(nw.state==='activated'){window.location.reload()}
+        if(nw.state==='activated'){
+          console.log('[SW] New version available');
+        }
       })}
     });
-  });
-  navigator.serviceWorker.addEventListener('message',function(e){
-    if(e.data&&e.data.type==='SW_UPDATED'){window.location.reload()}
-  });
-  var refreshing=false;
-  navigator.serviceWorker.addEventListener('controllerchange',function(){
-    if(!refreshing){refreshing=true;window.location.reload()}
   });
 }`,
           }}

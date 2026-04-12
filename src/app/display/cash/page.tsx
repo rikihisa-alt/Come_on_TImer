@@ -86,9 +86,27 @@ function CashDisplayInner() {
   const themeId = themeParam || cashGame?.themeId || assignment?.themeId || defaultThemeId || 'come-on-blue';
   const theme: ThemeConfig | undefined = themes.find(t => t.id === themeId) || themes[0];
 
-  const [elapsed, setElapsed] = useState(0);
-  const [countdown, setCountdown] = useState(0);
-  const [preLevelMs, setPreLevelMs] = useState(0);
+  const [elapsed, setElapsed] = useState(() => {
+    if (!cashGame) return 0;
+    if (cashGame.status === 'running' && cashGame.timerStartedAt && cashGame.preLevelRemainingMs <= 0) {
+      return cashGame.elapsedMs + (Date.now() - cashGame.timerStartedAt);
+    }
+    return cashGame?.elapsedMs || 0;
+  });
+  const [countdown, setCountdown] = useState(() => {
+    if (!cashGame) return 0;
+    if (cashGame.status === 'running' && cashGame.timerStartedAt && cashGame.countdownMode && cashGame.preLevelRemainingMs <= 0) {
+      return Math.max(0, cashGame.countdownRemainingMs - (Date.now() - cashGame.timerStartedAt));
+    }
+    return cashGame?.countdownRemainingMs || 0;
+  });
+  const [preLevelMs, setPreLevelMs] = useState(() => {
+    if (!cashGame) return 0;
+    if (cashGame.status === 'running' && cashGame.timerStartedAt && cashGame.preLevelRemainingMs > 0) {
+      return Math.max(0, cashGame.preLevelRemainingMs - (Date.now() - cashGame.timerStartedAt));
+    }
+    return cashGame?.preLevelRemainingMs || 0;
+  });
 
   useEffect(() => {
     const h = () => { unlockAudio(); preloadSounds(); };

@@ -111,7 +111,13 @@ function Inner() {
   const tournament: Tournament | undefined = tournaments.find(t => t.id === activeId);
   const themeId = themeParam || tournament?.themeId || assignment?.themeId || defaultThemeId || 'come-on-blue';
   const theme: ThemeConfig | undefined = themes.find(t => t.id === themeId) || themes[0];
-  const [displayMs, setDisplayMs] = useState(0);
+  const [displayMs, setDisplayMs] = useState(() => {
+    if (!tournament) return 0;
+    if (tournament.status === 'running' && tournament.timerStartedAt) {
+      return Math.max(0, tournament.remainingMs - (Date.now() - tournament.timerStartedAt));
+    }
+    return tournament.remainingMs;
+  });
   const prevRef = useRef(-1);
   const warnRef = useRef(false);
   const warn30sRef = useRef(false);

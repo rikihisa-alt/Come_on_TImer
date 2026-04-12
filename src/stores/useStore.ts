@@ -607,12 +607,24 @@ export const useStore = create<AppState>()(
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const currentAny = current as any;
           if (Array.isArray(data[key]) && Array.isArray(currentAny[key])) {
-            const remote = data[key] as { id?: string }[];
-            const local = currentAny[key] as { id?: string }[];
+            const remote = data[key] as { id?: string; status?: string; timerStartedAt?: number | null }[];
+            const local = currentAny[key] as { id?: string; status?: string; timerStartedAt?: number | null }[];
+            const localById = new Map(local.filter(x => x?.id).map(x => [x.id, x]));
             const remoteIds = new Set(remote.filter(x => x?.id).map(x => x.id));
+            // Merge: for each remote item, use local version if timer is running locally
+            // (prevents stale remote remainingMs/timerStartedAt from resetting active timer)
+            const merged = remote.map(r => {
+              if (!r?.id) return r;
+              const l = localById.get(r.id);
+              if (l && l.status === 'running' && l.timerStartedAt) {
+                // Running locally — keep local timer state, merge other fields from remote
+                return { ...r, status: l.status, remainingMs: (l as Record<string, unknown>).remainingMs, timerStartedAt: l.timerStartedAt, currentLevelIndex: (l as Record<string, unknown>).currentLevelIndex };
+              }
+              return r;
+            });
             // Keep local items that don't exist in remote (newly created locally)
             const localOnly = local.filter(x => x?.id && !remoteIds.has(x.id));
-            patch[key] = [...remote, ...localOnly];
+            patch[key] = [...merged, ...localOnly];
           } else {
             patch[key] = data[key];
           }
