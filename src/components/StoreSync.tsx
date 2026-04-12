@@ -5,10 +5,10 @@ import { useStore } from '@/stores/useStore';
 import { createClient } from '@/lib/supabase/client';
 import { isFirebaseAvailable, writeOrgState, onOrgStateChange } from '@/lib/firebase';
 
-const SUPABASE_DEBOUNCE_MS = 800;
-const FIREBASE_THROTTLE_MS = 500;
-const POLL_INTERVAL_MS = 10000;   // Poll every 10s (reduced from 3s to prevent flicker)
-const FLUSH_COOLDOWN_MS = 12000;  // Ignore remote echoes for 12s after own write
+const SUPABASE_DEBOUNCE_MS = 400;
+const FIREBASE_THROTTLE_MS = 300;
+const POLL_INTERVAL_MS = 5000;    // Poll every 5s
+const FLUSH_COOLDOWN_MS = 5000;   // Ignore remote echoes for 5s after own write
 const PERSISTED_KEYS = ['tournaments', 'cashGames', 'displays', 'themes', 'sound', 'displayToggles', 'defaultThemeId', 'systemStyle', 'blindTemplates', 'tournamentPresets', 'cashPresets'] as const;
 
 /**
@@ -56,9 +56,6 @@ export function StoreSync() {
     return persisted;
   }, []);
 
-  // Track when last local change happened (separate from flush time)
-  const lastLocalChange = useRef(0);
-
   // Apply remote data — with guards against snap-back
   const applyRemote = useCallback((data: Record<string, unknown>) => {
     // Guard 1: Skip if we have unsaved local changes
@@ -67,17 +64,14 @@ export function StoreSync() {
     // Guard 2: Skip during cooldown after our own flush (echo protection)
     if (Date.now() - lastFlushTime.current < FLUSH_COOLDOWN_MS) return;
 
-    // Guard 3: Skip if too soon after any local change (even already flushed)
-    if (Date.now() - lastLocalChange.current < 3000) return;
-
-    // Guard 4: Skip if data is identical to what we last saved
+    // Guard 3: Skip if data is identical to what we last saved
     const json = stableHash(data);
     if (!json || json === lastSavedJson.current) return;
     lastSavedJson.current = json;
 
     isRemoteUpdate.current = true;
     useStore.getState()._hydrateFromRemote(data);
-    setTimeout(() => { isRemoteUpdate.current = false; }, 150);
+    setTimeout(() => { isRemoteUpdate.current = false; }, 100);
   }, [stableHash]);
 
   // Flush: send data to Supabase + Firebase
@@ -269,7 +263,6 @@ export function StoreSync() {
       if (!initialLoadDone.current || !isAuthenticated.current) return;
 
       isDirty.current = true;
-      lastLocalChange.current = Date.now();
       lastFlushTime.current = Date.now();  // Protect from remote overwrite immediately
 
       if (supabaseTimer.current) clearTimeout(supabaseTimer.current);

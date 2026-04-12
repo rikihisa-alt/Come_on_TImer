@@ -134,13 +134,8 @@ function Inner() {
     return onSync((msg) => {
       if (msg.type === 'FULL_SYNC' && msg.payload) {
         const p = msg.payload as Record<string, unknown>;
-        if (p.tournaments) useStore.setState({ tournaments: p.tournaments as never });
-        if (p.displays) useStore.setState({ displays: p.displays as never });
-        if (p.themes) useStore.setState({ themes: p.themes as never });
-        if (p.sound) useStore.setState({ sound: p.sound as never });
-        if (p.displayToggles) useStore.setState({ displayToggles: p.displayToggles as never });
-        if (p.defaultThemeId) useStore.setState({ defaultThemeId: p.defaultThemeId as never });
-        if (p.systemStyle) useStore.setState({ systemStyle: p.systemStyle as never });
+        // Use _hydrateFromRemote for smart merge (preserves running timer state)
+        useStore.getState()._hydrateFromRemote(p);
       }
     });
   }, []);

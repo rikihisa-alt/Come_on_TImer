@@ -631,9 +631,6 @@ export const useStore = create<AppState>()(
         }
         if (Object.keys(patch).length > 0) {
           set(patch as Partial<AppState>);
-          // Also broadcast to other tabs on the same device
-          const s = get();
-          broadcast('FULL_SYNC', { tournaments: s.tournaments, cashGames: s.cashGames, displays: s.displays, themes: s.themes, sound: s.sound, displayToggles: s.displayToggles, defaultThemeId: s.defaultThemeId, systemStyle: s.systemStyle, blindTemplates: s.blindTemplates, tournamentPresets: s.tournamentPresets, cashPresets: s.cashPresets });
         }
       },
       // Get the persisted portion of state (for saving to remote)
