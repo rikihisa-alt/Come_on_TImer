@@ -245,8 +245,10 @@ export const useStore = create<AppState>()(
         set(s => ({ tournaments: s.tournaments.map(t => {
           if (t.id !== id) return t;
           const prev = Math.max(0, t.currentLevelIndex - 1);
-          return { ...t, currentLevelIndex: prev, remainingMs: (t.levels[prev]?.duration || 900) * 1000,
-            timerStartedAt: t.status === 'running' ? Date.now() : null };
+          // If finished, go back to paused state so user can resume
+          const newStatus = t.status === 'finished' ? 'paused' as const : t.status;
+          return { ...t, status: newStatus, currentLevelIndex: prev, remainingMs: (t.levels[prev]?.duration || 900) * 1000,
+            timerStartedAt: newStatus === 'running' ? Date.now() : null };
         }) }));
         get().broadcastAll();
       },
@@ -254,8 +256,9 @@ export const useStore = create<AppState>()(
         set(s => ({ tournaments: s.tournaments.map(t => {
           if (t.id !== id) return t;
           const idx = Math.max(0, Math.min(index, t.levels.length - 1));
-          return { ...t, currentLevelIndex: idx, remainingMs: (t.levels[idx]?.duration || 900) * 1000,
-            timerStartedAt: t.status === 'running' ? Date.now() : null };
+          const newStatus = t.status === 'finished' ? 'paused' as const : t.status;
+          return { ...t, status: newStatus, currentLevelIndex: idx, remainingMs: (t.levels[idx]?.duration || 900) * 1000,
+            timerStartedAt: newStatus === 'running' ? Date.now() : null };
         }) }));
         get().broadcastAll();
       },
