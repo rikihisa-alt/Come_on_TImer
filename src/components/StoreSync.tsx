@@ -5,10 +5,10 @@ import { useStore } from '@/stores/useStore';
 import { createClient } from '@/lib/supabase/client';
 import { isFirebaseAvailable, writeOrgState, onOrgStateChange } from '@/lib/firebase';
 
-const SUPABASE_DEBOUNCE_MS = 500;
-const FIREBASE_THROTTLE_MS = 300;
-const POLL_INTERVAL_MS = 3000;
-const FLUSH_COOLDOWN_MS = 8000;  // Ignore remote echoes for 8s after own write (must be > POLL_INTERVAL_MS)
+const SUPABASE_DEBOUNCE_MS = 800;
+const FIREBASE_THROTTLE_MS = 500;
+const POLL_INTERVAL_MS = 10000;   // Poll every 10s (reduced from 3s to prevent flicker)
+const FLUSH_COOLDOWN_MS = 12000;  // Ignore remote echoes for 12s after own write
 const PERSISTED_KEYS = ['tournaments', 'cashGames', 'displays', 'themes', 'sound', 'displayToggles', 'defaultThemeId', 'systemStyle', 'blindTemplates', 'tournamentPresets', 'cashPresets'] as const;
 
 /**
@@ -56,6 +56,9 @@ export function StoreSync() {
     return persisted;
   }, []);
 
+  // Track when last local change happened (separate from flush time)
+  const lastLocalChange = useRef(0);
+
   // Apply remote data — with guards against snap-back
   const applyRemote = useCallback((data: Record<string, unknown>) => {
     // Guard 1: Skip if we have unsaved local changes
@@ -64,7 +67,10 @@ export function StoreSync() {
     // Guard 2: Skip during cooldown after our own flush (echo protection)
     if (Date.now() - lastFlushTime.current < FLUSH_COOLDOWN_MS) return;
 
-    // Guard 3: Skip if data is identical to what we last saved
+    // Guard 3: Skip if too soon after any local change (even already flushed)
+    if (Date.now() - lastLocalChange.current < 3000) return;
+
+    // Guard 4: Skip if data is identical to what we last saved
     const json = stableHash(data);
     if (!json || json === lastSavedJson.current) return;
     lastSavedJson.current = json;
@@ -134,25 +140,58 @@ export function StoreSync() {
       if (!res.ok) return;
       const { store_data } = await res.json();
 
-      if (store_data && typeof store_data === 'object' && Object.keys(store_data).length > 0) {
-        isRemoteUpdate.current = true;
-        useStore.getState()._hydrateFromRemote(store_data);
-        lastSavedJson.current = stableHash(store_data);
-        setTimeout(() => { isRemoteUpdate.current = false; }, 100);
+      const localState = getPersistedState();
+      const localJson = stableHash(localState);
 
-        if (firebaseAvailable && orgId.current) {
+      if (store_data && typeof store_data === 'object' && Object.keys(store_data).length > 0) {
+        const remoteJson = stableHash(store_data);
+        if (remoteJson !== localJson) {
+          // Only apply remote if local has no meaningful data (fresh install)
+          const localTournaments = (localState.tournaments as { id?: string }[]) || [];
+          const remoteTournaments = (store_data.tournaments as { id?: string }[]) || [];
+          const hasLocalData = localTournaments.length > 0;
+          const hasRemoteData = remoteTournaments.length > 0;
+
+          if (!hasLocalData && hasRemoteData) {
+            // Fresh install: accept remote fully
+            isRemoteUpdate.current = true;
+            useStore.getState()._hydrateFromRemote(store_data);
+            lastSavedJson.current = remoteJson;
+            setTimeout(() => { isRemoteUpdate.current = false; }, 100);
+          } else if (hasLocalData) {
+            // Local has data: smart merge (remote as base, keep local additions)
+            isRemoteUpdate.current = true;
+            useStore.getState()._hydrateFromRemote(store_data);
+            setTimeout(() => { isRemoteUpdate.current = false; }, 100);
+            // Then push local state back to remote
+            const merged = getPersistedState();
+            lastSavedJson.current = stableHash(merged);
+            fetch('/api/store', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ store_data: merged }),
+            }).catch(() => {});
+            if (firebaseAvailable && orgId.current) {
+              writeOrgState(orgId.current, merged).catch(() => {});
+            }
+          }
+        } else {
+          lastSavedJson.current = localJson;
+        }
+
+        if (firebaseAvailable && orgId.current && !localJson) {
           writeOrgState(orgId.current, store_data).catch(() => {});
         }
       } else {
-        const current = getPersistedState();
+        // No remote data — push local to remote
         await fetch('/api/store', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ store_data: current }),
+          body: JSON.stringify({ store_data: localState }),
         });
-        lastSavedJson.current = stableHash(current);
+        lastSavedJson.current = localJson;
         if (firebaseAvailable && orgId.current) {
-          writeOrgState(orgId.current, current).catch(() => {});
+          writeOrgState(orgId.current, localState).catch(() => {});
         }
       }
 
@@ -230,6 +269,7 @@ export function StoreSync() {
       if (!initialLoadDone.current || !isAuthenticated.current) return;
 
       isDirty.current = true;
+      lastLocalChange.current = Date.now();
       lastFlushTime.current = Date.now();  // Protect from remote overwrite immediately
 
       if (supabaseTimer.current) clearTimeout(supabaseTimer.current);

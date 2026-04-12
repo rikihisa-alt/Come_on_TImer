@@ -596,11 +596,24 @@ export const useStore = create<AppState>()(
         };
       })(),
       // Apply remote store data (from Supabase) without triggering broadcastAll
+      // Uses smart merge for arrays with 'id' field to avoid losing locally-added items
       _hydrateFromRemote: (data: Record<string, unknown>) => {
         const keys = ['tournaments', 'cashGames', 'displays', 'themes', 'sound', 'displayToggles', 'defaultThemeId', 'systemStyle', 'blindTemplates', 'tournamentPresets', 'cashPresets'] as const;
         const patch: Record<string, unknown> = {};
+        const current = get();
         for (const key of keys) {
-          if (data[key] !== undefined) {
+          if (data[key] === undefined) continue;
+          // Smart merge for id-based arrays: use remote data but preserve local-only items
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const currentAny = current as any;
+          if (Array.isArray(data[key]) && Array.isArray(currentAny[key])) {
+            const remote = data[key] as { id?: string }[];
+            const local = currentAny[key] as { id?: string }[];
+            const remoteIds = new Set(remote.filter(x => x?.id).map(x => x.id));
+            // Keep local items that don't exist in remote (newly created locally)
+            const localOnly = local.filter(x => x?.id && !remoteIds.has(x.id));
+            patch[key] = [...remote, ...localOnly];
+          } else {
             patch[key] = data[key];
           }
         }
